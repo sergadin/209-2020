@@ -5,7 +5,7 @@
 
 Для запуска выполнить: _./\_main_
 
-Для генерации тестовых данных выполнить: _make input_builder && \_input\_builder [&lt;number-of-samples&gt; &lt;output-file-name&gt;]_
+Для генерации тестовых данных выполнить: _make input_builder && \_input\_builder [number-of-samples] [output-file-name]_
 
 На данный момент данные считываются из файла **\_\_database.txt**
 
