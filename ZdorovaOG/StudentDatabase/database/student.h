@@ -14,7 +14,7 @@ struct Student {
    * @param[in]  field  Поле для вывода
    */
   
-  void Print(std::ostream &os, const std::string &field);
+  void Print(std::ostream &os, const std::string &field) const;
   /**
    * @brief      Выводит в поток значение всех полей студента
    * 
@@ -22,5 +22,5 @@ struct Student {
    * @param      os     Поток вывода
    * @param[in]  delim  Разделитель
    */
-  void PrintAll(std::ostream &os, char delim);
+  void PrintAll(std::ostream &os, char delim) const;
 };
