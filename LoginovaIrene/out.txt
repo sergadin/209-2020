@@ -1,0 +1,5 @@
+insert Ac 0.5 105
+p
+del_it D 1 105
+p
+quit
