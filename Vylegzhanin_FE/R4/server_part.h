@@ -1,3 +1,7 @@
+#ifndef SERV_PART_H
+#define SERV_PART_H
+
+
 #include<algorithm>
 #include<vector>
 #include<list>
@@ -8,9 +12,9 @@
 //#include<cassert>
 
 using namespace std;
-//--------------------------------------------------------------------------
-//                        какие-то базовые структуры
-//--------------------------------------------------------------------------
+//--------------------------------------------------------------------------//
+//                        какие-то базовые структуры                        //
+//--------------------------------------------------------------------------//
 typedef enum {MON, TUE, WEN, THU, FRI, SAT, SUN} WeekDay;
 
 struct LessonInfo {
@@ -24,9 +28,9 @@ struct LessonInfo {
 typedef list<LessonInfo*> IndicesList;
 
 WeekDay GetDayFromString(string s);
-//---------------------------------------------------------------------------
-//                 структуры, представляющие запрос в памяти
-//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------//
+//  структуры, представляющие запрос в памяти (``синтаксический анализ'')    //
+//---------------------------------------------------------------------------//
 typedef enum {SELECT, RESELECT, INSERT, REMOVE, PRINT} CommandType;
 typedef enum {TEACHER, ROOM, GROUP, DAY, TIME, SUBJECT, SORT} Field;
 typedef enum {GT, LT, EQUAL, IN, NONE} Relation;
@@ -45,7 +49,8 @@ typedef enum {GT, LT, EQUAL, IN, NONE} Relation;
 struct Cond {// Одно условие вида поле + отношение + константа
     Field field;
     Relation relation;
-    union {
+ //   union {
+ 	struct {
       int number;//одно значение
       pair<int,int> diap;//диапазон значений
       string str;
@@ -60,48 +65,71 @@ struct Command {
 
 void SetInfo(LessonInfo& record, Cond cond_data);//помещает в запись информацию из условия
 bool CheckCondition(LessonInfo record, Cond condition);//проверка, удовлетворяет ли запись условию
-//---------------------------------------------------------------------------
-//                       сама база данных
-//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------//
+//                       сама база данных                                    //
+//---------------------------------------------------------------------------//
 class Database {
 	vector<LessonInfo> recs_;
-	map<    string, IndicesList> teachers_;
-	map<       int, IndicesList>   groups_;
-	map<       int, IndicesList>    rooms_;
-	map<DateTime_t, IndicesList>    times_;
-	map<    string, IndicesList> subjects_;
+	int recs_n_;
+
+	map< string, IndicesList> teachers_;
+	map<    int, IndicesList>   groups_;
+	map<    int, IndicesList>    rooms_;
+	map<WeekDay, IndicesList>     days_;
+	map<	int, IndicesList>    times_;
+	map< string, IndicesList> subjects_;
 public:
 	~Database();
 	Database();
 	Database(string filename);//конструктор из файла (запускает LoadFromFile)
 	
-	Database(const Database& other, SearchConditions criteria);
+	Database(const Database& other, const SearchConditions criteria);
 	//этот конструктор и осуществляет выборку из other записей, удовл. критериям
-
-	Database& operator= (const Database& other);
 
 	int DbSize() const;
 	void AddRecord(LessonInfo rec);
-	void RemoveRecords(SearchConditions criteria);
-//	void LoadFromFile(string filename);
+	void RemoveRecords(const SearchConditions criteria);
 	void SaveToFile(string filename) const;
 };
-//должны существовать два экземпляра этого класса:
-//ALL_DATA и SELECTED_DATA.
+/*должен существовать один глобальный экземпляр класса Database,
+  и ещё по одному -- для каждого пользователя.
+*/
+Database __ALL_DATA;
 
-//---------------------------------------------------------------------------
-//                       парсер и т.д.
-//---------------------------------------------------------------------------
-int    ImplementSelect  (SearchConditions& sc);//возвращает число выбранных записей
-int    ImplementReselect(SearchConditions& sc);
-void   ImplementInsert  (SearchConditions& sc);
-int    ImplementRemove  (SearchConditions& sc);//возвращает число удалённых записей
-string ImplementPrint   (SearchConditions& sc);//возвращает напечатанную таблицу
+//---------------------------------------------------------------------------//
+//                             пользовательское                              //
+//---------------------------------------------------------------------------//
+class Session {
+private:
+	Database* selection_;//так проще заменять на новую
+// + что-то вроде айди (?)
+public:
+	~Session();
+	Session();
+	int DoSelect  (const SearchConditions& sc);
+	int DoReselect(const SearchConditions& sc);
+};
 
-string ImplementCommand(const Command& t);//перенаправляет на настоящие обработчики
+//---------------------------------------------------------------------------//
+//                       парсер и т.д.                                       //
+//---------------------------------------------------------------------------//
 
-Command parse(const string& query);
+//эти две команды работают с данными сессии (от них, возможно, избавлюсь)
+int    ImplementSelect  (const SearchConditions& sc, Session& s);//возвращает число выбранных записей
+int    ImplementReselect(const SearchConditions& sc, Session& s);
+
+//эти - с глобальной информацией (поэтому ссылку на базу данных можно и убрать (?))
+void   ImplementInsert  (const SearchConditions& sc,       Database& db);
+int    ImplementRemove  (const SearchConditions& sc,       Database& db);//возвращает число удалённых записей
+string ImplementPrint   (const SearchConditions& sc, const Database& db);//возвращает напечатанную таблицу
+
+//switch (перенаправляет на обработчики, см.выше)
+string ImplementCommand(const Command& t, Session& s);
+
 //растаскивание строчки на кусочки
+Command parse(const string& query);
 
-string MainQueryHandler(const string& query);
 //вот эта функция работает как чёрный ящик и доступна извне сервера
+string MainQueryHandler(const string& query, Session& s);
+
+#endif

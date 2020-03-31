@@ -51,71 +51,109 @@ bool CheckCondition(LessonInfo record, Cond condition) {//проверка, уд
 //                       сама база данных
 //---------------------------------------------------------------------------
 Database::~Database() {}
-Database::Database() {}
+
+Database::Database() {
+	//...
+
+	recs_n_ = 0;
+}
+
 Database::Database(string filename) {}
-Database::Database(const Database& other, SearchConditions criteria) {}
+Database::Database(const Database& other, const SearchConditions criteria) {}
 
-Database& Database::operator= (const Database& other) {}
+int Database::DbSize() const {
+	return recs_n_;
+}
 
-void Database::AddRecord(LessonInfo rec) {}
-void Database::RemoveRecords(SearchConditions criteria) {}
+void Database::AddRecord(LessonInfo rec) {
+	//...
+
+	recs_n_++;
+}
+
+void Database::RemoveRecords(const SearchConditions criteria) {}
+
 void Database::SaveToFile(string filename) const {}
+
+//---------------------------------------------------------------------------//
+//                             пользовательское                              //
+//---------------------------------------------------------------------------//
+Session::~Session() {
+	delete selection_;
+}
+Session::Session() {
+	selection_ = new Database();
+}
+
+int Session::DoSelect(const SearchConditions& sc) {
+	*selection_ = Database(__ALL_DATA, sc);
+	return selection_->DbSize();
+}
+
+int Session::DoReselect(const SearchConditions& sc) {
+	*selection_ = Database(*selection_, sc);
+	return selection_->DbSize();
+}
 
 //---------------------------------------------------------------------------
 //                       парсер и т.д.
 //---------------------------------------------------------------------------
-int ImplementSelect  (SearchConditions& sc) {
-	SELECTED_DATA = Database(ALL_DATA, sc);
-	return SELECTED_DATA.DbSize();
+int ImplementSelect  (const SearchConditions& sc, Session& s) {
+	return s.DoSelect(sc);
 }
 
-int ImplementReselect(SearchConditions& sc) {
-	Database temp(SELECTED_DATA, sc);
-	SELECTED_DATA = temp;
-	return SELECTED_DATA.DbSize();
+int ImplementReselect(const SearchConditions& sc, Session& s) {
+	return s.DoReselect(sc);
 }
 
-void ImplementInsert  (SearchConditions& sc) {
+void ImplementInsert  (const SearchConditions& sc, Database& db) {
 /*пока что небезопасная версия:
 не выдаёт ошибку, если поля заполнены по нескольку раз,
 а вместо этого запоминает последнее; по дефолту там мусор*/
 	LessonInfo rec = {};
-	for(list::iterator it = sc::begin(); it != sc::end(); it++) {
-		if(it->relation != EQUAL) {/*EXCEPTION: INSERT плохо описан*/}
+	for(list<Cond>::const_iterator it = sc.begin(); it != sc.end(); it++) {
+		
+		if(it->relation != EQUAL) {
+			/*EXCEPTION: INSERT плохо описан*/
+		}
 
 		SetInfo(rec, *it);//помещает в запись информацию из условия
 	}
-	ALL_DATA.AddRecord(rec);
+	__ALL_DATA.AddRecord(rec);
 }
 
-int ImplementRemove  (SearchConditions& sc) {//возвращает число удалённых записей
+int ImplementRemove  (const SearchConditions& sc, Database& db) {//возвращает число удалённых записей
 	int res = 0;
 
 	return res;
 }
-string ImplementPrint   (SearchConditions& sc) {//возвращает напечатанную таблицу
+string ImplementPrint   (const SearchConditions& sc, const Database& db) {//возвращает напечатанную таблицу
 	string table;
 	return table;
 }
 
-string ImplementCommand(const Command& t) {//перенаправляет на настоящие обработчики
+string ImplementCommand(const Command& t, Session& s) {//перенаправляет на настоящие обработчики
 	string res("ok\n");
 	switch(t.cmd) {
 		case SELECT  :
-			res = "Selected "   + to_string(ImplementSelect  (t.conditions)) + " records successfully.\n";
+			res = "Selected "   + to_string(ImplementSelect  (t.conditions, s)) + " records successfully.\n";
 			break;
 		case RESELECT:
-			res = "Reselected " + to_string(ImplementReSelect(t.conditions)) + " records successfully.\n";
+			res = "Reselected " + to_string(ImplementReselect(t.conditions, s)) + " records successfully.\n";
 			break;
 		case REMOVE:
-			res = "Removed "    + to_string(ImplementRemove  (t.conditions)) + " records successfully.\n";
+			res = "Removed "    + to_string(ImplementRemove  (t.conditions, __ALL_DATA)) + " records successfully.\n";
 			break;
 		case INSERT:
-			ImplementInsert  (t.conditions);
+			ImplementInsert (t.conditions, __ALL_DATA);
 			res = "Inserted one record successfully.\n"; 
 			break;
-		case PRINT: res = ImplementPrint(t.conditions); break;
-		default: /*EXCEPTION: BAD COMMAND*/ break;
+		case PRINT:
+			res = ImplementPrint(t.conditions, __ALL_DATA);
+			break;
+		default:
+			/*EXCEPTION: BAD COMMAND*/
+			break;
 	}
 
 	return res;
@@ -124,5 +162,6 @@ string ImplementCommand(const Command& t) {//перенаправляет на �
 Command parse(const string& query) {//растаскивание строчки на кусочки
 }
 
-string MainQueryHandler(const string& query){//вот эта функция работает как чёрный ящик и доступна извне сервера
+string MainQueryHandler(const string& query, Session& s){//вот эта функция работает как чёрный ящик и доступна извне сервера
+	return ImplementCommand(parse(query), s);
 }
