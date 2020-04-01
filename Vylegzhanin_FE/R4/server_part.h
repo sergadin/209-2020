@@ -1,7 +1,6 @@
 #ifndef SERV_PART_H
 #define SERV_PART_H
 
-
 #include<algorithm>
 #include<vector>
 #include<list>
@@ -12,10 +11,10 @@
 //#include<cassert>
 
 using namespace std;
-//--------------------------------------------------------------------------//
-//                        какие-то базовые структуры                        //
-//--------------------------------------------------------------------------//
-typedef enum {MON, TUE, WEN, THU, FRI, SAT, SUN} WeekDay;
+//---------------------------------------------------------------------------//
+//                         какие-то базовые структуры                        //
+//---------------------------------------------------------------------------//
+typedef enum {MON, TUE, WED, THU, FRI, SAT, SUN} WeekDay;
 
 struct LessonInfo {
 	string teacher_;
@@ -25,12 +24,11 @@ struct LessonInfo {
 	int time_;
 	string subject_;
 };
-typedef list<LessonInfo*> IndicesList;
 
 WeekDay GetDayFromString(string s);
-//---------------------------------------------------------------------------//
-//  структуры, представляющие запрос в памяти (``синтаксический анализ'')    //
-//---------------------------------------------------------------------------//
+//----------------------------------------------------------------------------//
+//   структуры, представляющие запрос в памяти (``синтаксический анализ'')    //
+//----------------------------------------------------------------------------//
 typedef enum {SELECT, RESELECT, INSERT, REMOVE, PRINT} CommandType;
 typedef enum {TEACHER, ROOM, GROUP, DAY, TIME, SUBJECT, SORT} Field;
 typedef enum {GT, LT, EQUAL, IN, NONE} Relation;
@@ -39,7 +37,7 @@ typedef enum {GT, LT, EQUAL, IN, NONE} Relation;
 /// Field=SORT и Relation=NONE -- это костыли, которые нужны, чтобы
 /// команда PRINT вписывалась в данную структуру данных
 
-/// так, запросу "PRINT teacher group SORT group END" соответствует Command.conditions=
+/// так, запросу "PRINT teacher group SORT group END" соотв. Command.conditions=
 /// (TEACHER NONE ..) (GROUP NONE ..) (SORT NONE ..) (GROUP NONE ..)
 /// [на месте точек -- мусор]
 
@@ -49,7 +47,9 @@ typedef enum {GT, LT, EQUAL, IN, NONE} Relation;
 struct Cond {// Одно условие вида поле + отношение + константа
     Field field;
     Relation relation;
- //   union {
+ 
+ //union не работает, если внутри есть классы;
+ //поэтому заменил на struct
  	struct {
       int number;//одно значение
       pair<int,int> diap;//диапазон значений
@@ -63,11 +63,31 @@ struct Command {
     SearchConditions conditions;
 };
 
-void SetInfo(LessonInfo& record, Cond cond_data);//помещает в запись информацию из условия
-bool CheckCondition(LessonInfo record, Cond condition);//проверка, удовлетворяет ли запись условию
-//---------------------------------------------------------------------------//
-//                       сама база данных                                    //
-//---------------------------------------------------------------------------//
+void SetInfo(LessonInfo& record, Cond cond_data);
+//помещает в запись информацию из условия
+
+bool CheckCondition(LessonInfo record, Cond condition);
+//проверка, удовлетворяет ли запись условию (нужна для реализации Insert)
+
+//----------------------------------------------------------------------------//
+//                        сама база данных                                    //
+//----------------------------------------------------------------------------//
+
+//typedef list<vector<LessonInfo>::iterator> IndicesList;
+//это кажется более безопасным, но
+//при изменении списка итераторы ломаются (возможно)
+//было бы проще с list вместо vector
+
+typedef list<LessonInfo*> IndicesList;
+
+
+template<typename T> void AddToMapList (map<T,IndicesList>& data, T key, LessonInfo value);
+//добавляет элемент value в конец списка data[key]
+//(происходит при добавлении элемента в базу)
+
+template<typename T> void RemoveFromMapList (map<T,IndicesList>& data, T key, LessonInfo* value);
+//обратная операция
+
 class Database {
 	vector<LessonInfo> recs_;
 	int recs_n_;
@@ -78,31 +98,43 @@ class Database {
 	map<WeekDay, IndicesList>     days_;
 	map<	int, IndicesList>    times_;
 	map< string, IndicesList> subjects_;
+
 public:
 	~Database();
 	Database();
 	Database(string filename);//конструктор из файла (запускает LoadFromFile)
 	
-	Database(const Database& other, const SearchConditions criteria);
-	//этот конструктор и осуществляет выборку из other записей, удовл. критериям
+	Database(const Database& other, const SearchConditions conds);
+	//создаёт новую базу -- выборку из записей, удовл. данным условиям
 
-	int DbSize() const;
+	IndicesList SelectByCondition(Cond condition) const;
+	//возвращает список всех записей, удовл. данному условию
+
+	IndicesList SelectByConditionList(const SearchConditions conds) const;
+	//возвращает список всех записей, удовл. данным условиям
+
 	void AddRecord(LessonInfo rec);
-	void RemoveRecords(const SearchConditions criteria);
+	void RemoveRecord(LessonInfo* prec);
+	void RemoveRecords(const SearchConditions conds);
 	void SaveToFile(string filename) const;
+
+	int DbSize() const {return recs_n_;}
 };
 /*должен существовать один глобальный экземпляр класса Database,
   и ещё по одному -- для каждого пользователя.
 */
-Database __ALL_DATA;
+//сделать класс для глобального с автом. записью/загрузкой?
+//пока что аналоги конструктора/деструктора:
+void SetupGlobalDatabase();
+void ShutdownGlobalDatabase();
 
-//---------------------------------------------------------------------------//
-//                             пользовательское                              //
-//---------------------------------------------------------------------------//
+//----------------------------------------------------------------------------//
+//                              пользовательское                              //
+//----------------------------------------------------------------------------//
 class Session {
 private:
-	Database* selection_;//так проще заменять на новую
-// + что-то вроде айди (?)
+	Database selection_;
+// возможно, что-то ещё добавится
 public:
 	~Session();
 	Session();
@@ -110,20 +142,24 @@ public:
 	int DoReselect(const SearchConditions& sc);
 };
 
-//---------------------------------------------------------------------------//
-//                       парсер и т.д.                                       //
-//---------------------------------------------------------------------------//
+//----------------------------------------------------------------------------//
+//                        парсер и т.д.                                       //
+//----------------------------------------------------------------------------//
 
-//эти две команды работают с данными сессии (от них, возможно, избавлюсь)
-int    ImplementSelect  (const SearchConditions& sc, Session& s);//возвращает число выбранных записей
+//редиректы на методы класса Session
+int    ImplementSelect  (const SearchConditions& sc, Session& s);
+//возвращает число выбранных записей
 int    ImplementReselect(const SearchConditions& sc, Session& s);
 
-//эти - с глобальной информацией (поэтому ссылку на базу данных можно и убрать (?))
-void   ImplementInsert  (const SearchConditions& sc,       Database& db);
-int    ImplementRemove  (const SearchConditions& sc,       Database& db);//возвращает число удалённых записей
-string ImplementPrint   (const SearchConditions& sc, const Database& db);//возвращает напечатанную таблицу
+//редиректы на методы класса Database экземпляра __ALL_DATA
+void   ImplementInsert  (const SearchConditions& sc);
+int    ImplementRemove  (const SearchConditions& sc);
+//возвращает число удалённых записей
+string ImplementPrint   (const SearchConditions& sc, const Database& db);
+//возвращает напечатанную таблицу;
+//печать табличек из сессии может пригодиться для дебага
 
-//switch (перенаправляет на обработчики, см.выше)
+//перенаправляет на обработчики; формирует ответ на запрос
 string ImplementCommand(const Command& t, Session& s);
 
 //растаскивание строчки на кусочки

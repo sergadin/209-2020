@@ -3,5 +3,5 @@
 
 int main() {
 	Session s;
-	ImplementSelect(parse("foo").conditions, s);
+	//ImplementSelect(parse("foo").conditions, s);
 }
