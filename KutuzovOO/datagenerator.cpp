@@ -19,7 +19,7 @@ void makedatabase(int size_, int levels, string namefile)
     vector<string> items;
     ifstream fin;
     namefile+=".txt";
-    fin.open("test.txt");
+    fin.open("minecraft_items.txt");
     string line;
     while(getline(fin, line))
     {
