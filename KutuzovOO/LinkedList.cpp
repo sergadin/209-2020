@@ -79,6 +79,18 @@ void  LinkedList::printList() const
     }
 }
 
+std::ostream& operator<< (std::ostream &out, const LinkedList &p)
+{
+		LinkedList::Node* temp=p.front;
+		while(temp!=NULL)
+		{
+				out << temp->data.name <<", " <<  temp->data.quant <<  std::endl;
+				temp = temp->next;
+			}
+
+    return out;
+}
+
 bool LinkedList::search(const line& s) const
 {
 	Node* temp=front;

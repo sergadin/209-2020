@@ -56,6 +56,7 @@ private:
 	void deepCopy(const LinkedList& ls);
 	void deleteList();
   friend class HashTable;
+  friend std::ostream& operator<< (std::ostream &out, const LinkedList &point);
 };
 
 #endif
