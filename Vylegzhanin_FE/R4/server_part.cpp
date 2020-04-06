@@ -2,12 +2,12 @@
 #include <sstream>
 
 const string DayNumbers[] = {"MON", "TUE", "WEN", "THU", "FRI", "SAT", "SUN"};
-Database __ALL_DATA;
 const string __ALL_DATA_FILENAME("__ALL_DATA.dbase");
 
-//--------------------------------------------------------------------------
-//                        какие-то базовые структуры
-//--------------------------------------------------------------------------
+//----------------------------------------------------------------------------//
+//                        какие-то базовые структуры                          //
+//----------------------------------------------------------------------------//
+
 WeekDay GetDayFromString(string s) {
 	int pos = -1;
 	for(int i = 0; i < 7; i++) {
@@ -27,10 +27,12 @@ WeekDay GetDayFromString(string s) {
 		case 6: return SUN;
 		default: /*EXCEPTION */ break;
 	}
+
+	return MON;//костыль для строгого компилятора
 }
-//---------------------------------------------------------------------------
-//                 структуры, представляющие запрос в памяти
-//---------------------------------------------------------------------------
+//----------------------------------------------------------------------------//
+//                 структуры, представляющие запрос в памяти                  //
+//----------------------------------------------------------------------------//
 void SetInfo(LessonInfo& record, Cond cond_data) {//помещает в запись информацию из условия
 //возможно, нужна проверка, что cond_data.relation = EQUAL
 //или это ограничит функционал?
@@ -106,25 +108,48 @@ bool CheckCondition(LessonInfo record, Cond condition) {//проверка, уд
 
 		default: /*это значит не разобран случай*/ break;
 	}
+
+	return false;//костыль для строгого компилятора
 }
 
-//---------------------------------------------------------------------------
-//                       сама база данных
-//---------------------------------------------------------------------------
-Database::~Database() {
-	//кажется, пока здесь ничего не должно быть
-}
+//----------------------------------------------------------------------------//
+//                        класс для хранения записей                          //
+//----------------------------------------------------------------------------//
+RecordsContainer::~RecordsContainer() {}
 
-Database::Database() {
-	//кажется, пока здесь ничего не должно быть
-	recs_n_ = 0;
-}
+RecordsContainer::RecordsContainer():
+	recs_(),
+	recs_n_(0),
+	teachers_(),
+	groups_(),
+	rooms_(),
+	days_(),
+	times_(),
+	subjects_()
+	{}
 
-Database::Database(string filename) {
+RecordsContainer::RecordsContainer(string filename):
+	recs_(),
+	recs_n_(),
+	teachers_(),
+	groups_(),
+	rooms_(),
+	days_(),
+	times_(),
+	subjects_() {
 	//импорт из файла...
 }
 
-Database::Database(const Database& other, const SearchConditions conds) {
+RecordsContainer::RecordsContainer(RecordsContainer& other, SearchConditions conds):
+	recs_(),
+	recs_n_(other.Size()),
+	teachers_(),
+	groups_(),
+	rooms_(),
+	days_(),
+	times_(),
+	subjects_()
+	{
 	IndicesList indlist = other.SelectByConditionList(conds);
 	for(IndicesList::iterator it = indlist.begin(); it != indlist.end(); it++) {
 		AddRecord(**it);
@@ -132,37 +157,64 @@ Database::Database(const Database& other, const SearchConditions conds) {
 }
 
 
-IndicesList Database::SelectByCondition(Cond condition) const {
+IndicesList RecordsContainer::SelectByCondition(Cond condition) {
+	IndicesList res;
 //здесь должно быть нечто объёмное
 //отчасти похоже на checkcondition(), но сложнее
 //несколько switch и т.д.
+	return res;
 }
 
-IndicesList Database::SelectByConditionList(const SearchConditions cond_list) const {
-	IndicesList res;
-	for(SearchConditions::const_iterator it  = cond_list.begin();
-										 it != cond_list.end();
-										 it++) {
-		IndicesList other = SelectByCondition(*it);
+template<typename T> list<T> IntersectionOfLists(list<T> a, list<T> b) {
+	list<T> res;
+	for(typename list<T>::iterator i = a.begin(); i != a.end(); i++) {
+		bool in_b = false;
+		T value = *i;
 
-		IndicesList temp;//пересекаем res с выборкой по новому условию
-		set_intersection(res.begin(), res.end(),
-						 other.begin(), other.end(),
-						 temp.begin());
-		res = temp;
+		for(typename list<T>::iterator j = b.begin(); j != b.end(); j++) {
+			if(*j == value) {
+				in_b = true;
+				break;
+			}
+		}
+
+		if(in_b) {
+			res.push_back(value);
+		}
 	}
 
 	return res;
 }
 
-template<typename T> void AddToMapList(map<T,IndicesList>& data, T key, LessonInfo* value) {
+IndicesList RecordsContainer::SelectByConditionList(SearchConditions cond_list) {
+
+	if (cond_list.begin() == cond_list.end()) {//если условий нет -- возвращаем все записи
+		IndicesList all;
+		for(list<LessonInfo>::iterator it = recs_.begin();it != recs_.end(); it++) {
+			all.push_back(it);
+		}
+		return all;
+	}
+
+	IndicesList res = SelectByCondition(*cond_list.begin());
+
+	for(SearchConditions::const_iterator it  = cond_list.begin();
+										 it != cond_list.end();
+										 it++) {
+		res = IntersectionOfLists(res, SelectByCondition(*it));
+	}
+
+	return res;
+}
+
+template<typename T> void AddToMapList(map<T,IndicesList>& data, T key, DbIndex value) {
 	if(data.count(key) == 0) {
 		data[key] = IndicesList(1,value);
 	}
 	else data[key].push_back(value);
 }
 
-template<typename T> void RemoveFromMapList (map<T,IndicesList>& data, T key, LessonInfo* value) {
+template<typename T> void RemoveFromMapList (map<T,IndicesList>& data, T key, DbIndex value) {
 	if(data.count(key) == 0) {
 		/*EXCEPTION: NOTHING IS REMOVED*/
 	}
@@ -174,43 +226,32 @@ template<typename T> void RemoveFromMapList (map<T,IndicesList>& data, T key, Le
 	}
 }
 
-void Database::AddRecord(LessonInfo rec) {
+void RecordsContainer::AddRecord(LessonInfo rec) {
 	recs_.push_back(rec);
 	recs_n_++;
-	LessonInfo* ptr = &recs_.back();
+	DbIndex index = recs_.end();
 
-	AddToMapList(teachers_, rec.teacher_, ptr);
-	AddToMapList(  groups_, rec.group_,   ptr);
-	AddToMapList(   rooms_, rec.room_,    ptr);
-	AddToMapList(    days_, rec.day_,     ptr);
-	AddToMapList(   times_, rec.time_,    ptr);
-	AddToMapList(subjects_, rec.subject_, ptr);
+	AddToMapList(teachers_, rec.teacher_, index);
+	AddToMapList(  groups_, rec.group_,   index);
+	AddToMapList(   rooms_, rec.room_,    index);
+	AddToMapList(    days_, rec.day_,     index);
+	AddToMapList(   times_, rec.time_,    index);
+	AddToMapList(subjects_, rec.subject_, index);
 }
 
-void Database::RemoveRecord(LessonInfo* ptr) {
-	
+void RecordsContainer::RemoveRecord(DbIndex index) {
+	RemoveFromMapList(teachers_, index->teacher_, index);
+	RemoveFromMapList(  groups_, index->group_,   index);
+	RemoveFromMapList(   rooms_, index->room_,    index);
+	RemoveFromMapList(    days_, index->day_,     index);
+	RemoveFromMapList(   times_, index->time_,    index);
+	RemoveFromMapList(subjects_, index->subject_, index);
 
-	//recs_.erase(ptr);
-
-
-	//!!!!!
-	//нужно удалить из vector<LessonInfo>
-	//элемент *ptr,
-	//и при этом не сломать все остальные существующие указатели
-	//(уменьшить тех, кто после, на один?)
-	//было бы гораздо удобнее, если бы там был список
-	//или что-то другое STL-вское
-
+	recs_.erase(index);
 	recs_n_--;
-	RemoveFromMapList(teachers_, ptr->teacher_, ptr);
-	RemoveFromMapList(  groups_, ptr->group_,   ptr);
-	RemoveFromMapList(   rooms_, ptr->room_,    ptr);
-	RemoveFromMapList(    days_, ptr->day_,     ptr);
-	RemoveFromMapList(   times_, ptr->time_,    ptr);
-	RemoveFromMapList(subjects_, ptr->subject_, ptr);
 }
 
-void Database::RemoveRecords(const SearchConditions conds) {
+void RecordsContainer::RemoveRecords(const SearchConditions conds) {
 	IndicesList blacklist = SelectByConditionList(conds);
 
 	for(IndicesList::iterator it = blacklist.begin(); it != blacklist.end(); it++) {
@@ -218,44 +259,23 @@ void Database::RemoveRecords(const SearchConditions conds) {
 	}
 }
 
-void Database::SaveToFile(string filename) const {
+void RecordsContainer::SaveToFile(string filename) const {
 	//запись в файл...
 }
 
-void SetupGlobalDatabase() {
-	__ALL_DATA = Database(__ALL_DATA_FILENAME);
-}
-void ShutdownGlobalDatabase() {
-	__ALL_DATA.SaveToFile(__ALL_DATA_FILENAME);
-}
-//---------------------------------------------------------------------------//
-//                             пользовательское                              //
-//---------------------------------------------------------------------------//
-Session::~Session() {}
-Session::Session() {}
+//----------------------------------------------------------------------------//
+//                             основные классы                                //
+//----------------------------------------------------------------------------//
+Database::Database(string filename):
+	data_(filename),
+	filename_(filename)
+	{}
 
-int Session::DoSelect(const SearchConditions& sc) {
-	selection_ = Database(__ALL_DATA, sc);
-	return selection_.DbSize();
+Database::~Database() {
+	SaveToFile();
 }
 
-int Session::DoReselect(const SearchConditions& sc) {
-	selection_ = Database(selection_, sc);
-	return selection_.DbSize();
-}
-
-//---------------------------------------------------------------------------
-//                       парсер и т.д.
-//---------------------------------------------------------------------------
-int ImplementSelect  (const SearchConditions& sc, Session& s) {
-	return s.DoSelect(sc);
-}
-
-int ImplementReselect(const SearchConditions& sc, Session& s) {
-	return s.DoReselect(sc);
-}
-
-void ImplementInsert  (const SearchConditions& sc) {
+void Database::ImplementInsert  (const SearchConditions& sc) {
 // не выдаёт ошибку, если поля заполнены по нескольку раз,
 //а вместо этого запоминает последнее; незаполненные поля -> мусор
 	LessonInfo rec;
@@ -267,17 +287,18 @@ void ImplementInsert  (const SearchConditions& sc) {
 
 		SetInfo(rec, *it);//помещает в запись информацию из условия
 	}
-	__ALL_DATA.AddRecord(rec);
+	data_.AddRecord(rec);
 }
 
-int ImplementRemove  (const SearchConditions& sc) {//возвращает число удалённых записей
-	int res = __ALL_DATA.DbSize();
+int Database::ImplementRemove  (const SearchConditions& sc) {//возвращает число удалённых записей
+	int res = data_.Size();
 
-	__ALL_DATA.RemoveRecords(sc);
+	data_.RemoveRecords(sc);
 
-	return res - __ALL_DATA.DbSize();
+	return res - data_.Size();
 }
-string ImplementPrint   (const SearchConditions& sc, const Database& db) {//возвращает напечатанную таблицу
+
+string Database::ImplementPrint   (const SearchConditions& sc) {//возвращает напечатанную таблицу
 	string table;
 
 //  ....
@@ -285,13 +306,7 @@ string ImplementPrint   (const SearchConditions& sc, const Database& db) {//во
 	return table;
 }
 
-string to_string(int num) {
-	stringstream ss;
-	ss << num;
-	return ss.str();
-}
-
-string ImplementCommand(const Command& t, Session& s) {//перенаправляет на настоящие обработчики
+string Database::ImplementCommand(const Command& t, Session& s) {//перенаправляет на настоящие обработчики
 	string res("ok\n");
 	switch(t.cmd) {
 		case SELECT  :
@@ -308,7 +323,7 @@ string ImplementCommand(const Command& t, Session& s) {//перенаправл�
 			res = "Inserted one record successfully.\n"; 
 			break;
 		case PRINT:
-			res = ImplementPrint(t.conditions, __ALL_DATA);
+			res = ImplementPrint(t.conditions);
 			break;
 		default:
 			/*EXCEPTION: BAD COMMAND*/
@@ -318,10 +333,42 @@ string ImplementCommand(const Command& t, Session& s) {//перенаправл�
 	return res;
 }
 
-Command parse(const string& query) {
-	//растаскивание строчки на кусочки...
+string Database::HandleQuery(const string& query, Session& s){
+	return ImplementCommand(parse(query), s);
 }
 
-string MainQueryHandler(const string& query, Session& s){
-	return ImplementCommand(parse(query), s);
+void Database::SaveToFile() const {
+	data_.SaveToFile(filename_);
+}
+
+Session::~Session() {}
+Session::Session():
+	selection_()
+	{}
+
+//----------------------------------------------------------------------------//
+//                              парсер и т.д.                                 //
+//----------------------------------------------------------------------------//
+int Database::ImplementSelect  (const SearchConditions& sc, Session& s) {
+	s.selection_ = RecordsContainer(data_, sc);
+}
+
+int Database::ImplementReselect(const SearchConditions& sc, Session& s) {
+	s.selection_ = RecordsContainer(s.selection_, sc);
+}
+
+
+
+string to_string(int num) {
+	stringstream ss;
+	ss << num;
+	return ss.str();
+}
+
+
+
+Command parse(const string& query) {
+	Command res;
+	//растаскивание строчки на кусочки...
+	return res;
 }
