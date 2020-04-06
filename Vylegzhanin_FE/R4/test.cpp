@@ -3,5 +3,7 @@
 
 int main() {
 	Session s;
-	ImplementSelect(parse("foo").conditions, s);
+	Database db("test.dbase");
+	string query("foo");
+	db.HandleQuery(query, s);
 }
