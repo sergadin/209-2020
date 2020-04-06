@@ -1,0 +1,54 @@
+/*
+НЕАКТУАЛЬНАЯ АРХИТЕКТУРА
+*/
+
+
+void SetInfo(LessonInfo& record, Cond cond_data); -- есть
+
+bool CheckCondition(LessonInfo record, Cond condition); -- должно работать
+
+template<typename T> void AddToMapList (map<T,IndicesList>& data, T key, LessonInfo value); -- есть
+template<typename T> void RemoveFromMapList (map<T,IndicesList>& data, T key, LessonInfo* value); -- есть
+
+
+class RecordsContainer {
+	~RecordsContainer(); -- ничего и не должно быть
+	RecordsContainer(); -- ничего и не должно быть
+	RecordsContainer(string filename); -- НЕ НАПИСАНО
+	
+	RecordsContainer(RecordsContainer& other, SearchConditions conds); -- есть
+
+	IndicesList SelectByCondition(Cond condition); -- НЕ НАПИСАНО
+
+	IndicesList SelectByConditionList(SearchConditions conds); -- есть
+
+	void AddRecord(LessonInfo rec); -- есть
+	void RemoveRecord(LessonInfo* prec); -- ПРИ ТЕКУЩЕЙ АРХИТЕКТУРЕ НЕПОНЯТНО, КАК УДАЛЯТЬ, ЧТОБЫ НЕ СЛОМАЛИСЬ ИНДЕКСЫ
+
+	void RemoveRecords(SearchConditions conds); -- есть
+
+	void SaveToFile(string filename) const; -- НЕ НАПИСАНО
+};
+
+void SetupGlobalRecordsContainer(); -- есть
+void ShutdownGlobalRecordsContainer(); -- есть
+
+class Session {
+	~Session(); -- ничего и не должно быть
+	Session(); -- ничего и не должно быть
+	int DoSelect  (const SearchConditions& sc); -- есть
+	int DoReselect(const SearchConditions& sc); -- есть
+};
+
+int    ImplementSelect  (const SearchConditions& sc, Session& s); -- есть
+int    ImplementReselect(const SearchConditions& sc, Session& s); -- есть
+
+void   ImplementInsert  (const SearchConditions& sc); -- старое, то есть надо пересмотреть
+int    ImplementRemove  (const SearchConditions& sc); -- есть
+string ImplementPrint   (const SearchConditions& sc, const RecordsContainer& db); -- НЕ НАПИСАНО
+
+string ImplementCommand(const Command& t, Session& s); -- есть
+
+Command parse(const string& query); -- НЕ НАПИСАНО
+
+string MainQueryHandler(const string& query, Session& s); -- есть

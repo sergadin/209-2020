@@ -1,3 +1,6 @@
+#ifndef SERV_PART_H
+#define SERV_PART_H
+
 #include<algorithm>
 #include<vector>
 #include<list>
@@ -8,10 +11,10 @@
 //#include<cassert>
 
 using namespace std;
-//--------------------------------------------------------------------------
-//                        какие-то базовые структуры
-//--------------------------------------------------------------------------
-typedef enum {MON, TUE, WEN, THU, FRI, SAT, SUN} WeekDay;
+//---------------------------------------------------------------------------//
+//                         какие-то базовые структуры                        //
+//---------------------------------------------------------------------------//
+typedef enum {MON, TUE, WED, THU, FRI, SAT, SUN} WeekDay;
 
 struct LessonInfo {
 	string teacher_;
@@ -21,12 +24,12 @@ struct LessonInfo {
 	int time_;
 	string subject_;
 };
-typedef list<LessonInfo*> IndicesList;
 
 WeekDay GetDayFromString(string s);
-//---------------------------------------------------------------------------
-//                 структуры, представляющие запрос в памяти
-//---------------------------------------------------------------------------
+string to_string(int num);//дубликат на всякий случай
+//----------------------------------------------------------------------------//
+//   структуры, представляющие запрос в памяти (``синтаксический анализ'')    //
+//----------------------------------------------------------------------------//
 typedef enum {SELECT, RESELECT, INSERT, REMOVE, PRINT} CommandType;
 typedef enum {TEACHER, ROOM, GROUP, DAY, TIME, SUBJECT, SORT} Field;
 typedef enum {GT, LT, EQUAL, IN, NONE} Relation;
@@ -35,7 +38,7 @@ typedef enum {GT, LT, EQUAL, IN, NONE} Relation;
 /// Field=SORT и Relation=NONE -- это костыли, которые нужны, чтобы
 /// команда PRINT вписывалась в данную структуру данных
 
-/// так, запросу "PRINT teacher group SORT group END" соответствует Command.conditions=
+/// так, запросу "PRINT teacher group SORT group END" соотв. Command.conditions=
 /// (TEACHER NONE ..) (GROUP NONE ..) (SORT NONE ..) (GROUP NONE ..)
 /// [на месте точек -- мусор]
 
@@ -45,7 +48,10 @@ typedef enum {GT, LT, EQUAL, IN, NONE} Relation;
 struct Cond {// Одно условие вида поле + отношение + константа
     Field field;
     Relation relation;
-    union {
+ 
+ //union не работает, если внутри есть классы;
+ //поэтому заменил на struct
+ 	struct {
       int number;//одно значение
       pair<int,int> diap;//диапазон значений
       string str;
@@ -58,50 +64,99 @@ struct Command {
     SearchConditions conditions;
 };
 
-void SetInfo(LessonInfo& record, Cond cond_data);//помещает в запись информацию из условия
-bool CheckCondition(LessonInfo record, Cond condition);//проверка, удовлетворяет ли запись условию
-//---------------------------------------------------------------------------
-//                       сама база данных
-//---------------------------------------------------------------------------
+void SetInfo(LessonInfo& record, Cond cond_data);
+//помещает в запись информацию из условия
+
+bool CheckCondition(LessonInfo record, Cond condition);
+//проверка, удовлетворяет ли запись условию (нужна для реализации Insert)
+
+
+typedef list<LessonInfo>::iterator DbIndex;
+typedef list<DbIndex> IndicesList;
+//----------------------------------------------------------------------------//
+//                              сессия                                        //
+//----------------------------------------------------------------------------//
+class Session {
+private:
+	IndicesList selection_;
+public:
+	~Session() {}
+	Session() {}
+	IndicesList GetSelection() const {return selection_;}
+	void SetSelection(IndicesList s) {selection_ = s;}
+};
+
+
+//----------------------------------------------------------------------------//
+//                        сама база данных                                    //
+//----------------------------------------------------------------------------//
+
+template<typename T> list<T> IntersectionOfLists(list<T> a, list<T> b);
+
+template<typename T> void AddToMapList (map<T,IndicesList>& data, T key, DbIndex index);
+//добавляет элемент index в конец списка data[key]
+//(происходит при добавлении элемента в базу)
+
+template<typename T> void RemoveFromMapList (map<T,IndicesList>& data, T key, DbIndex index);
+//обратная операция
+
 class Database {
-	vector<LessonInfo> recs_;
-	map<    string, IndicesList> teachers_;
-	map<       int, IndicesList>   groups_;
-	map<       int, IndicesList>    rooms_;
-	map<DateTime_t, IndicesList>    times_;
-	map<    string, IndicesList> subjects_;
+private:
+
+	list<LessonInfo> recs_;
+	int recs_n_;
+
+	map< string, IndicesList> teachers_;
+	map<    int, IndicesList>   groups_;
+	map<    int, IndicesList>    rooms_;
+	map<WeekDay, IndicesList>     days_;
+	map<	int, IndicesList>    times_;
+	map< string, IndicesList> subjects_;
+
+	IndicesList SelectByCondition(Cond condition);
+	//возвращает список всех записей, удовл. данному условию
+
+	IndicesList SelectByConditionList(SearchConditions conds);
+	//возвращает список всех записей, удовл. данным условиям
+
+
+	string filename_;
+
+	void AddRecord(LessonInfo rec);
+	void RemoveRecord(DbIndex index);
+	void RemoveRecords(SearchConditions conds);
+	void SaveToFile(string filename) const;
+
+	int Size() const {return recs_n_;}
+
+
+
+	//возвращают число выбранных записей
+	int    ImplementSelect  (const SearchConditions& sc, Session& s);
+	int    ImplementReselect(const SearchConditions& sc, Session& s);
+
+	//редиректы на соотв. методы для Database
+	void   ImplementInsert  (const SearchConditions& sc);
+	int    ImplementRemove  (const SearchConditions& sc);
+
+	//возвращает число удалённых записей
+	string ImplementPrint   (const SearchConditions& sc);
+
+	//перенаправляет на обработчики; формирует ответ на запрос
+	string ImplementCommand(const Command& t, Session& s);
+
 public:
 	~Database();
-	Database();
-	Database(string filename);//конструктор из файла (запускает LoadFromFile)
-	
-	Database(const Database& other, SearchConditions criteria);
-	//этот конструктор и осуществляет выборку из other записей, удовл. критериям
+	Database(string filename);
 
-	Database& operator= (const Database& other);
-
-	int DbSize() const;
-	void AddRecord(LessonInfo rec);
-	void RemoveRecords(SearchConditions criteria);
-//	void LoadFromFile(string filename);
-	void SaveToFile(string filename) const;
+	void SaveToFile() const;
+	string HandleQuery(const string& query, Session& s);
 };
-//должны существовать два экземпляра этого класса:
-//ALL_DATA и SELECTED_DATA.
 
-//---------------------------------------------------------------------------
-//                       парсер и т.д.
-//---------------------------------------------------------------------------
-int    ImplementSelect  (SearchConditions& sc);//возвращает число выбранных записей
-int    ImplementReselect(SearchConditions& sc);
-void   ImplementInsert  (SearchConditions& sc);
-int    ImplementRemove  (SearchConditions& sc);//возвращает число удалённых записей
-string ImplementPrint   (SearchConditions& sc);//возвращает напечатанную таблицу
-
-string ImplementCommand(const Command& t);//перенаправляет на настоящие обработчики
-
-Command parse(const string& query);
+//----------------------------------------------------------------------------//
+//                        парсер и т.д.                                       //
+//----------------------------------------------------------------------------//
 //растаскивание строчки на кусочки
+Command parse(const string& query);
 
-string MainQueryHandler(const string& query);
-//вот эта функция работает как чёрный ящик и доступна извне сервера
+#endif
