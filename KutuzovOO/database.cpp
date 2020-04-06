@@ -1,4 +1,5 @@
 #include "database.h"
+#include <sstream>
 
 Database::Database(const std::string &filename_items, const std::string &filename_recipes)
 {
@@ -12,11 +13,25 @@ Database::Database(const std::string &filename_items, const std::string &filenam
       x.quant = 1;
       data.insert(x);
   }
-  data.print();
-  Recipe k;
-  k["asd"] = 5; //In the development
-  k["med"] = 7; //In the development
-  known_recipes["Lol"] = k; // In the development
+  //data.print();
+  std::ifstream fin1;
+  fin1.open(filename_recipes);
+  while(getline(fin1,str))
+  {
+      std::stringstream ss(str);
+      std::string f;
+      std::getline(ss,f,',');
+      DeviceName dname = f;
+      Recipe rrecipe;
+      while(std::getline(ss,f,','))
+      {
+          int quantt;
+          ss >> quantt;
+          ss.ignore(1);
+          rrecipe[f] = quantt;
+      }
+      known_recipes[dname] = rrecipe;
+  }
 
 }
 
