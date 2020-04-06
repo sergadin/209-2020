@@ -24,8 +24,9 @@ public:
   Database();
   Database(const std::string &filename_items, const std::string &filename_recipes);
   void print() const;
+  void DatabaseToFile(const std::string &filename_items, const std::string &filename_recipes) const;
   /*Database& operator= (const Database& other);
-  Database(const Database& other, SearchConditions criteria); //In the development
+  Database(const Database& other, SearchConditions criteria);
   int AddDetail(const Detail &det);
   bool CanMake(const Detail &det) const;
   void MakeDetail(const Detal &det);
@@ -34,8 +35,7 @@ public:
   void SaveToFile(const std::string &filename);
   Detail &GetDetail(const string &name);
   void ChangeQuantity(const std::string &name, int newQuant);
-  void DatebaseToFile(const std::string &namefile);
-  */ // In the development
+  */
 };
 
 #endif
