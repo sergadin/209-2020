@@ -1,4 +1,5 @@
 #include "HashTable.h"
+#include <fstream>
 
 int HashTable::hashFunc(const line& d) const //hash function (utilizes horner's method to prevent overflow on large strings)
 {
@@ -136,6 +137,17 @@ void HashTable::print() const
 				if(arr[i].front != NULL)
 				{
 						arr[i].printList();
+				}
+		}
+}
+void HashTable::HashTableToFile(const std::string &filename_items) const
+{
+		std::ofstream ofs(filename_items);
+		for(int i=0;i<arrSize;i++)
+		{
+				if(arr[i].front != NULL)
+				{
+						ofs << arr[i];
 				}
 		}
 }
