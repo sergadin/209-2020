@@ -129,6 +129,17 @@ double HashTable::loadFactor() const //returns the load factor of the hash table
 	return (numOfItems*1.0)/arrSize;
 }
 
+void HashTable::print() const
+{
+		for(int i=0;i<arrSize;i++)
+		{
+				if(arr[i].front != NULL)
+				{
+						arr[i].printList();
+				}
+		}
+}
+
 std::vector<line> HashTable::intersection(const HashTable& h) const //returns a vector of line containing intersection of calling object's data and h's data
 {
 	std::vector<line> ret_v;
