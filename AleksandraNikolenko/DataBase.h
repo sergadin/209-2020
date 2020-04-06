@@ -2,62 +2,46 @@
 #include <string>
 #include <vector>
 using namespace std;
-
+typedef enum {SELECT, RESELECT, INSERT, UPDATE, DELETE, PRINT} CommandType;
+typedef enum {author, title, publisher, genre, theme} Field;
 class Query{
 	private:
-		vector<Condition> query_:
+		CommandType command_; 
+		vector<Condition>* condition_:
+		vector<Field>* fields_; //for print
 	public:
-		Query(const string &qu);
-		Library* realization(const Query &qu);
+		Query(const string &qu); //if command != print -> fields = NULL
 };
 
 class Condition{
 	private:
-		string command_; //command or not?
-		vector<Criterion> criterion_;
+		Field field;
+		string relation_;
+		string comment_; //value-?
 	public:	
 		Condition(const string &str);
-		void realization(const Condition &cond)
-		{
-			if(cond->command = "SELECT") 
-				cond->select_();
-			if(cond->command = "RESELECT")
-				cond->reselect_();
-			if(cond->command = "INSERT")
-				cond->insert_();
-			if(cond->command = "UPDATE")
-				cond->update_();
-			if(cond->command = "DELETE")
-				cond->delete_();
-			if(cond->command = "PRINT")
-				cond->print_();
-		}
 };
-
-class Criterion{
-	private:
-		string field_;
-		string relation_;
-		string comment_;
-	public:
-		Criterion(const string &str); //correct?
-};
-
 
 class DataBase{
 	private:
 		Library *library_;
 	public:
 		DataBase(const string &filename);
+		process(Session user)
+		bool db_select(Session *user, Query *query);
+		bool db_reselect(Session *user, Query *query);
+		bool db_insert(Session *user, Query *query);
+		bool db_update(Session *user, Query *query);
+		bool db_delete(Session *user, Query *query);
+		bool db_print(Session *user, Query *query);
 };
 
 class Session{
 	private:
-		int code_;
-		Library* result_select_;
+		string query_;
 		Library* result;
 	public:
-		
+		Session();
 }
 
 class Book {
@@ -67,10 +51,11 @@ class Book {
                 char publisher_[64];
                 int class_1;
                 int class_2;
-                int class_3;
+                bool presence_;
         public:
                 Book(FILE *file);
-};
+                bool compare(const Book &book);
+
 
 
 class Library {
@@ -84,17 +69,17 @@ class Library {
                         library_.push_back(book);
                         library_.sort(0, library_.size() - 1);
                 }
-                void sort(int first, int last)
+                void sort(Field field, int first, int last)
                 {
                         int i = first, j = last;
-                        Book *tmp, *mid = library_[(i + j) / 2];
+                        Book *tmp, *mid = (library_[(i + j) / 2])->field;
                         if(!(library_.emty()))
                         {
                                 while(i <= j)
                                 {
-                                        while(library_[i] < mid)
+                                        while((library_[i])->field < mid)
                                                 i++;
-                                        while(library_[j] > mid)
+                                        while((library_[j])->field > mid)
                                                 j--;
                                         if(i < j)
                                         {
@@ -106,12 +91,14 @@ class Library {
                                         }
                                 }
                                 if(first < j)
-                                        library_.sort(first, j);
+                                        library_.sort(field, first, j);
                                 if(last > i)
-                                        library_.sort(i, last);
+                                        library_.sort(field, i, last);
                         }
 				}
 				bool empty_library();
+				void del_book();
+				void change(Field field, string value);
 				
 };
 
