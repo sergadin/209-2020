@@ -28,10 +28,18 @@ LinkedList& LinkedList::operator=(const LinkedList& ls) //assignment operator
 
 bool LinkedList::insert(const line& s)
 {
-	if(search(s))
-		return false;
-	front=new Node(s,front);
-	return true;
+		Node* temp=front;
+		while(temp!=NULL) //Traverse list
+		{
+			if(temp->data.name == s.name)
+			{
+					temp->data.quant+=s.quant;
+					return true;
+			}
+			temp = temp->next;
+		}
+		front=new Node(s,front);
+		return true;
 }
 
 bool LinkedList::remove(const line& s)
@@ -66,7 +74,7 @@ void  LinkedList::printList() const
     Node* temp=front;
     while(temp!=NULL)
     {
-        std::cout << temp->data.name << " ";
+        std::cout << temp->data.name << " v kolichesve " <<  temp->data.quant <<  std::endl;
         temp = temp->next;
     }
 }
@@ -76,7 +84,7 @@ bool LinkedList::search(const line& s) const
 	Node* temp=front;
 	while(temp!=NULL) //Traverse list
 	{
-		if(temp->data==s)
+		if(temp->data.name ==s.name)
 			return true;
 		temp = temp->next;
 	}

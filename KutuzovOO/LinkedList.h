@@ -9,9 +9,11 @@
 struct line
 {
   std::string name;
+  int quant;
   line& operator=(const line& rhs)
   {
       name = rhs.name;
+      quant = rhs.quant;
       return *this;
   }
   bool  operator==(const line &rhs)
@@ -53,6 +55,7 @@ private:
 	Node* front;
 	void deepCopy(const LinkedList& ls);
 	void deleteList();
+  friend class HashTable;
 };
 
 #endif
