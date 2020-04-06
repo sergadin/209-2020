@@ -20,6 +20,7 @@ public:
 	std::vector<line> intersection(const HashTable&) const;
 	std::vector<line> unions(const HashTable&) const;
 	std::vector<line> difference(const HashTable&) const;
+	void print() const;
 
 private:
 	LinkedList* arr;
