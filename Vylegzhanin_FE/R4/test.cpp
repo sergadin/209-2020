@@ -4,5 +4,6 @@
 int main() {
 	Session s;
 	Database db("test.dbase");
-	db.HandleQuery("foo", s);
+	string query("foo");
+	db.HandleQuery(query, s);
 }

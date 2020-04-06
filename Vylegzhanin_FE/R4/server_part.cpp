@@ -2,7 +2,6 @@
 #include <sstream>
 
 const string DayNumbers[] = {"MON", "TUE", "WEN", "THU", "FRI", "SAT", "SUN"};
-const string __ALL_DATA_FILENAME("__ALL_DATA.dbase");
 
 //----------------------------------------------------------------------------//
 //                        какие-то базовые структуры                          //
@@ -30,6 +29,13 @@ WeekDay GetDayFromString(string s) {
 
 	return MON;//костыль для строгого компилятора
 }
+
+string to_string(int num) {
+	stringstream ss;
+	ss << num;
+	return ss.str();
+}
+
 //----------------------------------------------------------------------------//
 //                 структуры, представляющие запрос в памяти                  //
 //----------------------------------------------------------------------------//
@@ -113,51 +119,10 @@ bool CheckCondition(LessonInfo record, Cond condition) {//проверка, уд
 }
 
 //----------------------------------------------------------------------------//
-//                        класс для хранения записей                          //
+//                        сама база данных                                    //
 //----------------------------------------------------------------------------//
-RecordsContainer::~RecordsContainer() {}
 
-RecordsContainer::RecordsContainer():
-	recs_(),
-	recs_n_(0),
-	teachers_(),
-	groups_(),
-	rooms_(),
-	days_(),
-	times_(),
-	subjects_()
-	{}
-
-RecordsContainer::RecordsContainer(string filename):
-	recs_(),
-	recs_n_(),
-	teachers_(),
-	groups_(),
-	rooms_(),
-	days_(),
-	times_(),
-	subjects_() {
-	//импорт из файла...
-}
-
-RecordsContainer::RecordsContainer(RecordsContainer& other, SearchConditions conds):
-	recs_(),
-	recs_n_(other.Size()),
-	teachers_(),
-	groups_(),
-	rooms_(),
-	days_(),
-	times_(),
-	subjects_()
-	{
-	IndicesList indlist = other.SelectByConditionList(conds);
-	for(IndicesList::iterator it = indlist.begin(); it != indlist.end(); it++) {
-		AddRecord(**it);
-	}
-}
-
-
-IndicesList RecordsContainer::SelectByCondition(Cond condition) {
+IndicesList Database::SelectByCondition(Cond condition) {
 	IndicesList res;
 //здесь должно быть нечто объёмное
 //отчасти похоже на checkcondition(), но сложнее
@@ -186,7 +151,7 @@ template<typename T> list<T> IntersectionOfLists(list<T> a, list<T> b) {
 	return res;
 }
 
-IndicesList RecordsContainer::SelectByConditionList(SearchConditions cond_list) {
+IndicesList Database::SelectByConditionList(SearchConditions cond_list) {
 
 	if (cond_list.begin() == cond_list.end()) {//если условий нет -- возвращаем все записи
 		IndicesList all;
@@ -226,7 +191,7 @@ template<typename T> void RemoveFromMapList (map<T,IndicesList>& data, T key, Db
 	}
 }
 
-void RecordsContainer::AddRecord(LessonInfo rec) {
+void Database::AddRecord(LessonInfo rec) {
 	recs_.push_back(rec);
 	recs_n_++;
 	DbIndex index = recs_.end();
@@ -239,7 +204,7 @@ void RecordsContainer::AddRecord(LessonInfo rec) {
 	AddToMapList(subjects_, rec.subject_, index);
 }
 
-void RecordsContainer::RemoveRecord(DbIndex index) {
+void Database::RemoveRecord(DbIndex index) {
 	RemoveFromMapList(teachers_, index->teacher_, index);
 	RemoveFromMapList(  groups_, index->group_,   index);
 	RemoveFromMapList(   rooms_, index->room_,    index);
@@ -251,7 +216,7 @@ void RecordsContainer::RemoveRecord(DbIndex index) {
 	recs_n_--;
 }
 
-void RecordsContainer::RemoveRecords(const SearchConditions conds) {
+void Database::RemoveRecords(const SearchConditions conds) {
 	IndicesList blacklist = SelectByConditionList(conds);
 
 	for(IndicesList::iterator it = blacklist.begin(); it != blacklist.end(); it++) {
@@ -259,20 +224,16 @@ void RecordsContainer::RemoveRecords(const SearchConditions conds) {
 	}
 }
 
-void RecordsContainer::SaveToFile(string filename) const {
+void Database::SaveToFile(string filename) const {
 	//запись в файл...
 }
 
-//----------------------------------------------------------------------------//
-//                             основные классы                                //
-//----------------------------------------------------------------------------//
-Database::Database(string filename):
-	data_(filename),
-	filename_(filename)
-	{}
+Database::Database(string filename) {
+	//загрузка из файла
+}
 
 Database::~Database() {
-	SaveToFile();
+	SaveToFile(filename_);
 }
 
 void Database::ImplementInsert  (const SearchConditions& sc) {
@@ -287,15 +248,15 @@ void Database::ImplementInsert  (const SearchConditions& sc) {
 
 		SetInfo(rec, *it);//помещает в запись информацию из условия
 	}
-	data_.AddRecord(rec);
+	AddRecord(rec);
 }
 
 int Database::ImplementRemove  (const SearchConditions& sc) {//возвращает число удалённых записей
-	int res = data_.Size();
+	int res = Size();
 
-	data_.RemoveRecords(sc);
+	RemoveRecords(sc);
 
-	return res - data_.Size();
+	return res - Size();
 }
 
 string Database::ImplementPrint   (const SearchConditions& sc) {//возвращает напечатанную таблицу
@@ -337,34 +298,20 @@ string Database::HandleQuery(const string& query, Session& s){
 	return ImplementCommand(parse(query), s);
 }
 
-void Database::SaveToFile() const {
-	data_.SaveToFile(filename_);
-}
-
-Session::~Session() {}
-Session::Session():
-	selection_()
-	{}
 
 //----------------------------------------------------------------------------//
 //                              парсер и т.д.                                 //
 //----------------------------------------------------------------------------//
 int Database::ImplementSelect  (const SearchConditions& sc, Session& s) {
-	s.selection_ = RecordsContainer(data_, sc);
+	s.SetSelection(SelectByConditionList(sc));
 }
 
 int Database::ImplementReselect(const SearchConditions& sc, Session& s) {
-	s.selection_ = RecordsContainer(s.selection_, sc);
+	IndicesList old_selection = s.GetSelection();
+	s.SetSelection(IntersectionOfLists(old_selection,
+									   SelectByConditionList(sc))
+				  );
 }
-
-
-
-string to_string(int num) {
-	stringstream ss;
-	ss << num;
-	return ss.str();
-}
-
 
 
 Command parse(const string& query) {

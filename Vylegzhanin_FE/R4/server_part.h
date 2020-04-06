@@ -26,6 +26,7 @@ struct LessonInfo {
 };
 
 WeekDay GetDayFromString(string s);
+string to_string(int num);//дубликат на всякий случай
 //----------------------------------------------------------------------------//
 //   структуры, представляющие запрос в памяти (``синтаксический анализ'')    //
 //----------------------------------------------------------------------------//
@@ -69,12 +70,26 @@ void SetInfo(LessonInfo& record, Cond cond_data);
 bool CheckCondition(LessonInfo record, Cond condition);
 //проверка, удовлетворяет ли запись условию (нужна для реализации Insert)
 
-//----------------------------------------------------------------------------//
-//                        класс для хранения записей                          //
-//----------------------------------------------------------------------------//
 
 typedef list<LessonInfo>::iterator DbIndex;
 typedef list<DbIndex> IndicesList;
+//----------------------------------------------------------------------------//
+//                              сессия                                        //
+//----------------------------------------------------------------------------//
+class Session {
+private:
+	IndicesList selection_;
+public:
+	~Session() {}
+	Session() {}
+	IndicesList GetSelection() const {return selection_;}
+	void SetSelection(IndicesList s) {selection_ = s;}
+};
+
+
+//----------------------------------------------------------------------------//
+//                        сама база данных                                    //
+//----------------------------------------------------------------------------//
 
 template<typename T> list<T> IntersectionOfLists(list<T> a, list<T> b);
 
@@ -85,7 +100,9 @@ template<typename T> void AddToMapList (map<T,IndicesList>& data, T key, DbIndex
 template<typename T> void RemoveFromMapList (map<T,IndicesList>& data, T key, DbIndex index);
 //обратная операция
 
-class RecordsContainer {
+class Database {
+private:
+
 	list<LessonInfo> recs_;
 	int recs_n_;
 
@@ -102,13 +119,8 @@ class RecordsContainer {
 	IndicesList SelectByConditionList(SearchConditions conds);
 	//возвращает список всех записей, удовл. данным условиям
 
-public:
-	~RecordsContainer();
-	RecordsContainer();
-	RecordsContainer(string filename);//конструктор из файла (запускает LoadFromFile)
-	
-	RecordsContainer(RecordsContainer& other, SearchConditions conds);
-	//создаёт новую базу -- выборку из записей, удовл. данным условиям
+
+	string filename_;
 
 	void AddRecord(LessonInfo rec);
 	void RemoveRecord(DbIndex index);
@@ -116,31 +128,14 @@ public:
 	void SaveToFile(string filename) const;
 
 	int Size() const {return recs_n_;}
-};
 
-//----------------------------------------------------------------------------//
-//                              основные классы                               //
-//----------------------------------------------------------------------------//
-class Session {
-	friend class Database;//даёт методам класса Database доступ к selection_
-private:
-	RecordsContainer selection_;
-// возможно, что-то ещё добавится
-public:
-	~Session();
-	Session();
-};
 
-class Database {
-private:
-	RecordsContainer data_;
-	string filename_;
 
 	//возвращают число выбранных записей
 	int    ImplementSelect  (const SearchConditions& sc, Session& s);
 	int    ImplementReselect(const SearchConditions& sc, Session& s);
 
-	//редиректы на соотв. методы для RecordsContainer
+	//редиректы на соотв. методы для Database
 	void   ImplementInsert  (const SearchConditions& sc);
 	int    ImplementRemove  (const SearchConditions& sc);
 
@@ -149,6 +144,7 @@ private:
 
 	//перенаправляет на обработчики; формирует ответ на запрос
 	string ImplementCommand(const Command& t, Session& s);
+
 public:
 	~Database();
 	Database(string filename);
@@ -156,8 +152,6 @@ public:
 	void SaveToFile() const;
 	string HandleQuery(const string& query, Session& s);
 };
-
-
 
 //----------------------------------------------------------------------------//
 //                        парсер и т.д.                                       //
