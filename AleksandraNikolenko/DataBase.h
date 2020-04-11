@@ -4,11 +4,12 @@
 using namespace std;
 typedef enum {SELECT, RESELECT, INSERT, UPDATE, DELETE, PRINT} CommandType;
 typedef enum {author, title, publisher, genre, theme} Field;
+typedef enum {"<", ">", "=", ">=", "<="} RelationType;
 class Query{
 	private:
 		CommandType command_; 
-		vector<Condition>* condition_:
-		vector<Field>* fields_; //for print
+		vector<Condition> condition_:
+		vector<Field> fields_; //for print
 	public:
 		Query(const string &qu); //if command != print -> fields = NULL
 };
@@ -16,24 +17,26 @@ class Query{
 class Condition{
 	private:
 		Field field;
-		string relation_;
+		RelationType relation_;
 		string comment_; //value-?
 	public:	
-		Condition(const string &str);
+		Condition(Field field, RelationType rel, string comment);
+		Condition(string comment); //for INSERT 
 };
 
 class DataBase{
 	private:
 		Library *library_;
-	public:
 		DataBase(const string &filename);
-		process(Session user)
-		bool db_select(Session *user, Query *query);
-		bool db_reselect(Session *user, Query *query);
-		bool db_insert(Session *user, Query *query);
-		bool db_update(Session *user, Query *query);
-		bool db_delete(Session *user, Query *query);
-		bool db_print(Session *user, Query *query);
+		bool process(Session &user);
+		bool parse(string str);
+		bool db_select(Session &user, Query query);
+		bool db_reselect(Session &user, Query query);
+		bool db_insert(Session &user, Query query);
+		bool db_update(Session &user, Query query);
+		bool db_delete(Session &user, Query query);
+		bool db_print(Session &user, Query query);
+		bool db_save(Session &user);
 };
 
 class Session{
@@ -53,10 +56,10 @@ class Book {
                 int class_2;
                 bool presence_;
         public:
-                Book(FILE *file);
+                Book(char author, char title, char publisher, int class_1, int class_2);
                 bool compare(const Book &book);
-
-
+				void del_();
+}
 
 class Library {
         private:
