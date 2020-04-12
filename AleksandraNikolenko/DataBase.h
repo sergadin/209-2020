@@ -4,7 +4,7 @@
 using namespace std;
 typedef enum {SELECT, RESELECT, INSERT, UPDATE, DELETE, PRINT} CommandType;
 typedef enum {author, title, publisher, genre, theme} Field;
-typedef enum {"<", ">", "=", ">=", "<="} RelationType;
+typedef enum {LT, GT, EQ, LT_EQ, GT_EQ} RelationType;
 class Query{
 	private:
 		CommandType command_; 
@@ -18,7 +18,7 @@ class Condition{
 	private:
 		Field field;
 		RelationType relation_;
-		string comment_; //value-?
+		string value_; //value-?
 	public:	
 		Condition(Field field, RelationType rel, string comment);
 		Condition(string comment); //for INSERT 
@@ -28,7 +28,6 @@ class DataBase{
 	private:
 		Library *library_;
 		DataBase(const string &filename);
-		bool process(Session &user);
 		bool parse(string str);
 		bool db_select(Session &user, Query query);
 		bool db_reselect(Session &user, Query query);
@@ -37,14 +36,19 @@ class DataBase{
 		bool db_delete(Session &user, Query query);
 		bool db_print(Session &user, Query query);
 		bool db_save(Session &user);
+	public:
+		bool process(Session &user);
 };
 
 class Session{
 	private:
 		string query_;
-		Library* result;
+		Library* result_;
+		CommandType last_command_;
 	public:
-		Session();
+		Session(const string &str);
+		void new_command(CommandType command);
+		void new_result(const vector<Book*> &result);
 }
 
 class Book {
