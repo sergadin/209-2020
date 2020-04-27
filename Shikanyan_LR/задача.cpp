@@ -1,9 +1,35 @@
 #include <iostream>
+#include <stdlib.h>
 #include <string>
 #include <vector>
 #include <fstream>
 #include <iomanip> // for setw (tab) 
+#include <ctime> 
+#include <sstream>
 using namespace std;
+
+string random_name()
+{
+	string name;
+	int i = 0;
+	i = 5 + (rand() % 5);
+	while(i != 0)
+	{
+		name += static_cast<char>(97 + (rand() % 26));
+		i--;
+	}
+	name[0] = toupper(name[0]);
+	return name;
+}
+
+string int_to_string(int i)
+{
+	string str;
+	stringstream ss;      
+	ss << i;    
+	str = ss.str();
+	return str;
+}
 
 string more(const string &com1,const string &com2)
 {
@@ -59,7 +85,11 @@ bool pole_or_not(const string &com)
 
 bool comand_or_not(const string &com)
 {
-	if(com == "select" || com == "reselect" || com == "print" || com == "insert" || com == "remove" || com == "save")
+	if(com == "select" || com == "reselect" || com == "print")
+	{
+		return 1; 
+	}
+	if(com == "generate" || com == "insert" || com == "remove" || com == "save")
 	{
 		return 1; 
 	}
@@ -119,7 +149,7 @@ struct proverka_insert_and_remove
     int room;
 };
 
-struct condition
+struct condition // одна строчка
 {
 	string comand;
 	vector<crit> criteri;
@@ -139,7 +169,6 @@ struct condition
 			throw MyException(-3, "Ne comanda");
 		}
  		i_copy = i;
-
 		while(i < one_zapr.size() - 4 )
 		{
 			if(one_zapr[i] == ' ' && one_zapr[i+1] == ' ')
@@ -165,6 +194,28 @@ struct condition
 			{
 				throw MyException(11, "Komanda save ne korectno zadana");
 			}
+		}
+		else if(comand == "generate")
+		{
+			if(one_zapr[i] == '0' && one_zapr[i+1] != ' ')
+			{
+				throw MyException(272, "V komande generate ne korectno zadano chislo");
+			}
+			while(i < one_zapr.size() - 4 )
+			{
+				if(one_zapr[i] == ' ')
+				{
+					throw MyException(312, "Komanda generate ne korectno zadana");
+				}
+				if(number_or_not(one_zapr,i)!= 1)
+				{
+					throw MyException(892, "V komande generate ne korectno zadano chislo");
+				}
+				cr.val += one_zapr[i]; 
+				i++;
+			}
+			criteri.push_back(cr);
+			cr.val.clear();
 		}
 		else if(comand == "print")
 		{
@@ -456,7 +507,7 @@ public:
 		{
 			throw MyException(13, "Zapros konchaetsa ne ' end' ");
 		}
-		while(i < zapr.size()-3)
+		while(i < zapr.size()-3)   //разделяем запрос по камандам 
 		{
 			if(zapr[i] == ' ' && zapr[i+1] == 'e' && zapr[i+2] == 'n' && zapr[i+3] == 'd')
 			{ 
@@ -567,7 +618,8 @@ public:
 		string a;
 		info line; 
 		int i = 0;
-		ifstream in("D:\\Base.txt"); //D:\\Base.txt
+		ifstream in;
+		in.open(file_name.c_str());
 	    if (in.is_open())
 	    {
 	        while (getline(in, a))
@@ -628,7 +680,7 @@ public:
 	{
 		ofstream out;
 		int i = 0;
-	    out.open("D:\\Base_for_out.txt");
+	    out.open("Base_for_out.txt");
 	    if (out.is_open())
 	    {
 	    	while(i < inf.size())
@@ -659,9 +711,27 @@ public:
 			save();
 			otvet.stroka = "Save IS OK";
 		}
+		else if(one_zapr.comand == "generate")
+		{
+			int number;
+			info inf;
+			srand(unsigned(time(0)));
+			number = atoi(one_zapr.criteri[0].val.c_str());
+			while(number !=0)
+			{
+				inf.teacher = random_name();
+				inf.date_time = int_to_string(rand() % 2400);
+				inf.group = int_to_string(100 + (rand() % 500));
+				inf.room = int_to_string(100 + (rand() % 900));
+				inf.subject = random_name();
+				add_elem(inf);	
+				number--;
+			}
+			otvet.stroka = "GENERATE is OK";
+		}
 		else if(one_zapr.comand == "remove")
 		{
-			int i = 0,q,status;
+			int i = 0, q, status;
 			while(i < inf.size())
 			{
 				q = 0;
@@ -677,7 +747,7 @@ public:
 				}
 				i++;
 			}
-			otvet.stroka = "ELEMENT YDALEN";
+			otvet.stroka = "ELEMENT YDALEN (Remove is ok)";
 		}
 		else if(one_zapr.comand == "insert")
 		{
@@ -863,15 +933,16 @@ public:
 
 int main(void)
 {
-    string st;
+    string st, base = "Base.txt";
 	condition s;
 	Result res;
 	getline(cin,st);
 	try
 	{
-		Database baza("pridymat");
+		Database baza(base);
 		Query zapros(st);
 		res = baza.process(zapros);
+		cout << "111";
 		res.print();
 	}
 	catch(MyException& my) 
