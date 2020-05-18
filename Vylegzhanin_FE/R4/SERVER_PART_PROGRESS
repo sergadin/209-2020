@@ -1,3 +1,8 @@
+/*
+НЕАКТУАЛЬНАЯ АРХИТЕКТУРА
+*/
+
+
 void SetInfo(LessonInfo& record, Cond cond_data); -- есть
 
 bool CheckCondition(LessonInfo record, Cond condition); -- должно работать
@@ -6,27 +11,27 @@ template<typename T> void AddToMapList (map<T,IndicesList>& data, T key, LessonI
 template<typename T> void RemoveFromMapList (map<T,IndicesList>& data, T key, LessonInfo* value); -- есть
 
 
-class Database {
-	~Database(); -- ничего и не должно быть
-	Database(); -- ничего и не должно быть
-	Database(string filename); -- НЕ НАПИСАНО
+class RecordsContainer {
+	~RecordsContainer(); -- ничего и не должно быть
+	RecordsContainer(); -- ничего и не должно быть
+	RecordsContainer(string filename); -- НЕ НАПИСАНО
 	
-	Database(const Database& other, const SearchConditions conds); -- есть
+	RecordsContainer(RecordsContainer& other, SearchConditions conds); -- есть
 
-	IndicesList SelectByCondition(Cond condition) const; -- НЕ НАПИСАНО
+	IndicesList SelectByCondition(Cond condition); -- НЕ НАПИСАНО
 
-	IndicesList SelectByConditionList(const SearchConditions conds) const; -- есть
+	IndicesList SelectByConditionList(SearchConditions conds); -- есть
 
 	void AddRecord(LessonInfo rec); -- есть
 	void RemoveRecord(LessonInfo* prec); -- ПРИ ТЕКУЩЕЙ АРХИТЕКТУРЕ НЕПОНЯТНО, КАК УДАЛЯТЬ, ЧТОБЫ НЕ СЛОМАЛИСЬ ИНДЕКСЫ
 
-	void RemoveRecords(const SearchConditions conds); -- есть
+	void RemoveRecords(SearchConditions conds); -- есть
 
 	void SaveToFile(string filename) const; -- НЕ НАПИСАНО
 };
 
-void SetupGlobalDatabase(); -- есть
-void ShutdownGlobalDatabase(); -- есть
+void SetupGlobalRecordsContainer(); -- есть
+void ShutdownGlobalRecordsContainer(); -- есть
 
 class Session {
 	~Session(); -- ничего и не должно быть
@@ -40,7 +45,7 @@ int    ImplementReselect(const SearchConditions& sc, Session& s); -- есть
 
 void   ImplementInsert  (const SearchConditions& sc); -- старое, то есть надо пересмотреть
 int    ImplementRemove  (const SearchConditions& sc); -- есть
-string ImplementPrint   (const SearchConditions& sc, const Database& db); -- НЕ НАПИСАНО
+string ImplementPrint   (const SearchConditions& sc, const RecordsContainer& db); -- НЕ НАПИСАНО
 
 string ImplementCommand(const Command& t, Session& s); -- есть
 

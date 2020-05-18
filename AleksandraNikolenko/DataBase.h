@@ -2,62 +2,52 @@
 #include <string>
 #include <vector>
 using namespace std;
-
+typedef enum {SELECT, RESELECT, INSERT, UPDATE, DELETE, PRINT} CommandType;
+typedef enum {AUTHOR, TITLE, PUBLISHER, GENRE, THEME, NONE} Field; //NONE for INSERT
+typedef enum {LT, GT, EQ, LT_EQ, GT_EQ} RelationType;
 class Query{
 	private:
-		vector<Condition> query_:
+		CommandType command_; 
+		vector<Condition> condition_:
+		vector<Field> fields_; //for print
 	public:
-		Query(const string &qu);
-		Library* realization(const Query &qu);
+		Query(const string &qu); //if command != print -> fields = NULL
 };
 
 class Condition{
 	private:
-		string command_; //command or not?
-		vector<Criterion> criterion_;
+		Field field;
+		RelationType relation_;
+		string value_;
 	public:	
-		Condition(const string &str);
-		void realization(const Condition &cond)
-		{
-			if(cond->command = "SELECT") 
-				cond->select_();
-			if(cond->command = "RESELECT")
-				cond->reselect_();
-			if(cond->command = "INSERT")
-				cond->insert_();
-			if(cond->command = "UPDATE")
-				cond->update_();
-			if(cond->command = "DELETE")
-				cond->delete_();
-			if(cond->command = "PRINT")
-				cond->print_();
-		}
+		Condition(Field field, RelationType rel, string comment); 
 };
-
-class Criterion{
-	private:
-		string field_;
-		string relation_;
-		string comment_;
-	public:
-		Criterion(const string &str); //correct?
-};
-
 
 class DataBase{
 	private:
 		Library *library_;
+		bool parse(string str);
+		bool db_select(Session &user, Query query);
+		bool db_reselect(Session &user, Query query);
+		bool db_insert(Session &user, Query query);
+		bool db_update(Session &user, Query query);
+		bool db_delete(Session &user, Query query);
+		bool db_print(Session &user, Query query);
+		bool db_save(Session &user);
 	public:
+		bool process(Session &user);
 		DataBase(const string &filename);
 };
 
 class Session{
 	private:
-		int code_;
-		Library* result_select_;
-		Library* result;
+		string query_;
+		Library result_;
+		CommandType last_command_;
 	public:
-		
+		Session(const string &str);
+		~Session();
+		void new_result(const vector<Book*> &result, CommandType new_command);
 }
 
 class Book {
@@ -67,11 +57,15 @@ class Book {
                 char publisher_[64];
                 int class_1;
                 int class_2;
-                int class_3;
+                bool presence_;
         public:
-                Book(FILE *file);
-};
-
+                Book(char author, char title, char publisher, int class_1, int class_2);
+                bool compare(const Book &book) const;
+				void del_();
+				void print_book() const;  //new
+				bool presence() const; //new
+				bool meet_cond(const vector<Condition> &conditions) const; //new
+}
 
 class Library {
         private:
@@ -79,22 +73,19 @@ class Library {
         public:
         		Library() {}
                 Library(FILE* fin);
-                void add_book(const Book *book)
-                {
-                        library_.push_back(book);
-                        library_.sort(0, library_.size() - 1);
-                }
-                void sort(int first, int last)
+                void add_book(const Book &book); //add book in correct place
+                void add_books(const FILE *fin); //new           add all books -> sort
+                void sort(Field field, int first, int last)
                 {
                         int i = first, j = last;
-                        Book *tmp, *mid = library_[(i + j) / 2];
+                        Book *tmp, *mid = (library_[(i + j) / 2])->field;
                         if(!(library_.emty()))
                         {
                                 while(i <= j)
                                 {
-                                        while(library_[i] < mid)
+                                        while((library_[i])->field < mid)
                                                 i++;
-                                        while(library_[j] > mid)
+                                        while((library_[j])->field > mid)
                                                 j--;
                                         if(i < j)
                                         {
@@ -106,12 +97,14 @@ class Library {
                                         }
                                 }
                                 if(first < j)
-                                        library_.sort(first, j);
+                                        library_.sort(field, first, j);
                                 if(last > i)
-                                        library_.sort(i, last);
+                                        library_.sort(field, i, last);
                         }
 				}
-				bool empty_library();
+				bool empty_library() const;
+				void del_book(Book &book);
+				void change(Field field, string value);
 				
 };
 
