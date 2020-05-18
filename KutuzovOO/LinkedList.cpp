@@ -42,13 +42,56 @@ bool LinkedList::insert(const line& s)
 		return true;
 }
 
-bool LinkedList::remove(const line& s)
+int LinkedList::removepart(const line& s)
 {
 	Node* temp=front;
 	if(temp==NULL) //list is empty
 		return false;
 	if(temp->data==s) //s is first string in list
 	{
+		if (temp->data.quant < s.quant ) {
+				throw 1;
+		}
+		if(temp->data.quant == s.quant ){
+			front=temp->next;
+			delete temp;
+			return 2;
+		}else{
+			temp->data.quant -=s.quant;
+			return 1;
+		}
+	}
+	else
+	{
+		while(temp->next!=NULL){
+			if(temp->next->data==s)
+			{
+				if (temp->next->data.quant < s.quant ) {
+						throw 1;
+				}
+				if(temp->next->data.quant == s.quant){
+					Node* deletedNode=temp->next;
+					temp->next=temp->next->next;
+					delete deletedNode;
+					return 2;
+				}
+				temp->next->data.quant -= s.quant;
+				return 1;
+			}
+			temp=temp->next;
+		}
+		return 0;
+	}
+}
+
+bool  LinkedList::remove(const line& s)
+{
+	Node* temp=front;
+	if(temp==NULL) //list is empty
+		return false;
+	if(temp->data==s) //s is first string in list
+	{
+
 		front=temp->next;
 		delete temp;
 		return true;
@@ -91,6 +134,23 @@ std::ostream& operator<< (std::ostream &out, const LinkedList &p)
     return out;
 }
 
+int LinkedList::searchP(const line& s) const
+{
+	Node* temp=front;
+	while(temp!=NULL) //Traverse list
+	{
+		if(temp->data.name ==s.name)
+		{
+			if(temp->data.quant - s.quant < 0)
+			{
+					return s.quant - temp->data.quant;
+			}
+			return 0;
+		}
+		temp = temp->next;
+	}
+	return s.quant;
+}
 bool LinkedList::search(const line& s) const
 {
 	Node* temp=front;

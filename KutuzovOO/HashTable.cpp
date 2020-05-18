@@ -1,5 +1,6 @@
 #include "HashTable.h"
 #include <fstream>
+#include <iostream>
 
 int HashTable::hashFunc(const line& d) const //hash function (utilizes horner's method to prevent overflow on large strings)
 {
@@ -106,11 +107,33 @@ bool HashTable::remove(const line& s) //removes line s if s exist in the hash ta
 	numOfItems--;
 	return successOrFail;
 }
+int HashTable::removepart(const line& s)
+{
+	int hash=hashFunc(s);
+	int successOrFail;
+	try{
+			successOrFail=arr[hash].removepart(s);
+	}
+	catch(int a)
+  {
+    std::cout << "Caught exception number:  " << a << std::endl;
+    return 0;
+  }
+	if(successOrFail == 2)  numOfItems--;
+	return successOrFail;
+}
 
 bool HashTable::search(const line& s) const //returns 1 if s exist in the hash table, 0 otherwise
 {
 	int hash=hashFunc(s);
 	bool found=arr[hash].search(s);
+	return found;
+}
+
+int HashTable::searchP(const line &s) const
+{
+	int hash=hashFunc(s);
+	int found=arr[hash].searchP(s);
 	return found;
 }
 

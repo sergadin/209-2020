@@ -1,3 +1,9 @@
+//////////////////////////////////////////////////////////
+//                                                      //
+//      The function generates a random database        //
+//                                                      //
+//////////////////////////////////////////////////////////
+
 #include <fstream>
 #include <iostream>
 #include <vector>
@@ -13,12 +19,11 @@ using namespace std;
 
 
 
-void makedatabase(int size_, int levels, string namefile)
+void makedatabase(int size_, int levels,const string &namefileI, const string &namefile)
 {
     string s = "abridgment";
     vector<string> items;
     ifstream fin;
-    namefile+=".txt";
     fin.open("minecraft_items.txt");
     string line;
     while(getline(fin, line))
@@ -39,28 +44,25 @@ void makedatabase(int size_, int levels, string namefile)
         {
             ofs << elm << ", ";
             int rec = rand() % 10;
-            if(rec == 0)
+            rec++;
+            for(int k=0;k<rec-1;k++)
             {
-                ofs << "None" << endl;
+                ofs << items[rand() % items.size()]  << ", " <<  rand() % 100  << ", ";
             }
-            else{
-                for(int k=0;k<rec-1;k++)
-                {
-                    ofs << items[rand() % items.size()]  << ", " <<  rand() % 100  << ", ";
-                }
-                ofs << items[rand() % items.size()]  << ", " <<  rand() % 100  << endl;
-            }
+            ofs << items[rand() % items.size()]  << ", " <<  rand() % 100  << endl;
+
         }
         for(auto elm: tmp)
         {
             items.push_back(elm);
         }
     }
-}
+    fin.close();
+    fin.open("minecraft_items.txt");
+    ofstream offs(namefileI);
+    while(getline(fin, line))
+    {
+        offs << line << ", " << rand() % 100 << endl;
+    }
 
-
-int main()
-{
-    makedatabase(1000000,100,"test3");
-    return 0;
 }

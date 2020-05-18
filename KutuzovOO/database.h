@@ -18,24 +18,26 @@ typedef std::map<std::string,int> Recipe;
 class Database
 {
 private:
-  HashTable data;
-  std::map<DeviceName, Recipe> known_recipes;
+  HashTable data;  // This is where information about the parts in the warehouse is stored
+  std::map<DeviceName, Recipe> known_recipes;  // Information about all recipes is stored here
 public:
-  Database();
-  Database(const std::string &filename_items, const std::string &filename_recipes);
-  void print() const;
-  void DatabaseToFile(const std::string &filename_items, const std::string &filename_recipes) const;
-  /*Database& operator= (const Database& other);
-  Database(const Database& other, SearchConditions criteria);
-  int AddDetail(const Detail &det);
-  bool CanMake(const Detail &det) const;
-  void MakeDetail(const Detal &det);
-  int deleteDetail(const Detail &det);
-  int dbsize() const;
-  void SaveToFile(const std::string &filename);
-  Detail &GetDetail(const string &name);
-  void ChangeQuantity(const std::string &name, int newQuant);
+  Database(); //Default constructor does nothing
+  Database(const std::string &filename_items, const std::string &filename_recipes);  // Reads the database from files
+  void print() const;  // It's clear what he's doing)
+  void DatabaseToFile(const std::string &filename_items, const std::string &filename_recipes) const;  // Writes the database to files
+  void DatabaseFromFile(const std::string &filename_items, const std::string &filename_recipes); // Reads the database from files
+  void AddDetail(const DeviceName &name, int quant);  // Adds device in the specified quantity
+  void AddRecipe(const DeviceName &name, Recipe rec);  // Adds a recipe
+  int deleteDetail(const DeviceName &name);  // Removes an item from the warehouse
+  int deleteDetail(const DeviceName &name, int quant); // Deletes device in the desired quantity
+  int CanMake(const DeviceName &name); //Checking whether a part can be created
+  int dbsize() const; // Number of part types
+  bool MakeDetail(const DeviceName &name); //Creates a device
+  /*
+  vector<DeviceName> MakeFrom(const vector<DeviceName> &details) // Second type of request
+  It remains to add this method
   */
+
 };
 
 #endif
