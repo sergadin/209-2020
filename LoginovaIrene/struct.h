@@ -171,6 +171,8 @@ class cond_for_name
 		
 		void clear(){	if(next)	next->clear(); next = 0;}
 		char *get_name(){ return name;}
+		cond_type get_cond(){	return c_name;}
+		cond_for_name * get_next(){	return next;}
 	friend class comand;
 };
 
@@ -187,6 +189,8 @@ class cond_for_rat
 		
 		void clear(){	if(next)	next->clear(); next = 0;}
 		double get_rt(){	return rating;}
+		cond_type get_cond(){	return c_rat;}
+		cond_for_rat * get_next(){	return next;}
 	friend class comand;
 };
 
@@ -203,6 +207,8 @@ class cond_for_gr
 		
 		void clear(){	if(next)	next->clear(); next = 0;}
 		int get_gr(){	return group;}
+		cond_type get_cond(){	return c_gr;}
+		cond_for_gr * get_next(){	return next;}
 	friend class comand;
 };
 
@@ -222,7 +228,9 @@ class comand
 		//int analyze_upd(comand * cmd);
 		cond_type find_cond(char *);
 		
-		int comand_sorting();
+		int gr_sort();
+		int rat_sort();
+		int name_sort();
 		
 		void print(FILE * stream = stdout);
 		void clear();
@@ -259,6 +267,7 @@ class Session
 		
 		int inside(student * elem);
 		
+		int get_size(){	curr = root; int size = 0; while(curr){	size ++; curr = curr->next;} return size;}
 		
 		sub_sess * get_root(){	return root;}
 		void set_root(sub_sess * r__t){	root = r__t;}
@@ -279,12 +288,16 @@ class Database
 		int add(student * prime){	my_hash->add(prime);}
 		void clear_sess(){	sess->eraze();}
 		void do_select(comand * cmd);
+		
+		int sess_size(){ return sess->get_size();}
+		
 		void sub_select_group(hash_node * head, comand * cmd);
 		void sub_select_tree(tree * head, comand * cmd);
 		void sub_select_subtree(tree_node * node, comand * cmd);
 		void sel_rat(student * prime, comand * cmd);
 		void sub_select_list(list * head, comand * cmd);
 		
+		void rec_sel_tree(tree_node * curr, cond_for_name * n_eq, char * min, int smn, char * max, int smx, comand * cmd);
 		void reselect(comand * cmd);
 };
 
