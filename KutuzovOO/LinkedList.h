@@ -6,7 +6,7 @@
 #include <string>
 
 
-struct line
+struct line //The device of parts along with its name
 {
   std::string name;
   int quant;
@@ -31,7 +31,9 @@ public:
 	LinkedList& operator=(const LinkedList&); //assignment operator
 	bool insert(const line&);
 	bool remove(const line&);
+  int removepart(const line&);
 	bool search(const line&) const;
+  int searchP(const line&) const; // Takes into account the number of parts returns how much is missing
 	std::vector<line> get() const;
   void printList() const;
 

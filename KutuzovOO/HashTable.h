@@ -1,6 +1,12 @@
 #ifndef HASHTABLE_H_INCLUDED
 #define HASHTABLE_H_INCLUDED
 
+//////////////////////////////////////////////////////////
+//                                                      //
+//     							Just a hash set                     //
+//                                                      //
+//////////////////////////////////////////////////////////
+
 #include "LinkedList.h"
 
 class HashTable
@@ -13,7 +19,9 @@ public:
 	HashTable& operator=(const HashTable&); //assignment operator
 	bool insert(const line&);
 	bool remove(const line&);
+ 	int removepart(const line& s);
 	bool search(const line&) const;
+  int searchP(const line&) const; // Takes into account the number of parts returns how much is missing
 	int size() const; //return numOfItems
 	int maxSize() const; //return arrSize
 	double loadFactor() const;

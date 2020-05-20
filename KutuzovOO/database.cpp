@@ -1,6 +1,11 @@
 #include "database.h"
 #include <sstream>
 
+Database::Database()
+{
+
+}
+
 Database::Database(const std::string &filename_items, const std::string &filename_recipes)
 {
   std::ifstream fin;
@@ -37,6 +42,41 @@ Database::Database(const std::string &filename_items, const std::string &filenam
   }
 
 }
+void Database::DatabaseFromFile(const std::string &filename_items, const std::string &filename_recipes)
+{
+  std::ifstream fin;
+  fin.open(filename_items);
+  std::string str;
+  while(getline(fin,str))
+  {
+      std::stringstream ss(str);
+      line x;
+      std::getline(ss,x.name,',');
+      ss  >> x.quant;
+      data.insert(x);
+  }
+  //data.print();
+  std::ifstream fin1;
+  fin1.open(filename_recipes);
+  while(getline(fin1,str))
+  {
+      std::stringstream ss(str);
+      std::string f;
+      std::getline(ss,f,',');
+      ss.ignore(1);
+      DeviceName dname = f;
+      Recipe rrecipe;
+      while(std::getline(ss,f,','))
+      {
+          int quantt;
+          ss >> quantt;
+          ss.ignore(1);
+          rrecipe[f] = quantt;
+          ss.ignore(1);
+      }
+      known_recipes[dname] = rrecipe;
+  }
+}
 
 void Database::DatabaseToFile(const std::string &filename_items, const std::string &filename_recipes) const
 {
@@ -69,4 +109,77 @@ void Database::print() const
       std::cout << std::endl;
     }
 
+}
+void Database::AddDetail(const std::string &name, int quant)
+{
+    line k;
+    k.name = name;
+    k.quant = quant;
+    data.insert(k);
+}
+
+void Database::AddRecipe(const std::string &name, std::map<std::string,int> rec)
+{
+    known_recipes[name] = rec;
+}
+int Database::deleteDetail(const DeviceName &name)
+{
+    line k;
+    k.name = name;
+    k.quant = 0;
+    return data.remove(k);
+}
+int Database::deleteDetail(const DeviceName &name, int quant)
+{
+  line k;
+  k.name = name;
+  k.quant = quant;
+  return data.removepart(k);
+}
+int Database::dbsize() const
+{
+    return data.size();
+}
+int Database::CanMake(const DeviceName &name)
+{
+    if(known_recipes.find(name) == known_recipes.end())
+    {
+          std::cout << "I don't know how to do this. I don't have a prescription.\n";
+          return 0;
+    }
+    std::map<std::string,int> rec;
+    rec = known_recipes[name];
+    int flag = 1;
+    for(auto elm : rec)
+    {
+        line l;
+        l.name = elm.first;
+        l.quant = elm.second;
+        int ost =  data.searchP(l);
+        if (ost > 0)
+        {
+            std::cout << ost <<  " " << l.name << " are missing" << std::endl;
+            flag = 0;
+        }
+    }
+    return flag;
+
+}
+
+bool Database::MakeDetail(const DeviceName &name)
+{
+  std::map<std::string,int> rec;
+  rec = known_recipes[name];
+  for(auto elm : rec)
+  {
+      line l;
+      l.name = elm.first;
+      l.quant = elm.second;
+      data.removepart(l);
+  }
+  line k;
+  k.name  = name;
+  k.quant = 1;
+  data.insert(k);
+  return 1;
 }
