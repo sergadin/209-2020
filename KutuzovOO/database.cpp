@@ -34,9 +34,8 @@ Database::Database(const std::string &filename_items, const std::string &filenam
       {
           int quantt;
           ss >> quantt;
-          ss.ignore(1);
+          ss.ignore(2);
           rrecipe[f] = quantt;
-          ss.ignore(1);
       }
       known_recipes[dname] = rrecipe;
   }
@@ -70,9 +69,8 @@ void Database::DatabaseFromFile(const std::string &filename_items, const std::st
       {
           int quantt;
           ss >> quantt;
-          ss.ignore(1);
+          ss.ignore(2);
           rrecipe[f] = quantt;
-          ss.ignore(1);
       }
       known_recipes[dname] = rrecipe;
   }
