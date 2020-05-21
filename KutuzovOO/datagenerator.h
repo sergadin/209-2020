@@ -15,28 +15,38 @@
 
 
 
-using namespace std;
-
-
-
-void makedatabase(int size_, int levels,const string &namefileI, const string &namefile)
+void hellomsg()
 {
-    string s = "abridgment";
-    vector<string> items;
-    ifstream fin;
+  std::cout <<"You can make several types of requests:\n";
+  std::cout << "\"show\" - Prints the database to the screen\n";
+  std::cout << "\"canmake DETAILNAME, QUANT\" - Displays information about whether the device can be built\n";
+  std::cout << "\"make DETAILNAME, QUANT\" - Assemble the detail\n";
+  std::cout << "\"adddetail DETAILNAME, QUANT\" - Add a detail to the database \n";
+  std::cout << "\"exit\" - terminate program \n";
+  std::cout << "\"savetofile FILENAME1 FILENAME2\" -  save the database to files\n";
+  std::cout << "Input comand : \n";
+}
+
+
+
+void makedatabase(int size_, int levels,const std::string &namefileI, const std::string &namefile)
+{
+    std::string s = "abridgment";
+    std::vector<std::string> items;
+    std::ifstream fin;
     fin.open("minecraft_items.txt");
-    string line;
+    std::string line;
     while(getline(fin, line))
     {
         items.push_back(line);
     }
-    ofstream ofs(namefile);
+    std::ofstream ofs(namefile);
     for(int i=0;i<levels;i++)
     {
-        vector<string> tmp;
+        std::vector<std::string> tmp;
         for(int j=0;j<(size_/levels);j++)
         {
-            next_permutation(s.begin(), s.end());
+            std::next_permutation(s.begin(), s.end());
             tmp.push_back(s);
         }
         srand(i*i +12);
@@ -49,7 +59,7 @@ void makedatabase(int size_, int levels,const string &namefileI, const string &n
             {
                 ofs << items[rand() % items.size()]  << ", " <<  rand() % 100  << ", ";
             }
-            ofs << items[rand() % items.size()]  << ", " <<  rand() % 100  << endl;
+            ofs << items[rand() % items.size()]  << ", " <<  rand() % 100  << std::endl;
 
         }
         for(auto elm: tmp)
@@ -59,10 +69,16 @@ void makedatabase(int size_, int levels,const string &namefileI, const string &n
     }
     fin.close();
     fin.open("minecraft_items.txt");
-    ofstream offs(namefileI);
+    std::ofstream offs(namefileI);
     while(getline(fin, line))
     {
-        offs << line << ", " << rand() % 100 << endl;
+        offs << line << ", " << rand() % 100 << std::endl;
+    }
+    std::string sp =  "abridgment";
+    for(int i=0;i<size_;i++)
+    {
+        offs << sp << ", " << rand() % 100 << std::endl;
+        next_permutation(sp.begin(), sp.end());
     }
 
 }

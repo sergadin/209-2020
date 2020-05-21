@@ -35,19 +35,13 @@ int main()
         x.DatabaseFromFile("items.txt","recipe.txt");
     }
     cout << "The database is ready to work\n";
-    cout <<"You can make several types of requests:\n";
-    cout << "\"show\" - Prints the database to the screen\n";
-    cout << "\"canmake DETAILNAME, QUANT\" - Displays information about whether the device can be built\n";
-    cout << "\"make DETAILNAME, QUANT\" - Assemble the detail\n";
-    cout << "\"adddetail DETAILNAME, QUANT\" - Add a detail to the database \n";
-    cout << "\"exit\" - terminate program \n";
+    hellomsg();
 
     while(1)
     {
       string str;
       getline(cin,str);
       if(str.size() == 0) continue;
-      cout << "Input comand : \n";
       stringstream ss(str);
       string zapros;
       ss >> zapros;
@@ -109,10 +103,17 @@ int main()
           ss  >> det.quant;
           x.AddDetail(det.name,det.quant);
       }
+      else if(zapros == "savetofile")
+      {
+          string name1, name2;
+          ss >> name1 >> name2;
+          x.DatabaseToFile(name1,name2);
+      }
       else
       {
           cout << "I didn't understand your request\n";
       }
+      hellomsg();
     }
     return 0;
 }
