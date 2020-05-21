@@ -21,7 +21,7 @@ int tmp_correct(double res, cond_type O)//Проверка на корректн
 //functions for student
 
 void student :: print( FILE * fp)
-{	fprintf( fp ,"%s \t%f \t%d\n", name, rating, group );}
+{	fprintf( fp ,"%s \t%1.2f \t%d\n", name, rating, group );}
 
 student & student ::operator = (student &&x)//move
 {
@@ -320,6 +320,21 @@ void hash :: print ( FILE * stream )
 		printf("Database is empty!\n");
 }
 
+int hash :: fill(int n, FILE * in)
+{
+	int gr;
+    double rt;
+    char name[64];
+    student * prime;
+    for( int i = 0; i < n; i++)
+    {
+        fscanf(in, "%s %lf %d", name, &rt, &gr);
+        prime = new student( name, rt, gr);
+		add( prime );
+		prime = 0;
+    }
+}
+
 //functions for comand
 
 void comand :: clear()
@@ -362,7 +377,7 @@ void comand :: print(FILE * stream)
 		{
 			for(int i = 0 ; i < 7; i++)
 				if(curr->c_rat == c_mass[i])	printf("( %s ", mass[i]);
-			fprintf(stream,"%f )", curr->rating);
+			fprintf(stream,"%1.2f )", curr->rating);
 			curr = curr->next;
 		}
 		fprintf(stream," | ");
@@ -462,10 +477,10 @@ int comand :: analyze()
 		}
 		else	return 1;
 	}
-	return comand_sorting();
+	return gr_sort()*100 + rat_sort()*10 + name_sort();
 }
 
-int comand :: comand_sorting()
+int comand :: gr_sort()
 {
 	int Eq_max = 1;
 	int Eq_min = 1;
@@ -529,12 +544,14 @@ int comand :: comand_sorting()
 			{
 				if( node->group > curr_gr )
 				{
-					Not_equal = curr;
+					Not_equal = 0;
 					curr->next = node;
+					Not_equal = curr;
 				}
 				else if( node->group < curr_gr )
 				{
 					cond_for_gr * prev = node;
+					
 					while(prev->next)
 					{
 						node = prev->next;
@@ -548,8 +565,8 @@ int comand :: comand_sorting()
 							break;
 						prev = node;
 					}
-					if(!node->next && (node->group != curr_gr))
-						node->next = curr;
+					if((!prev->next)&&(prev->group != curr_gr))
+						prev->next = curr;
 				}
 			}
 			else	Not_equal = curr;
@@ -565,9 +582,45 @@ int comand :: comand_sorting()
 		}
 		curr = next;
 	}
-	
 	if(gr_min > gr_max)
 		return -1;
+	if(Not_equal)
+	{
+		while((Not_equal)&&(Not_equal->group < gr_min))
+		{
+			next = Not_equal->next;
+			Not_equal->next = 0;
+			Not_equal = next;
+		}
+		node = Not_equal;
+		if(node&&(node->group > gr_max))
+		{
+			Not_equal->clear();
+			Not_equal = 0;
+		}
+		while(node && (node->next))
+		{
+			next = node->next;
+			if(next->group > gr_max)
+			{
+				next->clear();
+				next = 0;
+				node->next = 0;
+				break;
+			}
+			node = next;
+		}
+		if(Not_equal && Not_equal->group == gr_min)
+		{
+			Eq_min = 0;
+			if(Great)	Great->c_gr = GT;
+		}
+		if(node && node->group == gr_max)
+		{
+			Eq_max = 0;
+			if(Less)	Less->c_gr = LT;
+		}
+	}	
 	if(gr_min == gr_max)
 	{
 		if(Eq_min*Eq_max == 0)	return -1;
@@ -582,9 +635,6 @@ int comand :: comand_sorting()
 			else	Equal = Less;
 		}
 	}
-	
-	
-	
 	if(Equal)
 	{
 		curr_gr = Equal->group;
@@ -593,8 +643,10 @@ int comand :: comand_sorting()
 		if((curr_gr <= gr_min)&&(!Eq_min || (curr_gr != gr_min)))
 			return -1;
 		gr_root = Equal;
-		Equal->next = Not_equal;
-		return 0;
+		while(Not_equal && Not_equal->group != curr_gr)
+			Not_equal = Not_equal->next;
+		if(Not_equal) return -1;
+		else return 0;
 	}
 	gr_root = Not_equal;
 	if(Less)
@@ -612,6 +664,373 @@ int comand :: comand_sorting()
 	return 0;
 }
 
+int comand :: rat_sort()
+{
+	int Eq_max = 1;
+	int Eq_min = 1;
+	cond_for_rat * curr = rat_root;
+	if(!rat_root)	return 0;
+	cond_for_rat * next;
+	cond_for_rat * node;
+	rat_root = 0;
+	double curr_rat;
+	double rat_min = 0;
+	double rat_max = 1000;
+	cond_for_rat * Equal = 0;
+	cond_for_rat * Not_equal = 0;
+	cond_for_rat * Less = 0;
+	cond_for_rat * Great = 0;
+	while(curr)
+	{
+		next = curr->next;
+		curr->next = 0;
+		curr_rat = curr->rating;
+		if(curr->c_rat == LT)
+		{
+			if( curr_rat <= rat_max )
+			{
+				rat_max = curr_rat;
+				Eq_max = 0;
+				Less = curr;
+			}
+		}
+		else if(curr->c_rat == LE)
+		{
+			if( curr_rat < rat_max )
+			{
+				rat_max = curr_rat;
+				Eq_max = 1;
+				Less = curr;
+			}
+		}
+		else if(curr->c_rat == GT)
+		{
+			if( curr_rat >= rat_min )
+			{
+				rat_min = curr_rat;
+				Eq_min = 0;
+				Great = curr;
+			}
+		}
+		else if(curr->c_rat == GE)
+		{
+			if( curr_rat > rat_min )
+			{
+				rat_min = curr_rat;
+				Eq_min = 1;
+				Great = curr;
+			}
+		}
+		else if(curr->c_rat == NE)
+		{
+			node = Not_equal;
+			if(node)
+			{
+				if( node->rating > curr_rat )
+				{
+					Not_equal = 0;
+					curr->next = node;
+					Not_equal = curr;
+				}
+				else if( node->rating < curr_rat )
+				{
+					cond_for_rat * prev = node;
+					
+					while(prev->next)
+					{
+						node = prev->next;
+						if(node->rating > curr_rat)
+						{
+							prev->next = curr;
+							curr->next = node;
+							break;
+						}
+						if(eq(node->rating - curr_rat))
+							break;
+						prev = node;
+					}
+					if((!prev->next)&&(prev->rating != curr_rat))
+						prev->next = curr;
+				}
+			}
+			else	Not_equal = curr;
+		}
+		else if(curr->c_rat == EQ)
+		{
+			if(Equal)
+			{
+				if(!eq(Equal->rating - curr_rat))
+					return -1;
+			}
+			else	Equal = curr;
+		}
+		curr = next;
+	}
+	if(rat_min > rat_max)	return -1;
+	if(Not_equal)
+	{
+		while((Not_equal)&&(Not_equal->rating < rat_min))
+		{
+			next = Not_equal->next;
+			Not_equal->next = 0;
+			Not_equal = next;
+		}
+		node = Not_equal;
+		if(node&&(node->rating > rat_max))
+		{
+			Not_equal->clear();
+			Not_equal = 0;
+		}
+		while(node && (node->next))
+		{
+			next = node->next;
+			if(next->rating > rat_max)
+			{
+				next->clear();
+				next = 0;
+				node->next = 0;
+				break;
+			}
+			node = next;
+		}
+		if(Not_equal && Not_equal->rating == rat_min)
+		{
+			Eq_min = 0;
+			if(Great)	Great->c_rat = GT;
+		}
+		if(node && node->rating == rat_max)
+		{
+			Eq_max = 0;
+			if(Less)	Less->c_rat = LT;
+		}
+	}	
+	if(eq(rat_min - rat_max))
+	{
+		if(Eq_min*Eq_max == 0)	return -1;
+		else
+		{
+			Less->c_rat = EQ;
+			if(Equal)
+				if(!eq(Equal->rating - rat_min))	return -1;
+			else	Equal = Less;
+		}
+	}
+	if(Equal)
+	{
+		curr_rat = Equal->rating;
+		if((curr_rat >= rat_max)&&(!Eq_max || !eq(curr_rat - rat_max)))
+			return -1;
+		if((curr_rat <= rat_min)&&(!Eq_min || !eq(curr_rat - rat_min)))
+			return -1;
+		rat_root = Equal;
+		while(Not_equal && !eq(Not_equal->rating - curr_rat))
+			Not_equal = Not_equal->next;
+		if(Not_equal) return -1;
+		else return 0;
+	}
+	rat_root = Not_equal;
+	if(Less)
+	{
+		next = rat_root;
+		rat_root = Less;
+		Less->next = next;
+	}
+	if(Great)
+	{
+		next = rat_root;
+		rat_root = Great;
+		Great->next = next;
+	}
+	return 0;
+}
+
+int comand :: name_sort()
+{
+	int Eq_max = 1;
+	int Eq_min = 1;
+	cond_for_name * curr = name_root;
+	if(!name_root)	return 0;
+	cond_for_name * next;
+	cond_for_name * node;
+	name_root = 0;
+	char * curr_name;
+	char min_char = ' ';
+	char max_char = '~';
+	char * name_min = &min_char;
+	char * name_max = &max_char;
+	cond_for_name * Equal = 0;
+	cond_for_name * Not_equal = 0;
+	cond_for_name * Less = 0;
+	cond_for_name * Great = 0;
+	while(curr)
+	{
+		next = curr->next;
+		curr->next = 0;
+		curr_name = curr->name;
+		if(curr->c_name == LT)
+		{
+			if( strcmp(curr_name, name_max) <= 0 )
+			{
+				name_max = curr_name;
+				Eq_max = 0;
+				Less = curr;
+			}
+		}
+		else if(curr->c_name == LE)
+		{
+			if( strcmp(curr_name, name_max) < 0 )
+			{
+				name_max = curr_name;
+				Eq_max = 1;
+				Less = curr;
+			}
+		}
+		else if(curr->c_name == GT)
+		{
+			if( strcmp(curr_name, name_min ) >= 0)
+			{
+				name_min = curr_name;
+				Eq_min = 0;
+				Great = curr;
+			}
+		}
+		else if(curr->c_name == GE)
+		{
+			if( strcmp(curr_name, name_min) > 0)
+			{
+				name_min = curr_name;
+				Eq_min = 1;
+				Great = curr;
+			}
+		}
+		else if(curr->c_name == NE)
+		{
+			node = Not_equal;
+			if(node)
+			{
+				if( strcmp(node->name, curr_name ) > 0)
+				{
+					Not_equal = 0;
+					curr->next = node;
+					Not_equal = curr;
+				}
+				else if( strcmp( node->name, curr_name ) < 0)
+				{
+					cond_for_name * prev = node;
+					
+					while(prev->next)
+					{
+						node = prev->next;
+						if(strcmp(node->name, curr_name) > 0)
+						{
+							prev->next = curr;
+							curr->next = node;
+							break;
+						}
+						if( strcmp(node->name, curr_name) == 0)
+							break;
+						prev = node;
+					}
+					if((!prev->next)&&( strcmp(prev->name, curr_name) != 0 ))
+						prev->next = curr;
+				}
+			}
+			else	Not_equal = curr;
+		}
+		else if(curr->c_name == EQ)
+		{
+			if(Equal)
+			{
+				if(strcmp(Equal->name, curr_name) != 0)
+					return -1;
+			}
+			else	Equal = curr;
+		}
+		curr = next;
+	}
+	if( strcmp(name_min, name_max) > 0)		return -1;
+	if(Not_equal)
+	{
+		while((Not_equal)&&( strcmp(Not_equal->name, name_min) < 0))
+		{
+			next = Not_equal->next;
+			Not_equal->next = 0;
+			Not_equal = next;
+		}
+		node = Not_equal;
+		if(node&&( strcmp(node->name, name_max) > 0))
+		{
+			Not_equal->clear();
+			Not_equal = 0;
+		}
+		while(node && (node->next))
+		{
+			next = node->next;
+			if( strcmp(next->name, name_max) > 0)
+			{
+				next->clear();
+				next = 0;
+				node->next = 0;
+				break;
+			}
+			node = next;
+		}
+		if( Not_equal && strcmp( Not_equal->name,  name_min) != 0)
+		{
+			Eq_min = 0;
+			if(Great)	Great->c_name = GT;
+		}
+		if(node && strcmp( node->name, name_max) != 0)
+		{
+			Eq_max = 0;
+			if(Less)	Less->c_name = LT;
+		}
+	}
+	if( strcmp(name_min, name_max) == 0)
+	{
+		if(Eq_min*Eq_max == 0)	return -1;
+		else
+		{
+			if(!Less)	Less = Great;
+			Less->c_name = EQ;
+			if(Equal)
+			{
+				if( strcmp(Equal->name, name_min) != 0)
+					return -1;
+			}
+			else	Equal = Less;
+		}
+	}
+	if(Equal)
+	{
+		curr_name = Equal->name;
+		if(( strcmp(curr_name , name_max) >= 0)&&(!Eq_max || ( strcmp(curr_name, name_max) != 0)))
+			return -1;
+		if(( strcmp(curr_name , name_min) <= 0)&&(!Eq_min || ( strcmp(curr_name, name_min) != 0)))
+			return -1;
+		name_root = Equal;
+		while(Not_equal && strcmp( Not_equal->name, curr_name) != 0)
+			Not_equal = Not_equal->next;
+		if(Not_equal) return -1;
+		else return 0;
+	}
+	name_root = Not_equal;
+	if(Less)
+	{
+		next = name_root;
+		name_root = Less;
+		Less->next = next;
+	}
+	if(Great)
+	{
+		next = name_root;
+		name_root = Great;
+		Great->next = next;
+	}
+	return 0;
+}
+		   
+		   
 cond_type comand :: find_cond(char * cond)
 {
 	const char * mass[6] = {"==","!=","<", ">", "<=", ">="};
@@ -795,13 +1214,15 @@ int main(int argc, char *argv[])
 							cmd->type = CMD_NONE;
 							continue;
 						}
-						if( ret == -1 )
+						if( ret < 0 )
 						{
-							printf("We have conter conditions!\n");
+							printf("We have conter conditions! Error %3d\n", -ret);
+							cmd->type = CMD_NONE;
 							continue;
 						}
 						cmd->print();
-						//Base->do_select( cmd);
+						Base->do_select( cmd);
+						printf("Selected %d elements\n", Base->sess_size());
 					}
 					else if(strstr(com, "s_pr"))
 					{
@@ -858,107 +1279,93 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-int hash :: fill(int n, FILE * in)
-{
-	int gr;
-    double rt;
-    char name[64];
-    student * prime;
-    for( int i = 0; i < n; i++)
-    {
-        fscanf(in, "%s %lf %d", name, &rt, &gr);
-        prime = new student( name, rt, gr);
-		add( prime );
-		prime = 0;
-    }
-}
-
-/*
-
 // functions for select
 
 void Database :: do_select( comand * cmd)
 {
 	hash_node * curr;
-	cond_type G = cmd->c_gr;
-	int gr = cmd->get_gr();
-	int index = my_hash->get_index(cmd->get_gr());
-	int i;
-	if((G == EQ)||(G == GE)||(G == LE))//Часть для равно
+	int gr_max = 699;
+	int gr_min = 100;
+	int sign_max = 0;
+	int sign_min = 0;
+	cond_for_gr * node = cmd->gr_root;
+	cond_for_gr * n_eq;
+	if(node)
 	{
-		curr = my_hash->get_elem( index );
-		while(curr)
+		if(node->get_cond() == EQ)
 		{
-			if(curr->get_group() == gr)
-				sub_select_group(curr, cmd);
-			curr = curr->get_next();
-		}
-	}
-	if((G == GT)||(G == GE)||(G == NE))//Часть для больше
-	{
-		for( i = index + 1; i < HASH; i++)
-		{
-			curr = my_hash->get_elem( i );
+			int gr = node->get_gr();
+			curr = my_hash->get_elem( my_hash->get_index( gr ));
 			while(curr)
 			{
-				sub_select_group(curr, cmd);
+				if(curr->get_group() == gr)
+					//printf("Subselect in group %d\n", curr->get_group());
+					sub_select_group(curr, cmd);
 				curr = curr->get_next();
 			}
+		 	return;
 		}
-		curr = my_hash->get_elem( index );
-		while(curr)
+		if((node->get_cond() == GT)||(node->get_cond() == GE))
 		{
-			if(curr->get_group() > gr)
-				sub_select_group(curr, cmd);
-			curr = curr->get_next();
+			if(node->get_cond() == GE)	sign_min = 1;
+			gr_min = node->get_gr();
+			node = node->get_next();
+		}
+		if((node)&&((node->get_cond() == LT)||(node->get_cond() == LE)))
+		{	
+			if(node->get_cond() == LE)	sign_max = 1;
+			gr_max = node->get_gr();
+			node = node->get_next();
 		}
 	}
-	if((G == LT)||(G == LE)||(G == NE))//Часть для меньше
+	n_eq = node;
+	for(int i = my_hash->get_index(gr_min); i <= my_hash->get_index(gr_max); i++)
 	{
-		for( i = 0; i < index; i++)
-		{
-			curr = my_hash->get_elem( i );
-			while(curr)
-			{
-				sub_select_group(curr, cmd);
-				curr = curr->get_next();
-			}
-		}
-		curr = my_hash->get_elem( index );
+		curr = my_hash->get_elem( i );
 		while(curr)
 		{
-			if(curr->get_group() < gr)
-				sub_select_group(curr, cmd);
-			curr = curr->get_next();
-		}
-	}
-	if(G == COND_NONE)
-	{
-		for( i = 0; i < HASH; i++)
-		{
-			curr = my_hash->get_elem( i );
-			while(curr)
+			int gr = curr->get_group();
+			if(( gr > gr_min || (sign_min && gr == gr_min )) &&  ((gr < gr_max) || (sign_max && gr == gr_max )))
 			{
+				if(n_eq)
+				{
+					node = n_eq;
+					while(node && (gr > node->get_gr()))	node = node->get_next();
+					if(node && (gr == node->get_gr()))
+					{
+						curr = curr->get_next();
+						continue;
+					}
+				}
 				sub_select_group(curr, cmd);
-				curr = curr->get_next();
 			}
+			curr = curr->get_next();
 		}
 	}
 }
 
+
 void Database :: sub_select_group(hash_node * head, comand * cmd)
 {
-	if(cmd->c_name != COND_NONE)	sub_select_tree(head->get_tree(), cmd);
+	if(cmd->name_root != 0)			sub_select_tree(head->get_tree(), cmd);
 	else							sub_select_list(head->get_list(), cmd);
 }
 
 void Database :: sub_select_tree( tree * head, comand * cmd)
 {
-	char * tmp = cmd->get_name();
-	cond_type N = cmd->c_name;
 	tree_node * curr;
-	if((N == EQ)||(N == GE)||(N == LE))//Часть для равно
+	char min_char = ' ';
+	char max_char = '~';
+	char * name_min = &min_char;
+	char * name_max = &max_char;
+	char * tmp;
+	int sign_max = 0;
+	int sign_min = 0;
+	cond_for_name * node = cmd->name_root;
+	cond_for_name * n_eq;
+	if(node->get_cond() == EQ)//Часть для равно
 	{
+		tmp = node->get_name();
 		curr = head->get_root();
 		while(curr)
 		{
@@ -978,114 +1385,149 @@ void Database :: sub_select_tree( tree * head, comand * cmd)
 				break;
 			}
 		}
+		return;
 	}
-	if((N == GT)||(N == GE)||(N == NE))//Часть для больше
+	if((node->get_cond() == GT)||(node->get_cond() == GE))
 	{
-		curr = head->get_root();
-		while(curr)
-		{
-			if( strcmp( tmp, curr->get_name()) >= 0)
-			{
-				if(curr->get_right())	curr = curr->get_right();
-				else	break;
-			}
-			else if( strcmp( tmp, curr->get_name()) < 0)
-			{
-				sel_rat(curr->get_data(), cmd); //Это нам подходит
-				if(curr->get_right())	sub_select_subtree(curr->get_right(), cmd);	//Это нам подходит - функция которая перебирает элементы поддерева
-				if(curr->get_left())	curr = curr->get_left();
-				else break;
-			}
-		}
+		if(node->get_cond() == GE)	sign_min = 1;
+		name_min = node->get_name();
+		node = node->get_next();
 	}
-	if((N == LT)||(N == LE)||(N == NE))//Часть для меньше
-	{
-		curr = head->get_root();
-		while(curr)
-		{
-			if( strcmp( tmp, curr->get_name()) > 0)
-			{
-				sel_rat(curr->get_data(), cmd); //Это нам подходит
-				if(curr->get_left())	sub_select_subtree(curr->get_left(), cmd);  	//Это нам подходит - функция которая перебирает элементы поддерева
-				if(curr->get_right())	curr = curr->get_right();
-				else	break;
-			}
-			else if( strcmp( tmp, curr->get_name()) <= 0)
-			{
-				if(curr->get_left())	curr = curr->get_left();
-				else break;
-			}
-		}
+	if((node)&&((node->get_cond() == LT)||(node->get_cond() == LE)))
+	{	
+		if(node->get_cond() == LE)	sign_max = 1;
+		name_max = node->get_name();
+		node = node->get_next();
 	}
+	n_eq = node;
+	rec_sel_tree(head->get_root(), n_eq, name_min, sign_min, name_max, sign_max, cmd);
+	name_min = 0;
+	name_max = 0;
 }
 
-void Database :: sub_select_subtree(tree_node * node, comand * cmd)
+void Database :: rec_sel_tree(tree_node * curr, cond_for_name * n_eq, char * min, int smn, char * max, int smx, comand * cmd)
 {
-	sel_rat(node->get_data(), cmd);
-	if(node->get_right())	sub_select_subtree(node->get_right(), cmd);
-	if(node->get_left())	sub_select_subtree(node->get_left(), cmd);
+	cond_for_name * node;
+	char * tmp = curr->get_name();
+	if( strcmp(tmp, min) < 0)
+	{	if(curr->get_right())	rec_sel_tree(curr->get_right(), n_eq, min, smn, max, smx, cmd);
+	}
+	else if( strcmp(tmp, max) > 0)
+	{	if(curr->get_left())	rec_sel_tree(curr->get_left(), n_eq, min, smn, max, smx, cmd);
+	}
+	else if(( strcmp(tmp, min) == 0) && smn)
+	{
+		sel_rat(curr->get_data(), cmd);//Это нам подходит
+		if(curr->get_right())	rec_sel_tree(curr->get_right(), n_eq, min, smn, max, smx, cmd);
+	}
+	else if(( strcmp(tmp, max) == 0) && smx)
+	{
+		sel_rat(curr->get_data(), cmd);//Это нам подходит
+		if(curr->get_left())	rec_sel_tree(curr->get_left(), n_eq, min, smn, max, smx, cmd);
+	}
+	else
+	{
+		node = n_eq;
+		while(node && strcmp(tmp , node->get_name()) > 0)	node = node->get_next();
+		if((!node) || strcmp(tmp , node->get_name()) < 0)
+			sel_rat(curr->get_data(), cmd);//Это нам подходит
+		if(curr->get_left())	rec_sel_tree(curr->get_left(), n_eq, min, smn, max, smx, cmd);
+		if(curr->get_right())	rec_sel_tree(curr->get_right(), n_eq, min, smn, max, smx, cmd);
+	}
 }
-		
+	
 void Database :: sel_rat(student * prime, comand * cmd)
 {
-	double rt = cmd->get_rt();
-	double rt_pr = prime->get_rt();
-	cond_type R = cmd->c_rat;
-	int yes = 0;
-	if((R == EQ)||(R == GE)||(R == LE))//Часть для равно
-		if(rt_pr == rt)	yes = 1;
-	if((R == GT)||(R == GE)||(R == NE))//Часть для больше
-		if(rt_pr > rt)	yes = 1;
-	if((R == LT)||(R == LE)||(R == NE))//Часть для меньше
-		if(rt_pr < rt)	yes = 1;
-	if(R == COND_NONE)	yes = 1;
-	if(yes)	sess->add(prime);
+	double rt = prime->get_rt();
+	cond_for_rat * node = cmd->rat_root;
+	int yes = 1;
+	if(node && (node->get_cond() == EQ))
+	{
+		if(eq(node->get_rt() - rt))	sess->add(prime);
+		return;
+	}
+	if(node && (node->get_cond() == GT))
+	{
+		if(node->get_rt() >= rt)	return;
+		node = node->get_next();
+	}
+	if(node && (node->get_cond() == GE))
+	{
+		if(node->get_rt() > rt)	return;
+		node = node->get_next();
+	}
+	if(node && (node->get_cond() == LT))
+	{
+		if(node->get_rt() <= rt)	return;
+		node = node->get_next();
+	}
+	if(node && (node->get_cond() == LE))
+	{
+		if(node->get_rt() < rt)	return;
+		node = node->get_next();
+	}
+	while(node && (rt > node->get_rt()))	node = node->get_next();
+	if(node && eq( rt - node->get_rt()))
+		return;
+	sess->add(prime);
 }
 
 void Database :: sub_select_list(list * head, comand * cmd)
 {
-	double rat = cmd->get_rt();
-	cond_type R = cmd->c_rat;
 	list_node * curr = head->get_root();
-	if((R == LT)||(R == LE)||(R == NE))//Часть для меньше
+	double rat_min = 0;
+	double rat_max = 1000;
+	int sign_max = 0;
+	int sign_min = 0;
+	cond_for_rat * node = cmd->rat_root;
+	if(node && (node->get_cond() == EQ))
 	{
+		double rt = node->get_rt();
 		while(curr)
 		{
-			if(curr->get_rt() >= rat)	break;
-			else
+			if(curr->get_rt() > rt)	return;
+			if(eq(curr->get_rt() - rt))
 				sess->add(curr->get_data());
 			curr = curr->get_next();
 		}
+		return;
 	}
-	if((R == EQ)||(R == GE)||(R == LE))//Часть для равно
+	if(node && ((node->get_cond() == GT)||(node->get_cond() == GE)))
 	{
-		while(curr)
-		{
-			if(curr->get_rt() > rat)	break;
-			if( eq(curr->get_rt() - rat) )
-				sess->add(curr->get_data());
-			curr = curr->get_next();
-		}
+		if(node->get_cond() == GE)	sign_min = 1;
+		rat_min = node->get_rt();
+		node = node->get_next();
 	}
-	if((R == GT)||(R == GE)||(R == NE))//Часть для больше
-	{
-		while(curr)
-		{
-			if(curr->get_rt() > rat)
-				sess->add(curr->get_data());
-			curr = curr->get_next();
-		}
+	if(node && ((node->get_cond() == LT)||(node->get_cond() == LE)))
+	{	
+		if(node->get_cond() == LE)	sign_max = 1;
+		rat_max = node->get_rt();
+		node = node->get_next();
 	}
-	if(R == COND_NONE)
+	while(curr)
 	{
-		while(curr)
+		double rt = curr->get_rt();
+		if(( rt < rat_min ) || (eq(rt - rat_min ) && !sign_min))
 		{
-			sess->add(curr->get_data());
 			curr = curr->get_next();
+			continue;
 		}
+		else if(( rt > rat_max ) || (eq(rt - rat_max ) && !sign_max))
+		{
+			return;
+		}
+		while(node && (rt > node->get_rt()))	node = node->get_next();
+		if(node && eq(rt - node->get_rt()))
+		{
+			curr = curr->get_next();
+			continue;
+		}
+		sess->add(curr->get_data());
+		
+		curr = curr->get_next();
 	}
 }
-
+/*
 // functions for reselect
 
 void Database :: reselect(comand * cmd)
