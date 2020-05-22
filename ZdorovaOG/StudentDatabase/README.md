@@ -3,7 +3,7 @@
 
 Для компиляции выполнить: _make_
 
-Для запуска выполнить: _./\_main_
+Для запуска выполнить: _./main_
 
 Для генерации тестовых данных выполнить: _make input_builder && \_input\_builder [number-of-samples] [output-file-name]_
 
