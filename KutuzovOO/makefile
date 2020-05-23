@@ -1,2 +1,6 @@
+CC=g++
+NAME=server
+
+
 all:
-	g++ server.cpp database.cpp HashTable.cpp LinkedList.cpp
+	$(CC) test_server.cpp database.cpp HashTable.cpp LinkedList.cpp -o $(NAME)
