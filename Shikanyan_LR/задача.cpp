@@ -6,7 +6,11 @@
 #include <iomanip> // for setw (tab) 
 #include <ctime> 
 #include <sstream>
+#include <map>
+#include <algorithm>   
 using namespace std;
+
+
 
 string random_name()
 {
@@ -33,14 +37,13 @@ string int_to_string(int i)
 
 string more(const string &com1,const string &com2)
 {
-	// cout << endl << "com1 - " << com1 << " com2 - " << com2 << endl;
 	if(com1.size()>com2.size())
 	{
 		return com1;
 	}
 	if(com1.size()<com2.size())
 	{
-		return com1;
+		return com2;
 	}
 	if(com1>=com2)
 	{
@@ -120,6 +123,7 @@ struct crit
 
 struct info 
 {
+	int index;
     string teacher;
     string group;
     string date_time;
@@ -128,7 +132,7 @@ struct info
     void print()
     {
     	cout << endl << setw(10) << teacher << setw(5) << group << setw(6) << date_time; 
-		cout << setw(6) << room << setw(10) << subject;
+		cout << setw(6) << room << setw(10) << subject << "   " << index;
 	}
 	void clear()
 	{
@@ -389,7 +393,24 @@ struct condition // одна строчка
 					}
 					if(cr.pole == "date_time" &&  more(cr.high_val,"2400") == cr.high_val )
 					{
+						cout << "time - " << cr.high_val;
 						throw MyException(23, "Time ne corektno ukazano");
+					}
+					if(cr.pole == "group" && cr.low_val == "*")
+					{
+						cr.low_val = "0";
+					}
+					if(cr.pole == "room" && cr.low_val == "*")
+					{
+						cr.low_val = "0";
+					}
+					if(cr.pole == "group" && cr.high_val == "*")
+					{
+						cr.high_val = "1000000";
+					}
+					if(cr.pole == "room" && cr.high_val == "*")
+					{
+						cr.high_val = "1000000";
 					}
 					criteri.push_back(cr);
 					cr.low_val.clear();
@@ -433,7 +454,7 @@ struct condition // одна строчка
     }
     void print()
     {
-    	int i = 0;
+    	int i=0;
     	cout << endl << "Comand - " << comand << endl;
     	while(i < criteri.size())
     	{
@@ -593,26 +614,62 @@ bool ok_or_not_ok(const crit &cr,const info &inf)
 
 class Database
 {
-private: 
-	/*vector<string>A;
-	vector<string>B;
-	vector<string>C;
-	vector<string>D;
-	vector<string>E;
-	bool **AB;
-	bool **AC;
-	bool **AD;
-	bool **AE;
-	bool **BC;
-	bool **BD;
-	bool **BE;
-	bool **CD;
-	bool **CE;
-	bool **DE;
-	*/
+private:
+	int global_index;
 	vector<info> inf;
 	vector<info> ses;
+	map <string,vector<int> > mp_t;
+	map <string,vector<int> > mp_g;
+	map <string,vector<int> > mp_r;
+	map <string,vector<int> > mp_d;
+	map <string,vector<int> > mp_s;
 public:
+	void add_el_to_maps(info in)
+	{
+		mp_t[in.teacher].push_back(in.index);
+		mp_g[in.group].push_back(in.index);
+		mp_r[in.room].push_back(in.index);
+		mp_d[in.date_time].push_back(in.index);
+		mp_s[in.subject].push_back(in.index);
+	}
+	void del_el_from_maps(info in)
+	{
+		int i = 0;
+		while(in.index != mp_t[in.teacher][i])
+		{
+			i++;
+		}
+		mp_t[in.teacher].erase(mp_t[in.teacher].begin() + i);
+		vector<int>(mp_t[in.teacher]).swap(mp_t[in.teacher]);
+		i = 0;
+		while(in.index != mp_g[in.group][i])
+		{
+			i++;
+		}
+		mp_g[in.group].erase(mp_g[in.group].begin() + i);
+		vector<int>(mp_g[in.group]).swap(mp_g[in.group]);
+		i = 0;
+		while(in.index != mp_r[in.room][i])
+		{
+			i++;
+		}
+		mp_r[in.room].erase(mp_r[in.room].begin() + i);
+		vector<int>(mp_r[in.room]).swap(mp_r[in.room]);
+		i = 0;
+		while(in.index != mp_d[in.date_time][i])
+		{
+			i++;
+		}
+		mp_d[in.date_time].erase(mp_d[in.date_time].begin() + i);
+		vector<int>(mp_d[in.date_time]).swap(mp_d[in.date_time]);
+		i = 0;
+		while(in.index != mp_s[in.subject][i])
+		{
+			i++;
+		}
+		mp_s[in.subject].erase(mp_s[in.subject].begin() + i);
+		vector<int>(mp_s[in.subject]).swap(mp_s[in.subject]);
+	}
 	Database(const string &file_name)
 	{
 		string a;
@@ -620,6 +677,7 @@ public:
 		int i = 0;
 		ifstream in;
 		in.open(file_name.c_str());
+		global_index = 0;
 	    if (in.is_open())
 	    {
 	        while (getline(in, a))
@@ -654,6 +712,9 @@ public:
 	            	i++;
 				}
 				i = 0;
+				line.index = global_index;
+				global_index++;
+				add_el_to_maps(line);
 				inf.push_back(line);
 				line.date_time.clear();
 				line.group.clear();
@@ -671,11 +732,176 @@ public:
  	    	inf[i].print();
 	    	i++;
 		}
-		cout << endl << endl;
+		cout  << endl << "This is end of BAZA"  << endl;
 	}
 	/*
 	~Database();
 	*/
+	vector <int> association(condition c)
+	{
+		int i;
+		vector<int> it;
+		vector<int> ig;
+		vector<int> id;
+		vector<int> ir;
+		vector<int> is;
+		vector<int> v;
+		vector<int> vts;
+		vector<int> vgr;
+		vector<int> vdgr;
+		map <string,vector<int> >:: iterator iter;
+		int t = 0, g = 0, d = 0, r = 0, s = 0;
+		string teacher,group_low,group_high,date_time_low,date_time_high,room_low,room_high,subject;
+		for(i = 0;i < c.criteri.size();i++)
+		{
+			if(c.criteri[i].pole == "teacher")
+			{
+				teacher = c.criteri[i].val;
+				t++;
+			}
+			else if(c.criteri[i].pole == "group")
+			{
+				group_low = c.criteri[i].low_val;
+				group_high = c.criteri[i].high_val;
+				g++;
+			}
+			else if(c.criteri[i].pole == "date_time")
+			{
+				date_time_low = c.criteri[i].low_val;
+				date_time_high = c.criteri[i].high_val;
+				d++;
+			}
+			else if(c.criteri[i].pole == "room")
+			{
+				room_low = c.criteri[i].low_val;
+				room_high = c.criteri[i].high_val;
+				r++;
+			}
+			else if(c.criteri[i].pole == "subject")
+			{
+				subject = c.criteri[i].val;
+				s++;
+			}
+		}
+		if(t == 0)
+		{
+			for(i=0;i<global_index;i++)
+			{
+				it.push_back(i);
+			}
+		}
+		else
+		{
+			it = mp_t[teacher];
+		}
+		if(g == 0)
+		{
+			for(i=0;i<global_index;i++)
+			{
+				ig.push_back(i);
+			}
+		}
+		else
+		{
+			for( iter = mp_g.begin(); iter != mp_g.end(); ++iter) 
+			{
+				if(more(group_low,iter->first) == iter->first && more(iter->first,group_high) == group_high)
+				{				
+					ig.insert(ig.end(), mp_g[iter->first].begin(), mp_g[iter->first].end());
+				}
+		 	}
+		}
+		if(d == 0)
+		{
+			for(i=0;i<global_index;i++)
+			{
+				id.push_back(i);
+			}
+		}
+		else
+		{
+			for( iter = mp_d.begin(); iter != mp_d.end(); ++iter) 
+			{
+				if(more(date_time_low,iter->first) == iter->first && more(iter->first,date_time_high) == date_time_high)
+				{				
+					id.insert(id.end(), mp_d[iter->first].begin(), mp_d[iter->first].end());
+				}
+		 	}
+		}
+		if(r == 0)
+		{
+			for(i=0;i<global_index;i++)
+			{
+				ir.push_back(i);
+			}
+		}
+		else
+		{
+			for( iter = mp_r.begin(); iter != mp_r.end(); ++iter) 
+			{
+				if(more(room_low,iter->first) == iter->first && more(iter->first,room_high) == room_high)
+				{				
+					ir.insert(ir.end(), mp_r[iter->first].begin(), mp_r[iter->first].end());
+				}
+		 	}
+		}
+		if(s == 0)
+		{
+			for(i=0;i<global_index;i++)
+			{
+				is.push_back(i);
+			}
+		}
+		else
+		{
+			is = mp_s[subject];
+		}
+		set_intersection(it.begin(), it.end(),is.begin(), is.end(),back_inserter(vts));
+		set_intersection(ig.begin(), ig.end(),ir.begin(), ir.end(),back_inserter(vgr));
+		set_intersection(id.begin(), id.end(),vgr.begin(), vgr.end(),back_inserter(vdgr));
+		set_intersection(vdgr.begin(), vdgr.end(),vts.begin(), vts.end(),back_inserter(v));
+		return v;
+	}
+	vector <int> intersection(condition c)
+	{
+		int i = 0;
+		vector<int> v;
+		vector<int> vts;
+		vector<int> vgr;
+		vector<int> vdgr;
+		string teacher,group,date_time,room,subject;
+		while(i < c.criteri.size())
+		{
+			if(c.criteri[i].pole == "teacher")
+			{
+				teacher = c.criteri[i].val;
+			}
+			else if(c.criteri[i].pole == "group")
+			{
+				group = c.criteri[i].low_val;
+			}
+			else if(c.criteri[i].pole == "date_time")
+			{
+				date_time = c.criteri[i].low_val;
+			}
+			else if(c.criteri[i].pole == "room")
+			{
+				room = c.criteri[i].low_val;
+			}
+			else if(c.criteri[i].pole == "subject")
+			{
+				subject = c.criteri[i].val;
+				
+			}
+			i++;
+		}
+		set_intersection(mp_t[teacher].begin(), mp_t[teacher].end(),mp_s[subject].begin(), mp_s[subject].end(),back_inserter(vts));
+		set_intersection(mp_g[group].begin(), mp_g[group].end(),mp_r[room].begin(), mp_r[room].end(),back_inserter(vgr));
+		set_intersection(mp_d[date_time].begin(), mp_d[date_time].end(),vgr.begin(), vgr.end(),back_inserter(vdgr));
+		set_intersection(vdgr.begin(), vdgr.end(),vts.begin(), vts.end(),back_inserter(v));
+		return v;
+	}
+	
 	void save()
 	{
 		ofstream out;
@@ -692,14 +918,15 @@ public:
 	    }
 	    out.close();
 	    cout << endl << "FILE is SAVE" << endl;
-	    
 	}
 	void add_elem(const info& stroka)
 	{
+		add_el_to_maps(stroka);
 		inf.push_back(stroka);
 	}
 	void delete_elem(int i)
 	{
+		del_el_from_maps(inf[i]);
 		inf.erase(inf.begin() + i);
 		vector<info>(inf).swap(inf);
 	}
@@ -720,10 +947,12 @@ public:
 			while(number !=0)
 			{
 				inf.teacher = random_name();
-				inf.date_time = int_to_string(rand() % 2400);
+				inf.date_time = int_to_string(1 + rand() % 2400);
 				inf.group = int_to_string(100 + (rand() % 500));
 				inf.room = int_to_string(100 + (rand() % 900));
 				inf.subject = random_name();
+				inf.index = global_index;
+	        	global_index++;
 				add_elem(inf);	
 				number--;
 			}
@@ -731,20 +960,16 @@ public:
 		}
 		else if(one_zapr.comand == "remove")
 		{
-			int i = 0, q, status;
-			while(i < inf.size())
+			int i = 0, q = 0;
+			vector<int> ind_for_del;
+			ind_for_del = intersection(one_zapr);
+			while(i < ind_for_del.size())
 			{
-				q = 0;
-				status = 1;
-				while(q < one_zapr.criteri.size())
+				while(ind_for_del[i] != inf[q].index)
 				{
-					status = status * ok_or_not_ok(one_zapr.criteri[q],inf[i]);
 					q++;
 				}
-				if(status == 1)
-				{
-					delete_elem(i);
-				}
+				delete_elem(q);
 				i++;
 			}
 			otvet.stroka = "ELEMENT YDALEN (Remove is ok)";
@@ -777,55 +1002,55 @@ public:
 				}
 				i++;
 			}
+			inf.index = global_index;
+		    global_index++;
 			add_elem(inf);
 			otvet.stroka = "ELEMENT dobavlen";
 		}
 		else if(one_zapr.comand == "select")
 		{
-			int i = 0,q,status;
+			int i ,q = 0;
+			vector<int> ind_for_sel;
 			ses.clear();
-			while(i < inf.size())
+			ind_for_sel = association(one_zapr);
+ 			for(i = 0;i < ind_for_sel.size();i++)
 			{
-				q = 0;
-				status = 1;
-				while(q < one_zapr.criteri.size())
+				while(ind_for_sel[i] != inf[q].index)
 				{
-					status = status * ok_or_not_ok(one_zapr.criteri[q],inf[i]);
 					q++;
 				}
-				if(status == 1)
-				{
-					ses.push_back(inf[i]);
-				}
-				i++;
+				ses.push_back(inf[q]);
 			}
 			otvet.stroka = "SELECT is OK";
 		}
 		else if(one_zapr.comand == "reselect")
 		{
-			int i = 0,q,status;
-			while(i < ses.size())
+			int i ,q, status;
+			vector<int> ind_for_sel;
+			ind_for_sel = association(one_zapr);
+ 			for(q = 0;q < ses.size();q++)
 			{
-				q = 0;
-				status = 1;
-				while(q < one_zapr.criteri.size())
+				status = 0;
+				for(i = 0;i < ind_for_sel.size();i++)
 				{
-					status = status * ok_or_not_ok(one_zapr.criteri[q],inf[i]);
-					q++;
+					if(ind_for_sel[i] == ses[q].index)
+					{
+						status = 1;
+						break;
+					}
 				}
-				if(status == 0)
+				if(status == 0 )
 				{
-					ses.erase(ses.begin() + i);
+					ses.erase(ses.begin() + q);
 					vector<info>(ses).swap(ses);
-					i--;
+					q--;
 				}
-				i++;
 			}
 			otvet.stroka = "RESELECT is OK";	
 		}
 		else if(one_zapr.comand == "print")
 		{
-			int i = 0, q = 0;
+			int i = 0, q = 0, keks = 0;
 			proverka_insert_and_remove prov;
 			prov.date_time = 0;
 			prov.group = 0;
@@ -834,8 +1059,6 @@ public:
 			prov.teacher = 0;
 			while(i < ses.size())
 			{
-				
-				ses[i].print();
 				otvet.inf.push_back(ses[i]);
 				i++;
 			}
@@ -844,68 +1067,76 @@ public:
 				if(one_zapr.criteri[q].pole[0] == 't')
 				{
 					prov.teacher = 1;
+					keks = 1;
 				}
 				else if(one_zapr.criteri[q].pole[0] == 'g')
 				{
 					prov.group = 1;
+					keks = 1;
 				}
 				else if(one_zapr.criteri[q].pole[0] == 'd')
 				{
 					prov.date_time = 1;
+					keks = 1;
 				}
 				else if(one_zapr.criteri[q].pole[0] == 's')
 				{
 					prov.subject = 1;
+					keks = 1;
 				}
 				else if(one_zapr.criteri[q].pole[0] == 'r')
 				{
 					prov.room = 1;
+					keks = 1;
 				}
 				q++;
 			}
-			if(prov.date_time == 0)
+			if(keks == 1)
 			{
-				i = 0;
-				while(i < ses.size())
+				if(prov.date_time == 0)
 				{
-					otvet.inf[i].date_time.clear();
-					i++;
+					i = 0;
+					while(i < ses.size())
+					{
+						otvet.inf[i].date_time.clear();
+						i++;
+					}
 				}
-			}
-			if(prov.group == 0)
-			{
-				i = 0;
-				while(i < ses.size())
+				if(prov.group == 0)
 				{
-					otvet.inf[i].group.clear();
-					i++;
+					i = 0;
+					while(i < ses.size())
+					{
+						otvet.inf[i].group.clear();
+						i++;
+					}
 				}
-			}
-			if(prov.room == 0)
-			{
-				i = 0;
-				while(i < ses.size())
+				if(prov.room == 0)
 				{
-					otvet.inf[i].room.clear();
-					i++;
+					i = 0;
+					while(i < ses.size())
+					{
+						otvet.inf[i].room.clear();
+						i++;
+					}
 				}
-			}
-			if(prov.subject == 0)
-			{
-				i = 0;
-				while(i < ses.size())
+				if(prov.subject == 0)
 				{
-					otvet.inf[i].subject.clear();
-					i++;
+					i = 0;
+					while(i < ses.size())
+					{
+						otvet.inf[i].subject.clear();
+						i++;
+					}
 				}
-			}
-			if(prov.teacher == 0)
-			{
-				i = 0;
-				while(i < ses.size())
+				if(prov.teacher == 0)
 				{
-					otvet.inf[i].teacher.clear();
-					i++;
+					i = 0;
+					while(i < ses.size())
+					{
+						otvet.inf[i].teacher.clear();
+						i++;
+					}
 				}
 			}
 		}
@@ -942,7 +1173,6 @@ int main(void)
 		Database baza(base);
 		Query zapros(st);
 		res = baza.process(zapros);
-		cout << "111";
 		res.print();
 	}
 	catch(MyException& my) 
