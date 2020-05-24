@@ -1,3 +1,12 @@
+/**
+ * @file
+ * @brief      Заголовочный файл с описанием класса ClientSocket
+ *
+ * Данный файл содержит в себе описание класса ClientSocket, назначение
+ * которого в передаче данных от и к клиенту.
+ * Это файл из репозитория github.com/Pseudomanifold/SimpleServer со
+ * стилистическим рефакторингом.
+ */
 #pragma once
 
 #include <string>
@@ -12,9 +21,9 @@ class ClientSocket {
   int fileDescriptor() const;
 
   void Close();
-  void write(const std::string &data);
+  void Write(const std::string &data);
 
-  std::string read();
+  std::string Read();
 
   ClientSocket(const ClientSocket &) = delete;
   ClientSocket &operator=(const ClientSocket &) = delete;

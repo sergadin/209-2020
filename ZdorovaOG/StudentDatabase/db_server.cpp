@@ -37,7 +37,7 @@ int main(int argc, char const* argv[]) {
 
   server.OnAccept([&](std::weak_ptr<ClientSocket> socket) {
     if (auto s = socket.lock()) {
-      std::stringstream is(s->read());
+      std::stringstream is(s->Read());
       std::stringstream os;
 
       auto qtype = GetType(is);
@@ -46,7 +46,7 @@ int main(int argc, char const* argv[]) {
           auto& db = dbs[max_users];
           db.Load("__database.csv");
           db.SetDelim(',');
-          s->write(std::to_string(max_users));
+          s->Write(std::to_string(max_users));
           ++max_users;
           break;
         }
@@ -62,14 +62,14 @@ int main(int argc, char const* argv[]) {
             while (is.peek() != EOF) {
               db.Process(is, os);
             }
-            s->write(os.str());
+            s->Write(os.str());
           } catch (std::exception& ex) {
-            s->write("Error:\n" + std::string(ex.what()));
+            s->Write("Error:\n" + std::string(ex.what()));
           }
           break;
         }
         default:
-          s->write(
+          s->Write(
               "Something really bad happens. PLease contact your IT "
               "administrator.");
           throw std::logic_error("Unexpected request type");

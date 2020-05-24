@@ -19,7 +19,7 @@ int ClientSocket::fileDescriptor() const { return _fileDescriptor; }
 
 void ClientSocket::Close() { _server.Close(_fileDescriptor); }
 
-void ClientSocket::write(const std::string &data) {
+void ClientSocket::Write(const std::string &data) {
   auto result =
       send(_fileDescriptor, reinterpret_cast<const void *>(data.c_str()),
            data.size(), 0);
@@ -27,7 +27,7 @@ void ClientSocket::write(const std::string &data) {
   if (result == -1) throw std::runtime_error(std::string(strerror(errno)));
 }
 
-std::string ClientSocket::read() {
+std::string ClientSocket::Read() {
   std::string message;
 
   char buffer[256] = {0};

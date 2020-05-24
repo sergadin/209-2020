@@ -1,4 +1,14 @@
+/**
+ * @file
+ * @brief      Заголовочный файл с описанием класса Server
+ *
+ * Данный файл содержит в себе описание класса Server, назначение 
+ * которого в передаче данных от и к серверу.
+ * Это файл из репозитория github.com/Pseudomanifold/SimpleServer со
+ * стилистическим рефакторингом.
+ */
 #pragma once
+
 #include <functional>
 #include <memory>
 #include <mutex>
