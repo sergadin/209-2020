@@ -554,64 +554,6 @@ public:
 };
 
 
-bool ok_or_not_ok(const crit &cr,const info &inf)
-{
-	if(cr.pole[0] == 's')
-	{
-		if(inf.subject == cr.val)
-		{
-			return 1;
-		}
-	}
-	else if(cr.pole[0] == 't')
-	{
-		if(inf.teacher == cr.val)
-		{
-			return 1;
-		}
-	}
-	else if(cr.pole[0] == 'd')
-	{
-		if(more(inf.date_time,cr.low_val) == inf.date_time && more(cr.high_val,inf.date_time) == cr.high_val)
-		{
-			return 1;
-		}
-	}
-	else if(cr.pole[0] == 'r')
-	{
-		if(cr.low_val == "*" && more(cr.high_val, inf.room) == cr.high_val)
-		{
-			return 1;
-		}
-		if(cr.high_val == "*" && more(inf.room, cr.low_val) == inf.room)
-		{
-			return 1;
-		}
-		if(more(inf.room, cr.low_val) == inf.room && more(cr.high_val, inf.room) == cr.high_val)
-		{
-			return 1;
-		}
-	}
-	else if(cr.pole[0] == 'g')
-	{
-		if(cr.low_val == "*" && more(cr.high_val,inf.group) == cr.high_val)
-		{
-			return 1;
-		}
-		if(cr.high_val == "*" && more(inf.group, cr.low_val) == inf.group)
-		{
-			return 1;
-		}
-		if(more(cr.high_val,inf.group) == cr.high_val && more(inf.group, cr.low_val) == inf.group)
-		{
-			return 1;
-		}
-	}
-	return 0;
-}
-
-
-
 class Database
 {
 private:
