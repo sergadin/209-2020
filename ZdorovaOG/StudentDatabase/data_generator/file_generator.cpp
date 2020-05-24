@@ -175,7 +175,7 @@ int main(int argc, char const *argv[]) {
     std::ofstream ofs(argv[2], std::ios::binary);
     create_file(n, ofs);
   } else {
-    std::ofstream ofs("__database.txt", std::ios::binary);
+    std::ofstream ofs("__database.csv", std::ios::binary);
     create_file(n, ofs);
   }
   return 0;

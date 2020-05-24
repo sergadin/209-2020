@@ -1,8 +1,10 @@
 #include "index.h"
 
 Index::Index(const Index &other)
-    : _ids(other._ids), _id_by_name(other._id_by_name),
-      _id_by_group(other._id_by_group), _id_by_rating(other._id_by_rating) {}
+    : _ids(other._ids),
+      _id_by_name(other._id_by_name),
+      _id_by_group(other._id_by_group),
+      _id_by_rating(other._id_by_rating) {}
 
 Index &Index::operator=(const Index &other) {
   if (this != &other) {
@@ -25,8 +27,7 @@ Index &Index::operator=(Index &&other) {
 }
 
 bool Index::Insert(size_t id, const Student &s) {
-  if (!_ids.insert(id).second)
-    return false;
+  if (!_ids.insert(id).second) return false;
   _id_by_name[s.name].insert(id);
   _id_by_group[s.group].insert(id);
   _id_by_rating[s.rating].insert(id);
@@ -34,8 +35,7 @@ bool Index::Insert(size_t id, const Student &s) {
 }
 
 bool Index::Remove(size_t id, const Student &s) {
-  if (!HasId(id))
-    return false;
+  if (!HasId(id)) return false;
   _ids.erase(id);
   {
     auto it = _id_by_name.find(s.name);

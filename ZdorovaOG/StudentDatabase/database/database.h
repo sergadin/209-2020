@@ -1,11 +1,21 @@
+/**
+ * @file
+ * @brief      Заголовочный файл с описанием основных классов базы данных
+ *
+ * Данный файл содержит в себе определение класса DataHolder,
+ * служащего для базовых операций ввода-вывода, и класса
+ * DataBase, служащего для обработки основных запросов.
+ */
 #pragma once
-#define DEBUG
 
-#include "index.h"
-#include "student.h"
-
+#include <map>
+#include <set>
 #include <string>
 #include <vector>
+
+#include "../config/config.h"
+#include "index.h"
+#include "student.h"
 
 /**
  * @brief      Базовый класс для хранения записей
@@ -16,16 +26,24 @@ class DataHolder {
 public:
   DataHolder() = default;
   /**
-   * @brief      Добавляет студента в базу
+   * @brief      Добавляет запись о студенте в базу
    *
-   * @param[in]  s     Студент
+   * Добавляет запись о студенте в базу хранящуюся в оперативной памяти.
+   * Не изменяет файл базы на диске. Для сохранения изменений, должна быть
+   * вызвана функция Save(const std::string &)
+   *
+   * @param[in]  s     Структура Student с информацией по студенту
    */
   void Insert(const Student &s);
 
   /**
-   * @brief      Удаляет студента из базы
+   * @brief      Удаляет запись о студенте из базы
    *
-   * @param[in]  id    ИД (номер записи) студента
+   * Удаляет запись о студенте из базы хранящейся в оперативной памяти.
+   * Не изменяет файл базы на диске. Для сохранения изменений, должна быть
+   * вызвана функция Save(const std::string &)
+   *
+   * @param[in]  id    ИД записи студента
    *
    * @return     True если студент был удален, False иначе.
    */
@@ -67,8 +85,8 @@ public:
 
 protected:
   using base = DataHolder;
-  Index _index;
-  std::vector<Student> _data;
+  Index _index; ///< Базовый индекс базы данных
+  std::vector<Student> _data; ///< Список записей с информацией по студентам
 };
 
 /**
@@ -76,7 +94,7 @@ protected:
  *             Дополнительно умеет делать выборку по запросу.
  */
 class DataBase : public DataHolder {
-public:
+ public:
   /**
    * @brief      Производит выборку по запросу по всей базе
    *
@@ -94,6 +112,11 @@ public:
   /**
    * @brief      Выводит результаты последнего запроса в поток
    *
+   * Извлекает из потока ввода список полей для вывода и поле
+   * сортировки, если оно присутствует, и выводит в поток вывода
+   * информацию по запрошенным полям отсортированную по указанному полю
+   * (по умолчанию по ИД записи)
+   *
    * @param      is    Поток ввода
    * @param      os    Поток вывода
    */
@@ -101,11 +124,17 @@ public:
 
   /**
    * @brief      Удаляет записи из последнего запроса
+   *
+   * Вызывает метод Remove() родительского класса DataHolder
+   * для каждого ИД из последнего запроса и очищает индекс
    */
   void Delete();
 
   /**
    * @brief      Добавляет запись о студенте
+   *
+   * Считывает с потока ввода данные и формирует из них структуру Student,
+   * которую передает в метод Insert() родительского класса DataHolder
    *
    * @param      is    Поток ввода
    */
@@ -114,12 +143,23 @@ public:
   /**
    * @brief      Обрабатывает запрос
    *
+   * Базовый метод обработки запросов. Определяет по
+   * потоку ввода тип запроса и передает поток ввода в
+   * соответствующий метод для дальнейшей обработки
+   *
    * @param      is    Поток ввода
    * @param      os    Поток вывода
    */
   void Process(std::istream &is, std::ostream &os);
 
-private:
+  /**
+   * @brief      Задает разделитель для вывода
+   *
+   * @param      delim    Символ разделителя
+   */
+  void SetDelim(char delim);
+
+ private:
   using Columns = std::vector<std::string>;
   using IdSet = std::set<size_t>;
   using NameMap = std::map<std::string, IdSet>;
@@ -171,5 +211,7 @@ private:
    * @param[in]  ratings   Список рейтингов
    */
   void Print(std::ostream &os, Columns what_col, const RatingMap &ratings);
+
   Index _index;
+  char _delim = ' ';
 };

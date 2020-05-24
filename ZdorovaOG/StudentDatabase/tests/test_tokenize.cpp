@@ -1,9 +1,9 @@
-#include "../parser/token.h"
-#include "test_runner.h"
-
 #include <iostream>
 #include <map>
 #include <sstream>
+
+#include "../parser/token.h"
+#include "test_runner.h"
 
 void TestRequestEmpty() {
   std::stringstream inp;
@@ -26,8 +26,14 @@ void TestRequestSimple() {
                    field == "name" ? value.substr(1, value.size() - 2) : value);
       ASSERT(out[0].type == TokenType::COLUMN);
       ASSERT(out[1].type == TokenType::COMPARE_OP);
-      ASSERT(out[2].type ==
-             (field == "name" ? TokenType::NAME : TokenType::NUMBER));
+      if (field == "name") {
+        ASSERT(out[2].type == TokenType::STRING);
+      } else if (field == "group") {
+        ASSERT(out[2].type == TokenType::INTEGER);
+      } else /* if(field == "rating") */ {
+        ASSERT(out[2].type == TokenType::INTEGER ||
+               out[2].type == TokenType::FLOAT);
+      }
     }
 }
 
@@ -53,8 +59,7 @@ void TestRequestCaseIndepend() {
     std::stringstream inp1;
     inp1 << item;
     std::stringstream inp2;
-    for (char c : item)
-      inp2 << char(std::toupper(c));
+    for (char c : item) inp2 << char(std::toupper(c));
     auto out1 = Tokenize(inp1);
     auto out2 = Tokenize(inp2);
     ASSERT_EQUAL(out1[0].value, out2[0].value);

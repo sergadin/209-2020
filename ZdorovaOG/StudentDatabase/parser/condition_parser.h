@@ -1,9 +1,18 @@
+/**
+ * @file
+ * @brief      Заголовочный файл с описанием функций парсинга входных данных
+ *
+ * Данный файл содержит в себе определения функций, используемых
+ * при построении дерева запросов, а так же списка запросов
+ * для печати.
+ */
 #pragma once
-
-#include "node.h"
 
 #include <iostream>
 #include <memory>
+
+#include "node.h"
+
 
 /**
  * @brief      Строит дерево запросов
@@ -12,7 +21,7 @@
  *
  * @return     Указатель на вершину дерева
  */
-std::shared_ptr<Node> ParseSelectCondition(std::istream &is);
+std::shared_ptr<Node> ParseExpression(std::istream &is);
 
 /**
  * @brief      Строит список полей для вывода
@@ -21,4 +30,9 @@ std::shared_ptr<Node> ParseSelectCondition(std::istream &is);
  *
  * @return     Список полей для вывода
  */
-std::vector<std::string> ParsePrintCondition(std::istream &is);
+std::pair<std::vector<std::string>, std::string> ParseFieldList(
+    std::istream &is);
+
+std::string ParseString(std::istream &is);
+int ParseInteger(std::istream &is);
+double ParseFloat(std::istream &is);
