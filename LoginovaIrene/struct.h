@@ -26,6 +26,10 @@ class student
         char *get_name(){ return name;}
 		double get_rt(){	return rating;}
 		int get_gr(){	return group;}
+		
+		void set_name(char * my_name){	strcpy(name, my_name);}
+		void set_group(int gr){	group = gr;}
+		void set_rating(int rt){	rating = rt;}
 		student &operator = (student &&x);
 };
 
@@ -220,12 +224,11 @@ class comand
 		cond_for_name * name_root;
 		cond_for_rat  * rat_root;
 		cond_for_gr   * gr_root;
-		//oper_type   oper;
 	public:
 		comand(){ name_root = 0; rat_root = 0; gr_root = 0;}
 		~comand(){ name_root = 0; rat_root = 0; gr_root = 0;}
 		int analyze();
-		//int analyze_upd(comand * cmd);
+		int analyze_upd();
 		cond_type find_cond(char *);
 		
 		int gr_sort();
@@ -294,11 +297,16 @@ class Database
 		void sub_select_group(hash_node * head, comand * cmd);
 		void sub_select_tree(tree * head, comand * cmd);
 		void sub_select_subtree(tree_node * node, comand * cmd);
-		void sel_rat(student * prime, comand * cmd);
+		
 		void sub_select_list(list * head, comand * cmd);
 		
 		void rec_sel_tree(tree_node * curr, cond_for_name * n_eq, char * min, int smn, char * max, int smx, comand * cmd);
 		void reselect(comand * cmd);
+		void update(comand * cmd);
+		
+		int sel_gr(student * prime, comand * cmd);
+		int sel_rat(student * prime, comand * cmd);
+		int sel_name(student * prime, comand * cmd);
 };
 
 
