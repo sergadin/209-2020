@@ -128,17 +128,18 @@ std::pair<std::vector<std::string>, std::string> ParseFieldList(
   auto tokens = Tokenize(is);
   auto current = tokens.begin();
   for (; current != tokens.end(); ++current) {
-    if (current->type != TokenType::SORT_OP) break;
-    if (current->type != TokenType::COLUMN)
+    if (current->type == TokenType::SORT_OP) break;
+    if (current->type == TokenType::COLUMN)
       fields.push_back(current->value);
     else
       throw logic_error("3. Expected column name: name, group, rating or info");
   }
   if (current != tokens.end() && ++current != tokens.end()) {
-    if (current->type != TokenType::COLUMN)
+    if (current->type == TokenType::COLUMN)
       sortby = current->value;
     else
       throw logic_error("4. Expected column name: name, group or rating");
+    ++current;
   }
   if (current != tokens.end())
     throw logic_error("2. Unexpected tokens after condition");

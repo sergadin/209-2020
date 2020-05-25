@@ -72,8 +72,10 @@ int main(int argc, char const* argv[]) {
           s->Write(
               "Something really bad happens. PLease contact your IT "
               "administrator.");
+          s->Close();
           throw std::logic_error("Unexpected request type");
       }
+      s->Close();
     }
   });
   server.Listen();
