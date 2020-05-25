@@ -34,9 +34,8 @@ Database::Database(const std::string &filename_items, const std::string &filenam
       {
           int quantt;
           ss >> quantt;
-          ss.ignore(1);
+          ss.ignore(2);
           rrecipe[f] = quantt;
-          ss.ignore(1);
       }
       known_recipes[dname] = rrecipe;
   }
@@ -70,9 +69,8 @@ void Database::DatabaseFromFile(const std::string &filename_items, const std::st
       {
           int quantt;
           ss >> quantt;
-          ss.ignore(1);
+          ss.ignore(2);
           rrecipe[f] = quantt;
-          ss.ignore(1);
       }
       known_recipes[dname] = rrecipe;
   }
@@ -140,46 +138,51 @@ int Database::dbsize() const
 {
     return data.size();
 }
-int Database::CanMake(const DeviceName &name)
+MakeInfo Database::CanMake(const DeviceName &name, int quant)
 {
+    MakeInfo answer;
+    answer.type = all_right;
     if(known_recipes.find(name) == known_recipes.end())
     {
-          std::cout << "I don't know how to do this. I don't have a prescription.\n";
-          return 0;
+          answer.type = no_recipe;
+          return answer;
     }
     std::map<std::string,int> rec;
     rec = known_recipes[name];
-    int flag = 1;
     for(auto elm : rec)
     {
-        line l;
-        l.name = elm.first;
-        l.quant = elm.second;
-        int ost =  data.searchP(l);
+        line det;
+        det.name = elm.first;
+        det.quant = quant*elm.second;
+        int ost =  data.searchP(det);
         if (ost > 0)
         {
-            std::cout << ost <<  " " << l.name << " are missing" << std::endl;
-            flag = 0;
+            det.quant = ost;
+            answer.deficit.push_back(det);
+            answer.type =  no_details;
         }
     }
-    return flag;
+    return answer;
 
 }
 
-bool Database::MakeDetail(const DeviceName &name)
+void Database::MakeDetail(const DeviceName &name, int quant)
 {
+  if(CanMake(name,quant).type !=all_right)
+  {
+        throw 1;
+  }
   std::map<std::string,int> rec;
   rec = known_recipes[name];
   for(auto elm : rec)
   {
       line l;
       l.name = elm.first;
-      l.quant = elm.second;
+      l.quant = quant*elm.second;
       data.removepart(l);
   }
   line k;
   k.name  = name;
-  k.quant = 1;
+  k.quant = quant;
   data.insert(k);
-  return 1;
 }

@@ -1,3 +1,11 @@
+/**
+ * @file
+ * @brief      Заголовочный файл с описанием узлов дерева разбора запросов
+ *
+ * Данный файл содержит в себе определения классов узлов, используемых
+ * в дереве разбора запросов
+ */
+
 #pragma once
 
 #include <memory>
@@ -7,22 +15,32 @@
 
 #include "../database/index.h"
 
+/**
+ * @brief      Набор возможных операций сравнения объектов
+ */
 enum class Comparison {
-  Less,
-  LessOrEqual,
-  Greater,
-  GreaterOrEqual,
-  Equal,
-  NotEqual
+  LESS,  ///< Указывает, что элемент меньше заданного значения
+  LESS_EQUAL,  ///< Указывает, что элемент меньше или равен заданному значению
+  GREATER,  ///< Указывает, что элемент больше заданного значения
+  GREATER_EQUAL,  ///< Указывает, что элемент больше или равен заданному
+                  ///< значению
+  EQUAL,  ///< Указывает, что элемент равен заданному значени.
+  NOT_EQUAL  ///< Указывает, что элемент не равен заданному значени.
 };
 
-enum class LogicalOperation { Or, And };
+/**
+ * @brief      Набор возможных булевых операций над результатами обработки узлов
+ */
+enum class LogicalOperation {
+  OR,  ///< Конъюнкция (объединение) результатов
+  AND  ///< Дизъюнкция (пересечение) результатов
+};
 
 /**
  * @brief      Базовый узел дерева запросов
  */
 class Node {
-public:
+ public:
   /**
    * @brief      Выводит в поток содержимое узла
    *
@@ -47,7 +65,7 @@ public:
  * @brief      Пустой узел
  */
 class EmptyNode : public Node {
-public:
+ public:
   EmptyNode() {}
   std::ostream &Print(std::ostream &out) const override;
   std::set<size_t> Process(const Index &ind) const override;
@@ -57,13 +75,29 @@ public:
  * @brief      Узел выбора группы
  */
 class GroupSelectionNode : public Node {
-public:
+ public:
   GroupSelectionNode(const Comparison &cmp, int group)
       : _cmp(cmp), _group(group) {}
+
+  /**
+   * @brief      Выводит в поток содержимое узла
+   *
+   * @param      out   Поток вывода
+   *
+   * @return     Поток вывода
+   */
   std::ostream &Print(std::ostream &out) const override;
+
+  /**
+   * @brief      Производит операцию в узле
+   *
+   * @param[in]  ind   Индекс баззы данных
+   *
+   * @return     Список ИД студентов
+   */
   std::set<size_t> Process(const Index &ind) const override;
 
-private:
+ private:
   const Comparison _cmp;
   const int _group;
 };
@@ -72,13 +106,29 @@ private:
  * @brief      Узел выбора рейтинга
  */
 class RatingSelectionNode : public Node {
-public:
+ public:
   RatingSelectionNode(const Comparison &cmp, double rating)
       : _cmp(cmp), _rating(rating) {}
+
+  /**
+   * @brief      Выводит в поток содержимое узла
+   *
+   * @param      out   Поток вывода
+   *
+   * @return     Поток вывода
+   */
   std::ostream &Print(std::ostream &out) const override;
+
+  /**
+   * @brief      Производит операцию в узле
+   *
+   * @param[in]  ind   Индекс баззы данных
+   *
+   * @return     Список ИД студентов
+   */
   std::set<size_t> Process(const Index &ind) const override;
 
-private:
+ private:
   const Comparison _cmp;
   const double _rating;
 };
@@ -87,13 +137,29 @@ private:
  * @brief      Узел выбора имени
  */
 class NameSelectionNode : public Node {
-public:
+ public:
   NameSelectionNode(const Comparison &cmp, const std::string &name)
       : _cmp(cmp), _name(name) {}
+
+  /**
+   * @brief      Выводит в поток содержимое узла
+   *
+   * @param      out   Поток вывода
+   *
+   * @return     Поток вывода
+   */
   std::ostream &Print(std::ostream &out) const override;
+
+  /**
+   * @brief      Производит операцию в узле
+   *
+   * @param[in]  ind   Индекс баззы данных
+   *
+   * @return     Список ИД студентов
+   */
   std::set<size_t> Process(const Index &ind) const override;
 
-private:
+ private:
   const Comparison _cmp;
   const std::string _name;
 };
@@ -102,15 +168,31 @@ private:
  * @brief      Узел логической операции
  */
 class LogicalOperationNode : public Node {
-public:
+ public:
   LogicalOperationNode(const LogicalOperation &op,
                        const std::shared_ptr<Node> lhs,
                        const std::shared_ptr<Node> rhs)
       : _op(op), _lhs(lhs), _rhs(rhs) {}
+
+  /**
+   * @brief      Выводит в поток содержимое узла
+   *
+   * @param      out   Поток вывода
+   *
+   * @return     Поток вывода
+   */
   std::ostream &Print(std::ostream &out) const override;
+
+  /**
+   * @brief      Производит операцию в узле
+   *
+   * @param[in]  ind   Индекс баззы данных
+   *
+   * @return     Список ИД студентов
+   */
   std::set<size_t> Process(const Index &ind) const override;
 
-private:
+ private:
   const LogicalOperation _op;
   const std::shared_ptr<Node> _lhs;
   const std::shared_ptr<Node> _rhs;

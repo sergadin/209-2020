@@ -1,18 +1,26 @@
+/**
+ * @file
+ * @brief      Заголовочный файл с описанием класса Index
+ *
+ * Данный файл содержит в себе определение класса Index,
+ * который используется для быстрого нахождения ИД записей
+ * студентов
+ */
 #pragma once
-
-#include "student.h"
 
 #include <map>
 #include <set>
 #include <string>
 #include <vector>
 
+#include "student.h"
+
 /**
  * @brief      Индекс базы данных. Содержит поля сортиованные по
  *             имени, группе, рейтингу.
  */
 class Index {
-public:
+ public:
   Index() = default;
   Index(const Index &other);
   Index &operator=(const Index &other);
@@ -81,9 +89,9 @@ public:
   const std::map<int, std::set<size_t>> &GetGroupMap() const;
   const std::map<double, std::set<size_t>> &GetRatingMap() const;
 
-private:
-  std::set<size_t> _ids;
-  std::map<std::string, std::set<size_t>> _id_by_name;
-  std::map<int, std::set<size_t>> _id_by_group;
-  std::map<double, std::set<size_t>> _id_by_rating;
+ private:
+  std::set<size_t> _ids; ///< ИД записей сортированые по возрастанию
+  std::map<std::string, std::set<size_t>> _id_by_name; ///< ИД записей сортированные по именам соответствующий студентов
+  std::map<int, std::set<size_t>> _id_by_group; ///< ИД записей сортированные по группам соответствующих студентов
+  std::map<double, std::set<size_t>> _id_by_rating; ///< ИД записей сортированные по рейтингам соответствующих студентов
 };

@@ -22,80 +22,80 @@ std::set<size_t> GetUnion(const std::set<size_t> &x,
 std::set<size_t> EmptyNode::Process(const Index &) const { return {}; }
 std::set<size_t> GroupSelectionNode::Process(const Index &ind) const {
   switch (_cmp) {
-  case Comparison::Less:
-    return ind.FindByConditionL(_group);
-  case Comparison::LessOrEqual:
-    return ind.FindByConditionLE(_group);
-  case Comparison::Greater:
-    return ind.FindByConditionG(_group);
-  case Comparison::GreaterOrEqual:
-    return ind.FindByConditionGE(_group);
-  case Comparison::Equal:
-    return ind.FindByConditionE(_group);
-  case Comparison::NotEqual:
-    return ind.FindByConditionNE(_group);
-  default:
-    throw std::logic_error("Unknown comparison operation");
+    case Comparison::LESS:
+      return ind.FindByConditionL(_group);
+    case Comparison::LESS_EQUAL:
+      return ind.FindByConditionLE(_group);
+    case Comparison::GREATER:
+      return ind.FindByConditionG(_group);
+    case Comparison::GREATER_EQUAL:
+      return ind.FindByConditionGE(_group);
+    case Comparison::EQUAL:
+      return ind.FindByConditionE(_group);
+    case Comparison::NOT_EQUAL:
+      return ind.FindByConditionNE(_group);
+    default:
+      throw std::logic_error("Unknown comparison operation");
   }
 }
 std::set<size_t> NameSelectionNode::Process(const Index &ind) const {
   switch (_cmp) {
-  case Comparison::Less:
-    return ind.FindByConditionL(_name);
-  case Comparison::LessOrEqual:
-    return ind.FindByConditionLE(_name);
-  case Comparison::Greater:
-    return ind.FindByConditionG(_name);
-  case Comparison::GreaterOrEqual:
-    return ind.FindByConditionGE(_name);
-  case Comparison::Equal:
-    return ind.FindByConditionE(_name);
-  case Comparison::NotEqual:
-    return ind.FindByConditionNE(_name);
-  default:
-    throw std::logic_error("Unknown comparison operation");
+    case Comparison::LESS:
+      return ind.FindByConditionL(_name);
+    case Comparison::LESS_EQUAL:
+      return ind.FindByConditionLE(_name);
+    case Comparison::GREATER:
+      return ind.FindByConditionG(_name);
+    case Comparison::GREATER_EQUAL:
+      return ind.FindByConditionGE(_name);
+    case Comparison::EQUAL:
+      return ind.FindByConditionE(_name);
+    case Comparison::NOT_EQUAL:
+      return ind.FindByConditionNE(_name);
+    default:
+      throw std::logic_error("Unknown comparison operation");
   }
 }
 std::set<size_t> RatingSelectionNode::Process(const Index &ind) const {
   switch (_cmp) {
-  case Comparison::Less:
-    return ind.FindByConditionL(_rating);
-  case Comparison::LessOrEqual:
-    return ind.FindByConditionLE(_rating);
-  case Comparison::Greater:
-    return ind.FindByConditionG(_rating);
-  case Comparison::GreaterOrEqual:
-    return ind.FindByConditionGE(_rating);
-  case Comparison::Equal:
-    return ind.FindByConditionE(_rating);
-  case Comparison::NotEqual:
-    return ind.FindByConditionNE(_rating);
-  default:
-    throw std::logic_error("Unknown comparison operation");
+    case Comparison::LESS:
+      return ind.FindByConditionL(_rating);
+    case Comparison::LESS_EQUAL:
+      return ind.FindByConditionLE(_rating);
+    case Comparison::GREATER:
+      return ind.FindByConditionG(_rating);
+    case Comparison::GREATER_EQUAL:
+      return ind.FindByConditionGE(_rating);
+    case Comparison::EQUAL:
+      return ind.FindByConditionE(_rating);
+    case Comparison::NOT_EQUAL:
+      return ind.FindByConditionNE(_rating);
+    default:
+      throw std::logic_error("Unknown comparison operation");
   }
 }
 std::set<size_t> LogicalOperationNode::Process(const Index &ind) const {
-  if (_op == LogicalOperation::And) {
+  if (_op == LogicalOperation::AND) {
     return GetIntersection(_lhs->Process(ind), _rhs->Process(ind));
   }
-  if (_op == LogicalOperation::Or) {
+  if (_op == LogicalOperation::OR) {
     return GetUnion(_lhs->Process(ind), _rhs->Process(ind));
   }
   return {};
 }
 
 std::string GetCompNotation(const Comparison &cmp) {
-  if (cmp == Comparison::Less)
+  if (cmp == Comparison::LESS)
     return "<";
-  else if (cmp == Comparison::LessOrEqual)
+  else if (cmp == Comparison::LESS_EQUAL)
     return "<=";
-  else if (cmp == Comparison::Greater)
+  else if (cmp == Comparison::GREATER)
     return ">";
-  else if (cmp == Comparison::GreaterOrEqual)
+  else if (cmp == Comparison::GREATER_EQUAL)
     return ">=";
-  else if (cmp == Comparison::Equal)
+  else if (cmp == Comparison::EQUAL)
     return "==";
-  else if (cmp == Comparison::NotEqual)
+  else if (cmp == Comparison::NOT_EQUAL)
     return "!=";
   else
     return "<unknown sign>";
@@ -117,10 +117,10 @@ std::ostream &NameSelectionNode::Print(std::ostream &out) const {
 std::ostream &LogicalOperationNode::Print(std::ostream &out) const {
   out << '(';
   _lhs->Print(out);
-  if (_op == LogicalOperation::And) {
+  if (_op == LogicalOperation::AND) {
     out << " & ";
   }
-  if (_op == LogicalOperation::Or) {
+  if (_op == LogicalOperation::OR) {
     out << " | ";
   }
   _rhs->Print(out);

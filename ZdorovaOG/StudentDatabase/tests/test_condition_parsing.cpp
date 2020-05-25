@@ -1,9 +1,9 @@
-#include "../parser/condition_parser.h"
-#include "test_runner.h"
-
 #include <iostream>
 #include <map>
 #include <sstream>
+
+#include "../parser/condition_parser.h"
+#include "test_runner.h"
 
 void TestSelectRequestSimple() {
   std::map<std::string, std::string> data = {
@@ -14,7 +14,7 @@ void TestSelectRequestSimple() {
       std::stringstream exp;
       inp << field << op << value;
       exp << field << op << value;
-      auto ptr = ParseSelectCondition(inp);
+      auto ptr = ParseExpression(inp);
       ASSERT(ptr != nullptr);
       std::stringstream out;
       out << *ptr;
@@ -34,7 +34,7 @@ void TestSelectRequestAnd() {
           inp << field1 << op1 << value1 << " AND " << field2 << op2 << value2;
           exp << '(' << field1 << op1 << value1 << " & " << field2 << op2
               << value2 << ')';
-          auto ptr = ParseSelectCondition(inp);
+          auto ptr = ParseExpression(inp);
           ASSERT(ptr != nullptr);
           std::stringstream out;
           out << *ptr;
@@ -54,7 +54,7 @@ void TestSelectRequestOr() {
           inp << field1 << op1 << value1 << " OR " << field2 << op2 << value2;
           exp << '(' << field1 << op1 << value1 << " | " << field2 << op2
               << value2 << ')';
-          auto ptr = ParseSelectCondition(inp);
+          auto ptr = ParseExpression(inp);
           ASSERT(ptr != nullptr);
           std::stringstream out;
           out << *ptr;
@@ -78,7 +78,7 @@ void TestSelectRequestComplex() {
                   << value2 << " OR " << field3 << op3 << value3;
               exp << "((" << field1 << op1 << value1 << " & " << field2 << op2
                   << value2 << ')' << " | " << field3 << op3 << value3 << ')';
-              auto ptr = ParseSelectCondition(inp);
+              auto ptr = ParseExpression(inp);
               ASSERT(ptr != nullptr);
               std::stringstream out;
               out << *ptr;
@@ -97,7 +97,7 @@ void TestSelectRequestComplex() {
                   << value2 << " AND " << field3 << op3 << value3;
               exp << "(" << field1 << op1 << value1 << " | " << '(' << field2
                   << op2 << value2 << " & " << field3 << op3 << value3 << "))";
-              auto ptr = ParseSelectCondition(inp);
+              auto ptr = ParseExpression(inp);
               ASSERT(ptr != nullptr);
               std::stringstream out;
               out << *ptr;
@@ -116,7 +116,7 @@ void TestSelectRequestComplex() {
                   << value2 << ')' << " AND " << field3 << op3 << value3;
               exp << "((" << field1 << op1 << value1 << " | " << field2 << op2
                   << value2 << ')' << " & " << field3 << op3 << value3 << ')';
-              auto ptr = ParseSelectCondition(inp);
+              auto ptr = ParseExpression(inp);
               ASSERT(ptr != nullptr);
               std::stringstream out;
               out << *ptr;
@@ -129,7 +129,7 @@ void TestSelectRequestBad() {
   try {
     std::stringstream inp;
     inp << "AND rating < 5.5";
-    auto ptr = ParseSelectCondition(inp);
+    auto ptr = ParseExpression(inp);
   } catch (...) {
     start_logic = true;
   }
@@ -139,7 +139,7 @@ void TestSelectRequestBad() {
   try {
     std::stringstream inp;
     inp << "group == 4 AND AND rating < 5.5";
-    auto ptr = ParseSelectCondition(inp);
+    auto ptr = ParseExpression(inp);
   } catch (...) {
     double_logic = true;
   }
@@ -149,7 +149,7 @@ void TestSelectRequestBad() {
   try {
     std::stringstream inp;
     inp << "group == 4 rating < 5.5";
-    auto ptr = ParseSelectCondition(inp);
+    auto ptr = ParseExpression(inp);
   } catch (...) {
     no_logic = true;
   }
@@ -159,7 +159,7 @@ void TestSelectRequestBad() {
   try {
     std::stringstream inp;
     inp << "(group == 4 OR rating < 5.5";
-    auto ptr = ParseSelectCondition(inp);
+    auto ptr = ParseExpression(inp);
   } catch (...) {
     no_paren = true;
   }
@@ -169,7 +169,7 @@ void TestSelectRequestBad() {
   try {
     std::stringstream inp;
     inp << "(group == 4 OR rating < 5.5 AND";
-    auto ptr = ParseSelectCondition(inp);
+    auto ptr = ParseExpression(inp);
   } catch (...) {
     logic_on_end = true;
   }

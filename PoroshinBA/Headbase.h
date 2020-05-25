@@ -1,4 +1,7 @@
 #include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <fstream>
 #include <iostream>
 #include <list>
 #include <map>
@@ -18,7 +21,7 @@ struct Student {
 };
 
 std::ostream &operator<<(std::ostream &os, const Student &s) {
-  os << s.name << ' ' << s.group << ' ' << s.rating;
+  os << s.name << ',' << s.group << ',' << s.rating;
   return os;
 }
 
@@ -29,12 +32,12 @@ struct GroupInfo {
 };
 
 class DataBase {
-private:
+ private:
   std::unordered_map<int, GroupInfo> group_data;
 
-public:
+ public:
   DataBase() = default;
-  ~DataBase();
+  ~DataBase() = default;
   void Insert(const Student &s) {
     auto &group = group_data[s.group];
     auto &students = group.students_by_rating;
@@ -45,44 +48,47 @@ public:
     group.it_by_name[s.name].push_back(student_it);
   }
 
-  void Remove(const Student &s) {
+  GroupInfo::student_it Remove(const Student &s) {
     auto &group = group_data[s.group];
     auto &students = group.students_by_rating;
     auto student_it1 = students.begin();
-    while (student_it1 != students.end() && *student_it1 != s)
-      ++student_it1;
+    while (student_it1 != students.end() && *student_it1 != s) ++student_it1;
     auto student_it2 = student_it1;
-    while (student_it2 != students.end() && *student_it2 == s)
-      ++student_it2;
+    while (student_it2 != students.end() && *student_it2 == s) ++student_it2;
     auto is_in_range = [student_it1,
                         student_it2](GroupInfo::student_it student_it) {
       for (auto it = student_it1; it != student_it2; ++it)
-        if (it == student_it)
-          return true;
+        if (it == student_it) return true;
       return false;
     };
-    auto& same_name = group.it_by_name[s.name];
-    for(size_t i = 0, j = same_name.size(); i < j; ++i) {
-        if(is_in_range(same_name[i])) {
-            same_name[i] = same_name.back();
-            same_name.pop_back();
-            --j;
-        }
-    } 
-    if (group.it_by_name[s.name].empty())
-      group.it_by_name.erase(s.name);
-    students.erase(student_it1, student_it2);
+    auto &same_name = group.it_by_name[s.name];
+    for (size_t i = 0, j = same_name.size(); i < j; ++i) {
+      if (is_in_range(same_name[i])) {
+        same_name[i] = same_name.back();
+        same_name.pop_back();
+        --j;
+      }
+    }
+    if (group.it_by_name[s.name].empty()) group.it_by_name.erase(s.name);
+    return students.erase(student_it1, student_it2);
   }
 
   void PrintAll(std::ostream &os) {
     for (const auto &[group_id, group] : group_data)
       for (const auto &[name, it_vector] : group.it_by_name)
-        for (auto it : it_vector)
-          os << *it << '\n';
+        for (auto it : it_vector) os << *it << '\n';
   }
 
-  void Select(std::istream &is);
-  void Reselect(std::istream &is);
-  bool Load(std::string &filename);
-  bool Save(std::string &filename);
+  void RawEditionSelectName(std::string str);
+  void SelectGroup(int g);
+  void SelectRating(double r);
+
+  void Load(const std::string &filename);
+  void Save(const std::string &filename);
+
+  void SortName(std::ostream &os);
+  void SortGroup(std::ostream &os);
+  void SortRating(std::ostream &os);
+
+  void Process(std::istream &is, std::ostream &os);
 };
