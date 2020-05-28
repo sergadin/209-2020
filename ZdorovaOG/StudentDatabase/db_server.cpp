@@ -37,6 +37,7 @@ int main(int argc, char const* argv[]) {
 
   server.OnAccept([&](std::weak_ptr<ClientSocket> socket) {
     if (auto s = socket.lock()) {
+      s->Write("Connected");
       std::stringstream is(s->Read());
       std::stringstream os;
 

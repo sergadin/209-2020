@@ -20,19 +20,20 @@ def get_word(s):
 
 
 class DataBaseClient:
-    def __init__(self, addr='localhost', port=8080, timeout=10, buffsize=256):
+    def __init__(self, addr='localhost', port=8080, timeout=10, buffsize=4096):
         self.port = port
         self.addr = addr
         self.timeout = timeout
         self.buffsize = buffsize
         self.id = self.raw_query('new_user')
+        print('Session started')
 
     def __del__(self):
         self.raw_query(f'close_db\n{self.id}')
 
     def read(self, s):
         try:
-            data = s.recv(self.buffsize, 0)
+            data = s.recv(self.buffsize)
             return data
         except (ConnectionResetError, ConnectionAbortedError, BlockingIOError, AttributeError, OSError) as ex:
             print(ex)
@@ -40,17 +41,30 @@ class DataBaseClient:
 
     def raw_query(self, request):
         with socket.socket() as s:
-            s.connect((self.addr, self.port))
-            s.send(request.encode())
-            data = b''
+            status = ''
             s.setblocking(0)
             s.settimeout(self.timeout)
+            s.connect((self.addr, self.port))
             while True:
                 data_part = self.read(s)
-                if data_part == b'':
+                data_part = data_part.decode()
+                if data_part.find('\7') >= 0:
+                    status += data_part[:data_part.find('\7')]
+                    data = status[data_part.find('\7'):]
                     break
-                data += data_part
-            return data.decode()
+                else:
+                    status += data_part
+            print(status) 
+            s.send((request+'\7').encode())
+            while True:
+                data_part = self.read(s)
+                data_part = data_part.decode()
+                if data_part.find('\7') >= 0:
+                    data += data_part[:data_part.find('\7')]
+                    break
+                else:
+                    data += data_part
+            return data[:-1]
 
     def check(self, request):
         req_type = get_word(request)
