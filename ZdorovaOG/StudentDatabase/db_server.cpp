@@ -54,6 +54,7 @@ int main(int argc, char const* argv[]) {
         case QueryType::CloseDB: {
           auto uid = GetUID(is);
           dbs.erase(uid);
+          s->Write("Closed");
           break;
         }
         case QueryType::Request: {
