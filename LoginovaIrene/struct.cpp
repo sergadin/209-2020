@@ -358,7 +358,7 @@ void comand :: print(FILE * stream)
 	const char * mass[7] = {"==","!=","<", ">", "<=", ">=", "set"};
 	if(gr_root)
 	{
-		fprintf(stream, "group : ");
+		fprintf(stream, "group ");
 		cond_for_gr * curr = gr_root;
 		while(curr)
 		{
@@ -398,8 +398,7 @@ void comand :: print(FILE * stream)
 	printf("\n");
 }
 
-/*
-int comand :: analyze_upd(comand * cmd)
+int comand :: analyze_upd()
 {
 	char buff[100];
 	while(scanf("%s", buff)!=0)
@@ -409,28 +408,24 @@ int comand :: analyze_upd(comand * cmd)
 		{
 			int gr;
 			if(scanf(" = %d", &gr)==0) return 1;
-			c_gr = SET;
-			group = gr;
+			gr_root = new cond_for_gr(SET, gr);
 		}
 		else if(strcmp(buff, "rating")==0)
 		{
 			double rat;
 			if(scanf(" = %lf", &rat)==0) return 1;
-			c_rat = SET;
-			rating = rat;
+			rat_root = new cond_for_rat(SET, rat);
 		}
 		else if(strcmp(buff, "name")==0)
 		{
 			if(scanf(" = %s", buff)==0) return 1;
-			c_name = SET;
-			strcpy(name, buff);
+			name_root = new cond_for_name(SET, buff);
 		}
-		else if(strcmp(buff, "where")==0)	return cmd->analyze();
 		else	return 1;
 	}
 	return 0;
 }
-*/
+
 
 int comand :: analyze()
 {
@@ -1232,23 +1227,18 @@ int main(int argc, char *argv[])
 				}
 			case 'u':
 				{
-					/*
 					if(strstr(com,"update")==com)
 					{
-						comand * set = new comand();
-						sess->eraze();
-						set->type = UPDATE;
-						cmd->type = SELECT;
-						int ret = set->analyze_upd( cmd );
+						cmd->type = UPDATE;
+						int ret = cmd->analyze_upd( );
 						if( ret == 1 )
 						{
 							cmd->type = CMD_NONE;
 							continue;
 						}
-						set->print();
 						cmd->print();
+						Base->update(cmd);
 					}
-					*/
 					break;
 				}
 			case 'r':
@@ -1262,8 +1252,15 @@ int main(int argc, char *argv[])
 							cmd->type = CMD_NONE;
 							continue;
 						}
+						if( ret < 0 )
+						{
+							printf("We have conter conditions! Error %3d\n", -ret);
+							cmd->type = CMD_NONE;
+							continue;
+						}
 						cmd->print();
-						//Base->reselect(cmd);
+						Base->reselect(cmd);
+						printf("Relected %d elements\n", Base->sess_size());
 					}
 					break;
 				}
@@ -1344,7 +1341,6 @@ void Database :: do_select( comand * cmd)
 	}
 }
 
-
 void Database :: sub_select_group(hash_node * head, comand * cmd)
 {
 	if(cmd->name_root != 0)			sub_select_tree(head->get_tree(), cmd);
@@ -1381,7 +1377,8 @@ void Database :: sub_select_tree( tree * head, comand * cmd)
 			}
 			else
 			{
-				sel_rat(curr->get_data(), cmd);//Это нам подходит
+				if(sel_rat(curr->get_data(), cmd))
+					sess->add(curr->get_data());//Это нам подходит
 				break;
 			}
 		}
@@ -1417,12 +1414,14 @@ void Database :: rec_sel_tree(tree_node * curr, cond_for_name * n_eq, char * min
 	}
 	else if(( strcmp(tmp, min) == 0) && smn)
 	{
-		sel_rat(curr->get_data(), cmd);//Это нам подходит
+		if(sel_rat(curr->get_data(), cmd))
+			sess->add(curr->get_data());//Это нам подходит
 		if(curr->get_right())	rec_sel_tree(curr->get_right(), n_eq, min, smn, max, smx, cmd);
 	}
 	else if(( strcmp(tmp, max) == 0) && smx)
 	{
-		sel_rat(curr->get_data(), cmd);//Это нам подходит
+		if(sel_rat(curr->get_data(), cmd))
+			sess->add(curr->get_data());//Это нам подходит
 		if(curr->get_left())	rec_sel_tree(curr->get_left(), n_eq, min, smn, max, smx, cmd);
 	}
 	else
@@ -1430,48 +1429,13 @@ void Database :: rec_sel_tree(tree_node * curr, cond_for_name * n_eq, char * min
 		node = n_eq;
 		while(node && strcmp(tmp , node->get_name()) > 0)	node = node->get_next();
 		if((!node) || strcmp(tmp , node->get_name()) < 0)
-			sel_rat(curr->get_data(), cmd);//Это нам подходит
+			if(sel_rat(curr->get_data(), cmd))
+				sess->add(curr->get_data());//Это нам подходит
 		if(curr->get_left())	rec_sel_tree(curr->get_left(), n_eq, min, smn, max, smx, cmd);
 		if(curr->get_right())	rec_sel_tree(curr->get_right(), n_eq, min, smn, max, smx, cmd);
 	}
 }
 	
-void Database :: sel_rat(student * prime, comand * cmd)
-{
-	double rt = prime->get_rt();
-	cond_for_rat * node = cmd->rat_root;
-	int yes = 1;
-	if(node && (node->get_cond() == EQ))
-	{
-		if(eq(node->get_rt() - rt))	sess->add(prime);
-		return;
-	}
-	if(node && (node->get_cond() == GT))
-	{
-		if(node->get_rt() >= rt)	return;
-		node = node->get_next();
-	}
-	if(node && (node->get_cond() == GE))
-	{
-		if(node->get_rt() > rt)	return;
-		node = node->get_next();
-	}
-	if(node && (node->get_cond() == LT))
-	{
-		if(node->get_rt() <= rt)	return;
-		node = node->get_next();
-	}
-	if(node && (node->get_cond() == LE))
-	{
-		if(node->get_rt() < rt)	return;
-		node = node->get_next();
-	}
-	while(node && (rt > node->get_rt()))	node = node->get_next();
-	if(node && eq( rt - node->get_rt()))
-		return;
-	sess->add(prime);
-}
-
 void Database :: sub_select_list(list * head, comand * cmd)
 {
 	list_node * curr = head->get_root();
@@ -1527,52 +1491,164 @@ void Database :: sub_select_list(list * head, comand * cmd)
 		curr = curr->get_next();
 	}
 }
-/*
+
 // functions for reselect
 
 void Database :: reselect(comand * cmd)
 {
-	int tmp_name = 0;
-	int tmp_rt = 0;
-	int tmp_gr = 0;
-	int t = 0;
-	int sh = 0;
-	double res;
-	char * buff = cmd->get_name();
-	double rt = cmd->get_rt();
-	int gr = cmd->get_gr();
-	sub_sess * prev;
 	sub_sess * curr = sess->get_root();
+	int t = 0;
+	sub_sess * prev = 0;
 	while(curr)
 	{
-		student * dat = curr->get_data();
-		res = strcmp(dat->get_name(), buff);
-		tmp_name = tmp_correct(res, cmd->c_name);
-		
-		res = dat->get_gr() - gr;
-		tmp_gr = tmp_correct(res, cmd->c_gr);
-		
-		res = dat->get_rt() - rt;
-		tmp_rt = tmp_correct(res, cmd->c_rat);
-		
-		t = tmp_name * tmp_rt * tmp_gr;
-		if(!t &&(curr == sess->get_root()))
+		t = sel_gr(curr->get_data(), cmd);
+		if(t == 1)
+			t += sel_rat(curr->get_data(), cmd);
+		if(t == 2)
+			t += sel_name(curr->get_data(), cmd);
+		if(t != 3)
 		{
-			curr = curr->get_next();
-			sess->set_root( curr );
+			if(prev)
+			{
+				sess->set_next(prev, curr->get_next());
+				sess->set_next(curr, 0);
+				curr = prev;
+			}
+			else
+			{
+				sess->set_root(curr->get_next());
+				sess->set_next(curr, 0);
+				curr = sess->get_root();
+				continue;
+			}
 		}
-		else if(!t)
-		{
-			curr = curr->get_next();
-			sess->set_next( prev, curr );
-		}
-		else
-		{
-			prev = curr;
-			curr = prev->get_next();
-		}
+		prev = curr;
+		curr = curr->get_next();
 	}
 }
 
-*/
+// functions for update
 
+void Database :: update(comand * cmd)
+{
+	sub_sess * curr = sess->get_root();
+	int t = 0;
+	while(curr)
+	{
+		student * prime = curr->get_data();
+		if(cmd->gr_root)
+			prime->set_group((cmd->gr_root)->get_gr());
+		if(cmd->rat_root)
+			prime->set_rating((cmd->rat_root)->get_rt());
+		if(cmd->name_root)
+			prime->set_name((cmd->name_root)->get_name());
+		curr = curr->get_next();
+	}
+}
+
+// student подходит под условия cmd
+
+int Database :: sel_gr(student * prime, comand * cmd)
+{
+	int gr = prime->get_gr();
+	cond_for_gr * node = cmd->gr_root;
+	int yes = 1;
+	if(node && (node->get_cond() == EQ))
+	{
+		if(node->get_gr() == gr)	return 1;
+		else	return 0;
+	}
+	if(node && (node->get_cond() == GT))
+	{
+		if(node->get_gr() >= gr)	return 0;
+		node = node->get_next();
+	}
+	if(node && (node->get_cond() == GE))
+	{
+		if(node->get_gr() > gr)	return 0;
+		node = node->get_next();
+	}
+	if(node && (node->get_cond() == LT))
+	{
+		if(node->get_gr() <= gr)	return 0;
+		node = node->get_next();
+	}
+	if(node && (node->get_cond() == LE))
+	{
+		if(node->get_gr() < gr)	return 0;
+		node = node->get_next();
+	}
+	while(node && (gr > node->get_gr()))	node = node->get_next();
+	if(node && (gr == node->get_gr()))	return 0;
+	return 1;
+}
+
+int Database :: sel_rat(student * prime, comand * cmd)
+{
+	double rt = prime->get_rt();
+	cond_for_rat * node = cmd->rat_root;
+	int yes = 1;
+	if(node && (node->get_cond() == EQ))
+	{
+		if(eq(node->get_rt() - rt))	return 1;
+		else	return 0;
+	}
+	if(node && (node->get_cond() == GT))
+	{
+		if(node->get_rt() >= rt)	return 0;
+		node = node->get_next();
+	}
+	if(node && (node->get_cond() == GE))
+	{
+		if(node->get_rt() > rt)	return 0;
+		node = node->get_next();
+	}
+	if(node && (node->get_cond() == LT))
+	{
+		if(node->get_rt() <= rt)	return 0;
+		node = node->get_next();
+	}
+	if(node && (node->get_cond() == LE))
+	{
+		if(node->get_rt() < rt)	return 0;
+		node = node->get_next();
+	}
+	while(node && (rt > node->get_rt()))	node = node->get_next();
+	if(node && eq( rt - node->get_rt()))	return 0;
+	return 1;
+}
+
+int Database :: sel_name(student * prime, comand * cmd)
+{
+	char * name = prime->get_name();
+	cond_for_name * node = cmd->name_root;
+	int yes = 1;
+	if(node && (node->get_cond() == EQ))
+	{
+		if(strcmp(node->get_name(),name) == 0 )	return 1;
+		else	return 0;
+	}
+	if(node && (node->get_cond() == GT))
+	{
+		if( strcmp(node->get_name(), name) >= 0)	return 0;
+		node = node->get_next();
+	}
+	if(node && (node->get_cond() == GE))
+	{
+		if(strcmp(node->get_name(), name) > 0)	return 0;
+		node = node->get_next();
+	}
+	if(node && (node->get_cond() == LT))
+	{
+		if(strcmp(node->get_name(), name) <= 0)	return 0;
+		node = node->get_next();
+	}
+	if(node && (node->get_cond() == LE))
+	{
+		if(strcmp(node->get_name(), name) < 0)	return 0;
+		node = node->get_next();
+	}
+	while(node && (strcmp(node->get_name(), name) < 0))	node = node->get_next();
+	if(node && (strcmp(node->get_name(), name) == 0))	return 0;
+	return 1;
+}
