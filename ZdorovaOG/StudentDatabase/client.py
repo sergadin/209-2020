@@ -44,6 +44,7 @@ class DataBaseClient:
             status = ''
             s.setblocking(0)
             s.settimeout(self.timeout)
+            print('Try to connect')
             s.connect((self.addr, self.port))
             while True:
                 data_part = self.read(s)
@@ -54,7 +55,8 @@ class DataBaseClient:
                     break
                 else:
                     status += data_part
-            print(status) 
+            print(status)
+            print('Process request')
             s.send((request+'\7').encode())
             while True:
                 data_part = self.read(s)
@@ -64,7 +66,8 @@ class DataBaseClient:
                     break
                 else:
                     data += data_part
-            return data[:-1]
+            print('Done')
+            return data
 
     def check(self, request):
         req_type = get_word(request)

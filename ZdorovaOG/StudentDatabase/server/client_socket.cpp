@@ -9,6 +9,7 @@
 #include <iostream>
 #include <stdexcept>
 
+#include "../config/config.h"
 #include "server.h"
 
 ClientSocket::ClientSocket(int fileDescriptor, Server &server)
@@ -38,8 +39,10 @@ std::string ClientSocket::Read() {
   while (true) {
     numBytes = recv(_fileDescriptor, buffer, sizeof(buffer), MSG_DONTWAIT);
     if (message.size() > 0 && numBytes == -1) {
+#ifdef DEBUG
       std::cerr << "Socket error" << std::endl;
-      break;
+#endif
+      numBytes = 0;
     }
     buffer[numBytes] = 0;
     message += buffer;
