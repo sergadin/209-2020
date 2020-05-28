@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <iostream>
 #include <stdexcept>
 
 #include "server.h"
@@ -42,6 +43,8 @@ std::string ClientSocket::Read() {
     }
     buffer[numBytes] = 0;
     message += buffer;
+    if (message.size() > 0 && message.back() == '\7')
+      break;
   }
   message.pop_back();
   return message;
