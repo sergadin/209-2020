@@ -1,16 +1,13 @@
-#ifndef DB_CPP
-#define DB_CPP
-
 #include <fstream>
 #include <iostream>
 #include <map>
 #include <set>
+using namespace std;
 
 #include "exceptions.h"
 #include "db.h"
 
 
-using namespace std;
 
 Database::~Database() {
 	SaveToFile();
@@ -99,7 +96,7 @@ const set<Matrix>& Database::MatricesWithWidth(int m) const {
 	return data_.find(m)->second;
 }
 
-void Database::AddMatrix(const Matrix& mat) {
+void Database::InsertMatrix(const Matrix& mat) {
 	int m = mat.m_;
 	set<Matrix> new_set;
 
@@ -142,4 +139,45 @@ void Database::PrintInfo() const {
 		cout << "----INFO ABOUT DB---}" << endl << endl;
 }
 
-#endif //DB_CPP
+QueryResult Database::InteractWithMatrix(const Matrix& mat) {
+	QueryResult result;
+	result.err_code = 0;
+
+	cout << "db is interacting with mat=" << endl;
+	mat.Print();
+	cout << "let us see..." << endl;
+	if(!ContainsMatricesWithWidth(mat.m_)) {
+		cout << "found no matrices to multiply with" << endl;
+		cout << "try adding new matrix to the base..." << endl;
+		InsertMatrix(mat);
+		cout << "added successfully." << endl;
+		return result;
+	}
+
+
+	const set<Matrix>& right_multiplies = MatricesWithWidth(mat.m_);
+
+
+	cout << "found " << right_multiplies.size() << " matrices to multiply with. namely: {{" << endl; 
+
+	for(auto it = right_multiplies.begin(); it != right_multiplies.end(); it++) {
+		cout << "we can multiply by" << endl;
+		it->Print();
+		cout << endl << "and get" << endl;
+		Matrix temp = mat * (*it);
+		temp.Print();
+		cout << endl;
+		result.output.push_back(temp);
+
+//		result.output.push_back(mat * (*it));
+	}
+	cout << "}}. returning this list." << endl;
+	return result;
+}
+
+QueryResult Database::InteractWithMatrixFromIfstream(ifstream& fin) {
+	int n,m;
+	fin >> n;
+	fin >> m;
+	return InteractWithMatrix(Matrix(n, m, fin));
+}

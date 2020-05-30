@@ -3,15 +3,23 @@
 
 #include <map>
 #include <set>
+#include <vector>
+using namespace std;
 
 #include "matrix.h"
 #include "exceptions.h"
 
-using namespace std;
+struct QueryResult {
+	int err_code;
+	vector<Matrix> output;
+};
 
 class Database {
 	map<int, set<Matrix> > data_;
 	string filename_;
+
+	bool ContainsMatricesWithWidth(int m) const;
+	const set<Matrix>& MatricesWithWidth(int m) const;
 
 public:
 	Database(const string filename);
@@ -23,15 +31,16 @@ public:
 
 	~Database();
 	void SaveToFile() const;
-
-	bool ContainsMatricesWithWidth(int m) const;
-	const set<Matrix>& MatricesWithWidth(int m) const;
-
-	void AddMatrix(const Matrix& mat);
-
+	
 	void Clear();
-
 	void PrintInfo() const;
+
+	void InsertMatrix(const Matrix& mat);
+
+	QueryResult InteractWithMatrix(const Matrix& mat);
+
+	//бесполезная обёртка; надо или обобщить, или заменить, или убрать
+	QueryResult InteractWithMatrixFromIfstream(ifstream& fin);
 };
 
 #endif //DB_H

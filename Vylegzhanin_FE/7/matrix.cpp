@@ -1,11 +1,9 @@
-#ifndef MATRIX_CPP
-#define MATRIX_CPP
-
 #include <iostream>
 #include <fstream>
+using namespace std;
+
 #include "matrix.h"
 #include "exceptions.h"
-using namespace std;
 
 
 //чтение/запись отдельных интов (чтоб не загромождать)
@@ -17,6 +15,65 @@ void read_int(ifstream& fin, int* pnum) {
 	fin.read(reinterpret_cast<char*>(pnum), sizeof(int));
 }
 
+Matrix::~Matrix() {
+	for(int i = 0; i < n_; i++) {
+		delete[] data_[i];
+	}
+
+	delete[] data_;
+}
+
+Matrix::Matrix(const Matrix& other) {
+	n_ = other.n_;
+	m_ = other.m_;
+	data_ = new int*[n_];
+	for(int i = 0; i < n_; i++) {
+		data_[i] = new int[m_];
+
+		for(int j = 0; j < m_; j++){
+			data_[i][j] = other.data_[i][j];
+		}
+	}
+}
+
+Matrix::Matrix(int n, int m, ifstream& fin) {
+	if (!fin) {
+		throw NullPtrException("Matrix::Matrix(raw data)", "bad data pointer");
+	}
+
+	CheckDimensions("Matrix::Matrix(fin)", n,m);
+	
+	n_ = n;
+	m_ = m;
+	data_ = new int*[n];
+
+	for(int i = 0; i < n; i++) {
+		data_[i] = new int[m];
+		for(int j = 0; j < m; j++) {
+			read_int(fin, &data_[i][j]);
+		}
+	}
+}
+
+Matrix::Matrix(int n, int m, int** data) {
+	if (data == NULL) {
+		throw NullPtrException("Matrix::Matrix(raw data)", "bad data pointer");
+	}
+
+	CheckDimensions("Matrix::Matrix(int**)", n,m);
+
+	n_ = n;
+	m_ = m;
+	data_ = data;
+
+	//лучше упадёт сейчас, чем непонятно когда
+	//(проверка, что данные по этому
+	//указателю вообще доступны)
+	int t = 0;
+	for(int i = 0; i < n; i++) {
+		t += data[i][m-1];
+	}
+}
 
 Matrix& Matrix::operator=(const Matrix& other) {
 	if(this == &other) {
@@ -61,57 +118,12 @@ void Matrix::WriteToFout(ofstream& fout) const {
 	}
 }
 
-Matrix::Matrix(int n, int m, ifstream& fin) {
-	if (!fin) {
-		throw NullPtrException("Matrix::Matrix(raw data)", "bad data pointer");
-	}
-	if (n <= 0 || m <= 0) {
-		throw MatrixSizeException("Matrix::Matrix(raw data)", "non-positive Matrix dimensions", n, m);
-	}
-	n_ = n;
-	m_ = m;
-	data_ = new int*[n];
-
-	for(int i = 0; i < n; i++) {
-		data_[i] = new int[m];
-		for(int j = 0; j < m; j++) {
-			read_int(fin, &data_[i][j]);
-		}
+void Matrix::CheckDimensions(const string& funcname, int n, int m) {
+	if(n <= 0 || m <= 0) {
+		throw MatrixSizeException(funcname, "non-positive matrix dimensions", n, m);
 	}
 }
 
-Matrix::Matrix(int n, int m, int** data) {
-	if (data == NULL) {
-		throw NullPtrException("Matrix::Matrix(raw data)", "bad data pointer");
-	}
-	if (n <= 0 || m <= 0) {
-		throw MatrixSizeException("Matrix::Matrix(raw data)", "non-positive Matrix dimensions", n, m);
-	}
-	n_ = n;
-	m_ = m;
-	data_ = data;
-
-	//лучше сейчас, чем никогда
-	//(проверка, что данные по этому
-	//указателю вообще доступны)
-	int t = 0;
-	for(int i = 0; i < n; i++) {
-		t += data[i][m-1];
-	}
-}
-
-Matrix::Matrix(const Matrix& other) {
-	n_ = other.n_;
-	m_ = other.m_;
-	data_ = new int*[n_];
-	for(int i = 0; i < n_; i++) {
-		data_[i] = new int[m_];
-
-		for(int j = 0; j < m_; j++){
-			data_[i][j] = other.data_[i][j];
-		}
-	}
-}
 
 Matrix operator*(const Matrix& lhs, const Matrix& rhs) {
 
@@ -169,13 +181,3 @@ bool operator<(const Matrix& lhs, const Matrix& rhs) {
 
 
 
-Matrix::~Matrix() {
-	for(int i = 0; i < n_; i++) {
-		delete[] data_[i];
-	}
-
-	delete[] data_;
-}
-
-
-#endif //MATRIX_CPP
