@@ -36,7 +36,7 @@
 
 ## Для запуска клиента запустить:
 
-    запустить client.py
+  client.py
 
 ## Типы запросов:
 * canmake
@@ -49,48 +49,48 @@
 ### CANMAKE
 Запускается командой:
 
-  canmake <detailname>, <quant> end
+    canmake <detailname>, <quant> end
 
 Выводит на экран ответ на вопрос можем ли собрать это устройство. Если же его собрать нельзя, выводит причину.
 
 ### ADDDETAIL
 Запускается командой:
 
-  adddetail <detailname>, <quant> end
+    adddetail <detailname>, <quant> end
 
 Добавляет устройство на склад.
 
 ### SHOW
 Запускается командой:
 
-  show  end
+    show  end
 
 Выводит на экран всю информацию о складе. Сперва доступные детали и их количество, далее все известные рецепты.
 
 ### DELETEDETAIL
 Запускается командой:
 
-  deletedetail <detailname>, <quant> end
+    deletedetail <detailname>, <quant> end
 
 или же
 
-  deletedetail <detailname> end
+    deletedetail <detailname> end
 
 Первая команда удалит деталь со склада в нужном количестве, если это возможно. Вторая команда удалит деталь вовсе.
 
 ### ADDRECIPE
 Запускается командой:
 
-  AddRecipe <DETAILNAME>, <FIRTST_ITEM>, <QUANT>, <SECOND_ITEM>, <QUANT>, ... end
+    AddRecipe <DETAILNAME>, <FIRTST_ITEM>, <QUANT>, <SECOND_ITEM>, <QUANT>, ... end
 
 Добавляет рецепт детали на склад
 
 ### MAKE
 Запускается командой:
 
-  make <detailname>, <quant> end
+    make <detailname>, <quant> end
 
 Собирает нужное количество деталей.
 
 ## Замечания
-Все команды переводятся в нижний регист. 
+Все команды переводятся в нижний регист.
