@@ -1,4 +1,5 @@
 #include "server_part.h"
+#include "exceptions.h"
 #include <sstream>
 
 const string DayNumbers[] = {"MON", "TUE", "WEN", "THU", "FRI", "SAT", "SUN"};
@@ -24,7 +25,11 @@ WeekDay GetDayFromString(string s) {
 		case 4: return FRI;
 		case 5: return SAT;
 		case 6: return SUN;
-		default: /*EXCEPTION */ break;
+		default:
+			string err_msg("Bad weekday ");
+			err_msg += s; 
+			throw DatatypeException(string("GetDayFromString"), err_msg);
+			break;
 	}
 
 	return MON;//костыль для строгого компилятора
@@ -39,6 +44,18 @@ string to_string(int num) {
 //----------------------------------------------------------------------------//
 //                 структуры, представляющие запрос в памяти                  //
 //----------------------------------------------------------------------------//
+string StringFormOfData(Field field, LessonInfo data) {
+	switch(field) {
+		case TEACHER: return data.teacher_;
+		case SUBJECT: return data.subject_;
+		case ROOM:    return to_string(data.room_ );
+		case GROUP:   return to_string(data.group_);
+		case TIME:    return to_string(data.time_ );
+		case WEEKDAY: return DayNumbers[data.day_];
+		default: return string("NaN");
+	}
+}
+
 void SetInfo(LessonInfo& record, Cond cond_data) {//помещает в запись информацию из условия
 //возможно, нужна проверка, что cond_data.relation = EQUAL
 //или это ограничит функционал?
@@ -50,7 +67,10 @@ void SetInfo(LessonInfo& record, Cond cond_data) {//помещает в запи
 		case    TIME: record.time_    = cond_data.value.number; break;
 		case SUBJECT: record.subject_ = cond_data.value.str;    break;
 
-		case SORT: default: /*EXCEPTION: BAD FIELD*/ break;
+		case SORT: default: /*EXCEPTION: BAD FIELD*/
+			string err_msg("Bad field type");
+			throw QuerySyntaxException("SetInfo", err_msg);
+			break;
 	}
 }
 
@@ -84,8 +104,9 @@ bool CheckCondition(LessonInfo record, Cond condition) {//проверка, уд
 				/*проверка, подходит ли str под маску condition.value.str*/
 
 			default:
-			/*EXCEPTION: BAD RELATION OF STRINGS*/
-			break;
+				string err_msg("Impossible relation for type 'string'");
+				throw QuerySyntaxException("CheckCondition", err_msg);
+				break;
 		}
 		break;
 
@@ -106,8 +127,9 @@ bool CheckCondition(LessonInfo record, Cond condition) {//проверка, уд
 						num <= condition.value.diap.second);
 
 			default:
-			/*EXCEPTION: BAD RELATION OF INTEGERS*/
-			break;
+				string err_msg("Impossible relation for type 'int'");
+				throw QuerySyntaxException("CheckCondition", err_msg);
+				break;
 		}
 		break;
 
@@ -172,16 +194,17 @@ IndicesList Database::SelectByConditionList(SearchConditions cond_list) {
 	return res;
 }
 
-template<typename T> void AddToMapList(map<T,IndicesList>& data, T key, DbIndex value) {
+template<typename T> void Database::AddToMapList(map<T,IndicesList>& data, T key, DbIndex value) {
 	if(data.count(key) == 0) {
 		data[key] = IndicesList(1,value);
 	}
 	else data[key].push_back(value);
 }
 
-template<typename T> void RemoveFromMapList (map<T,IndicesList>& data, T key, DbIndex value) {
+template<typename T> void Database::RemoveFromMapList (map<T,IndicesList>& data, T key, DbIndex value) {
 	if(data.count(key) == 0) {
-		/*EXCEPTION: NOTHING IS REMOVED*/
+		string err_msg("key isn't found in map list");
+		throw DatabaseException("Database::RemoveFromMapList", err_msg);
 	}
 	IndicesList& indlist = data[key];
 	for(IndicesList::iterator it = indlist.begin(); it != indlist.end(); it++) {
@@ -243,7 +266,8 @@ void Database::ImplementInsert  (const SearchConditions& sc) {
 	for(list<Cond>::const_iterator it = sc.begin(); it != sc.end(); it++) {
 
 		if(it->relation != EQUAL) {
-			/*EXCEPTION: INSERT плохо описан*/
+			string err_msg("cond.relation != EQUAL in SearchCondition");
+			throw QuerySyntaxException("Database::ImplementInsert", err_msg);
 		}
 
 		SetInfo(rec, *it);//помещает в запись информацию из условия
@@ -251,57 +275,6 @@ void Database::ImplementInsert  (const SearchConditions& sc) {
 	AddRecord(rec);
 }
 
-int Database::ImplementRemove  (const SearchConditions& sc) {//возвращает число удалённых записей
-	int res = Size();
-
-	RemoveRecords(sc);
-
-	return res - Size();
-}
-
-string Database::ImplementPrint   (const SearchConditions& sc) {//возвращает напечатанную таблицу
-	string table;
-
-//  ....
-
-	return table;
-}
-
-string Database::ImplementCommand(const Command& t, Session& s) {//перенаправляет на настоящие обработчики
-	string res("ok\n");
-	switch(t.cmd) {
-		case SELECT  :
-			res = "Selected "   + to_string(ImplementSelect  (t.conditions, s)) + " records successfully.\n";
-			break;
-		case RESELECT:
-			res = "Reselected " + to_string(ImplementReselect(t.conditions, s)) + " records successfully.\n";
-			break;
-		case REMOVE:
-			res = "Removed "    + to_string(ImplementRemove  (t.conditions   )) + " records successfully.\n";
-			break;
-		case INSERT:
-			ImplementInsert (t.conditions);
-			res = "Inserted one record successfully.\n"; 
-			break;
-		case PRINT:
-			res = ImplementPrint(t.conditions);
-			break;
-		default:
-			/*EXCEPTION: BAD COMMAND*/
-			break;
-	}
-
-	return res;
-}
-
-string Database::HandleQuery(const string& query, Session& s){
-	return ImplementCommand(parse(query), s);
-}
-
-
-//----------------------------------------------------------------------------//
-//                              парсер и т.д.                                 //
-//----------------------------------------------------------------------------//
 int Database::ImplementSelect  (const SearchConditions& sc, Session& s) {
 	s.SetSelection(SelectByConditionList(sc));
 }
@@ -312,6 +285,94 @@ int Database::ImplementReselect(const SearchConditions& sc, Session& s) {
 									   SelectByConditionList(sc))
 				  );
 }
+
+
+int Database::ImplementRemove  (const SearchConditions& sc) {//возвращает число удалённых записей
+	int res = Size();
+
+	RemoveRecords(sc);
+
+	return res - Size();
+}
+
+string Database::ImplementPrint   (const SearchConditions& sc, Session& s) {//возвращает напечатанную таблицу
+
+	IndicesList indlist = s.GetSelection();
+	size_type tablesize = intlist.size();
+	vector<string> table;
+
+	SearchConditions::const_iterator sorting_begin;
+
+	//перенос данных в соотв. строки
+	for(SearchConditions::const_iterator sc_it = sc.begin(); sc_it != sc.end(); sc++) {
+		if(sc_it->field == SORT) {
+			sc_it++;
+			sorting_begin = sc_it;
+			break;
+		}
+
+		string row;
+		for(list<DbIndex>::iterator ind_it = indlist.begin(); ind_it != indlist.end(); ind_it++) {
+			switch(sc_it->field) {
+				case TEACHER: case ROOM: case GROUP: case DAY: case TIME: case SUBJECT:
+				row += " "; row += StringFormOfData(sc_it->field, **ind_it); break;
+				default: throw QuerySyntaxException("Database::ImplementPrint", "Unknown data field");
+			}
+		}
+	}
+
+	
+	return table;
+}
+
+string Database::ImplementCommand(const Command& t, Session& s) {//перенаправляет на настоящие обработчики
+	string res("ok\n");
+
+	try {
+		switch(t.cmd) {
+			case SELECT  :
+				res = "Selected "   + to_string(ImplementSelect  (t.conditions, s)) + " records successfully.\n";
+				break;
+			case RESELECT:
+				res = "Reselected " + to_string(ImplementReselect(t.conditions, s)) + " records successfully.\n";
+				break;
+			case REMOVE:
+				res = "Removed "    + to_string(ImplementRemove  (t.conditions   )) + " records successfully.\n";
+				break;
+			case INSERT:
+				ImplementInsert (t.conditions);
+				res = "Inserted one record successfully.\n"; 
+				break;
+			case PRINT:
+				res = ImplementPrint(t.conditions);
+				break;
+			default:
+				throw QuerySyntaxException("Database::ImplementCommand", "Unknown command");
+				break;
+		}
+
+	}	
+	catch(QuerySyntaxException& ex) {
+		cerr << "Query syntax error in function " << ex.FuncName() << ':' << endl;
+		cerr << ex.Message() << endl;
+		return ex.Message();
+	}
+	catch(...) {
+		string err_msg("Unknown exception occured"); 
+		cerr << err_msg << endl;
+		return err_msg;
+	}
+
+	return res;
+}
+
+string Database::HandleQuery(const string& query, Session& s){
+	return ImplementCommand(parse(query), s);
+}
+
+//----------------------------------------------------------------------------//
+//                              парсер и т.д.                                 //
+//----------------------------------------------------------------------------//
 
 
 Command parse(const string& query) {

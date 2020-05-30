@@ -27,6 +27,8 @@ struct LessonInfo {
 
 WeekDay GetDayFromString(string s);
 string to_string(int num);//дубликат на всякий случай
+
+template<typename T> list<T> IntersectionOfLists(list<T> a, list<T> b);
 //----------------------------------------------------------------------------//
 //   структуры, представляющие запрос в памяти (``синтаксический анализ'')    //
 //----------------------------------------------------------------------------//
@@ -44,6 +46,8 @@ typedef enum {GT, LT, EQUAL, IN, NONE} Relation;
 
 /// а запросу "SELECT teacher=Iv* group=100-499 subject=Analysis END" --
 /// (TEACHER IN "Iv*") (GROUP IN (100,499)) (SUBJECT EQUAL "Analysis")
+
+string StringFormOfData(Field field, LessonInfo data);
 
 struct Cond {// Одно условие вида поле + отношение + константа
     Field field;
@@ -90,16 +94,6 @@ public:
 //----------------------------------------------------------------------------//
 //                        сама база данных                                    //
 //----------------------------------------------------------------------------//
-
-template<typename T> list<T> IntersectionOfLists(list<T> a, list<T> b);
-
-template<typename T> void AddToMapList (map<T,IndicesList>& data, T key, DbIndex index);
-//добавляет элемент index в конец списка data[key]
-//(происходит при добавлении элемента в базу)
-
-template<typename T> void RemoveFromMapList (map<T,IndicesList>& data, T key, DbIndex index);
-//обратная операция
-
 class Database {
 private:
 
@@ -122,14 +116,19 @@ private:
 
 	string filename_;
 
+	template<typename T> void AddToMapList (map<T,IndicesList>& data, T key, DbIndex index);
+	//добавляет элемент index в конец списка data[key]
+	//(происходит при добавлении элемента в базу)
+
+	template<typename T> void RemoveFromMapList (map<T,IndicesList>& data, T key, DbIndex index);
+	//обратная операция
+
 	void AddRecord(LessonInfo rec);
 	void RemoveRecord(DbIndex index);
 	void RemoveRecords(SearchConditions conds);
 	void SaveToFile(string filename) const;
 
 	int Size() const {return recs_n_;}
-
-
 
 	//возвращают число выбранных записей
 	int    ImplementSelect  (const SearchConditions& sc, Session& s);
@@ -140,10 +139,13 @@ private:
 	int    ImplementRemove  (const SearchConditions& sc);
 
 	//возвращает число удалённых записей
-	string ImplementPrint   (const SearchConditions& sc);
+	string ImplementPrint   (const SearchConditions& sc, Session& s);
 
 	//перенаправляет на обработчики; формирует ответ на запрос
 	string ImplementCommand(const Command& t, Session& s);
+
+	//растаскивание строчки на кусочки
+	Command parse(const string& query);
 
 public:
 	~Database();
@@ -153,10 +155,6 @@ public:
 	string HandleQuery(const string& query, Session& s);
 };
 
-//----------------------------------------------------------------------------//
-//                        парсер и т.д.                                       //
-//----------------------------------------------------------------------------//
-//растаскивание строчки на кусочки
-Command parse(const string& query);
+
 
 #endif
