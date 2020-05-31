@@ -6,13 +6,13 @@ using namespace std;
 #include "exceptions.h"
 
 
-//чтение/запись отдельных интов (чтоб не загромождать)
-void write_int(ofstream& fout, int* pnum) {
-	fout.write(reinterpret_cast<char*>(pnum),sizeof(int));
+//чтение/запись отдельных интов (чтоб не загромождать дальнейший код)
+void write_int(ostream& out_stream, int* pnum) {
+	out_stream.write(reinterpret_cast<char*>(pnum),sizeof(int));
 }
 
-void read_int(ifstream& fin, int* pnum) {
-	fin.read(reinterpret_cast<char*>(pnum), sizeof(int));
+void read_int(istream& in_stream, int* pnum) {
+	in_stream.read(reinterpret_cast<char*>(pnum), sizeof(int));
 }
 
 Matrix::~Matrix() {
@@ -36,12 +36,27 @@ Matrix::Matrix(const Matrix& other) {
 	}
 }
 
-Matrix::Matrix(int n, int m, ifstream& fin) {
-	if (!fin) {
-		throw NullPtrException("Matrix::Matrix(raw data)", "bad data pointer");
+Matrix::Matrix(int n, int m) {
+	CheckDimensions(n,m);
+
+	n_ = n;
+	m_ = m;
+	data_ = new int*[n];
+
+	for(int i = 0; i < n; i++) {
+		data_[i] = new int[m];
+		for(int j = 0; j < m; j++) {
+			data_[i][j] = 0;
+		}
+	}
+}
+
+Matrix::Matrix(int n, int m, istream& in_stream) {
+	if (!in_stream) {
+		throw NullPtrException("bad data pointer");
 	}
 
-	CheckDimensions("Matrix::Matrix(fin)", n,m);
+	CheckDimensions(n,m);
 	
 	n_ = n;
 	m_ = m;
@@ -50,17 +65,17 @@ Matrix::Matrix(int n, int m, ifstream& fin) {
 	for(int i = 0; i < n; i++) {
 		data_[i] = new int[m];
 		for(int j = 0; j < m; j++) {
-			read_int(fin, &data_[i][j]);
+			read_int(in_stream, &data_[i][j]);
 		}
 	}
 }
 
 Matrix::Matrix(int n, int m, int** data) {
 	if (data == NULL) {
-		throw NullPtrException("Matrix::Matrix(raw data)", "bad data pointer");
+		throw NullPtrException("bad data pointer");
 	}
 
-	CheckDimensions("Matrix::Matrix(int**)", n,m);
+	CheckDimensions(n,m);
 
 	n_ = n;
 	m_ = m;
@@ -110,7 +125,7 @@ void Matrix::Print() const {
 	}
 }
 
-void Matrix::WriteToFout(ofstream& fout) const {
+void Matrix::WriteToOstream(ostream& fout) const {
 	for(int i = 0; i < n_; i++) {
 		for(int j = 0; j < n_; j++) {
 			write_int(fout, &data_[i][j]);
@@ -118,23 +133,32 @@ void Matrix::WriteToFout(ofstream& fout) const {
 	}
 }
 
-void Matrix::CheckDimensions(const string& funcname, int n, int m) {
+void Matrix::CheckDimensions(int n, int m) {
 	if(n <= 0 || m <= 0) {
-		throw MatrixSizeException(funcname, "non-positive matrix dimensions", n, m);
+		throw MatrixSizeException("non-positive matrix dimensions", n, m);
 	}
 }
 
+int Matrix::GetN() const {return n_;}
+int Matrix::GetM() const {return m_;}
+int Matrix::GetElem(int i, int j) const {
+	if(i < 0 || i > n_ || j < 0 || j > m_) {
+		throw MatrixElemException(i,j,n_,m_);
+	}
+
+	return data_[i][j];
+}
 
 Matrix operator*(const Matrix& lhs, const Matrix& rhs) {
 
 
-	if(lhs.m_ != rhs.n_) {
-		throw MatrixSizeException("Matrix::operator*", "non-consistent dimensions while multiplicating", lhs.m_, rhs.n_);
+	if(lhs.GetM() != rhs.GetN()) {
+		throw MatrixSizeException("non-consistent dimensions while multiplicating", lhs.GetM(), rhs.GetN());
 	}
 
-	int new_n = lhs.n_;
-	int new_m = rhs.m_;
-	int mid_size = lhs.m_;
+	int new_n = lhs.GetN();
+	int new_m = rhs.GetM();
+	int mid_size = lhs.GetM();
 
 	int** newdata = new int*[new_n];
 	for(int i = 0; i < new_n; i++) {
@@ -144,7 +168,7 @@ Matrix operator*(const Matrix& lhs, const Matrix& rhs) {
 			newdata[i][j] = 0;
 			for(int k = 0; k < mid_size; k++) {
 //				cout << newdata[i][j] << "+=" << lhs.data_[i][k] << '*' << other.data_[k][j] << endl;
-				newdata[i][j] += lhs.data_[i][k] * rhs.data_[k][j];
+				newdata[i][j] += lhs.GetElem(i,k) * rhs.GetElem(k,j);
 			}
 		}
 	}
@@ -153,24 +177,29 @@ Matrix operator*(const Matrix& lhs, const Matrix& rhs) {
 }
 
 bool operator<(const Matrix& lhs, const Matrix& rhs) {
-	if(lhs.n_ < rhs.n_) {
+	int ln = lhs.GetN(), rn = rhs.GetN();
+	int lm = lhs.GetM(), rm = rhs.GetM();
+	
+	if(ln < rn) {
 		return true;
 	}
-	if(lhs.n_ > rhs.n_) {
+	if(ln > rn) {
 		return false;
 	}
-	if(lhs.m_ < rhs.m_) {
+	if(lm < rm) {
 		return true;
 	}
-	if(lhs.m_ > rhs.m_) {
+	if(lm > rm) {
 		return false;
 	}
-	for(int i = 0; i < lhs.n_; i++) {
-		for(int j = 0; j < lhs.m_; j++) {
-			if(lhs.data_[i][j] < rhs.data_[i][j]) {
+	for(int i = 0; i < ln; i++) {
+		for(int j = 0; j < lm; j++) {
+			int le = lhs.GetElem(i,j);
+			int re = rhs.GetElem(i,j);
+			if(le < re) {
 				return true;
 			}
-			if(lhs.data_[i][j] > rhs.data_[i][j]) {
+			if(le > re) {
 				return false;
 			}
 		}

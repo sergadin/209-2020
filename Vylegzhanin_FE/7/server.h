@@ -28,16 +28,18 @@ class DbServer {
 
     struct sockaddr_in server_address_;
 
-	char* GetInputMessage(int ms);
+	char* GetInputMessage(int ms_input);
 	//получает от соединения сообщение
 	//(перед которым отправлена его длина).
 	//[[[архитектура ещё не совсем продумана]]]
 
-	void SendQueryResult(int ms, QueryResult qr);
-	//отправляет по данному соединению
-	//набор матриц вместе с необх.данными (размерность, код ошибки)
+	void SendQueryResult(QueryResult qr);
+	//отправляет ответ на запрос
 
-	void HandleQuery(int ms_input, int ms_output);
+	void SendInteger(int num);
+	//отправляет одно число
+
+	void HandleQuery(int ms_input);
 	//выполняется в цикле: получает запрос и отвечает на него
 	//(используя другие функции)
 
