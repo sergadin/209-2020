@@ -9,6 +9,7 @@
 #pragma once
 
 #include <map>
+#include <mutex>
 #include <set>
 #include <string>
 #include <vector>
@@ -23,7 +24,7 @@
  *             загрузки и сохранения записей.
  */
 class DataHolder {
-public:
+ public:
   DataHolder() = default;
   /**
    * @brief      Добавляет запись о студенте в базу
@@ -83,10 +84,11 @@ public:
    */
   void Save(std::ostream &os);
 
-protected:
+ protected:
   using base = DataHolder;
-  Index _index; ///< Базовый индекс базы данных
-  std::vector<Student> _data; ///< Список записей с информацией по студентам
+  Index _index;  ///< Базовый индекс базы данных
+  std::vector<Student> _data;  ///< Список записей с информацией по студентам
+  std::mutex _mutex;
 };
 
 /**
@@ -99,15 +101,17 @@ class DataBase : public DataHolder {
    * @brief      Производит выборку по запросу по всей базе
    *
    * @param      is    Поток ввода
+   * @param[in]  pid   Идентификатор пользователя
    */
-  void Select(std::istream &is);
+  void Select(std::istream &is, size_t pid);
 
   /**
    * @brief      Производит выбрку по запросу по предудущей выборке
    *
    * @param      is    Поток ввода
+   * @param[in]  pid   Идентификатор пользователя
    */
-  void Reselect(std::istream &is);
+  void Reselect(std::istream &is, size_t pid);
 
   /**
    * @brief      Выводит результаты последнего запроса в поток
@@ -119,16 +123,19 @@ class DataBase : public DataHolder {
    *
    * @param      is    Поток ввода
    * @param      os    Поток вывода
+   * @param[in]  pid   Идентификатор пользователя
    */
-  void Print(std::istream &is, std::ostream &os);
+  void Print(std::istream &is, std::ostream &os, size_t pid);
 
   /**
    * @brief      Удаляет записи из последнего запроса
    *
    * Вызывает метод Remove() родительского класса DataHolder
    * для каждого ИД из последнего запроса и очищает индекс
+   *
+   * @param[in]  pid   Идентификатор пользователя
    */
-  void Delete();
+  void Delete(size_t pid);
 
   /**
    * @brief      Добавляет запись о студенте
@@ -141,6 +148,15 @@ class DataBase : public DataHolder {
   void Add(std::istream &is);
 
   /**
+   * @brief      Список состояний после функции Process
+   */
+  enum Status {
+    Shutdown = -1,  ///< Указывает, что необходимо завершить программу
+    Ok = 0,  ///< Указывает, что можно продолжать работать
+    Close = 1  ///< Указывает, что необходимо закрыть сессию
+  };
+  
+  /**
    * @brief      Обрабатывает запрос
    *
    * Базовый метод обработки запросов. Определяет по
@@ -149,8 +165,11 @@ class DataBase : public DataHolder {
    *
    * @param      is    Поток ввода
    * @param      os    Поток вывода
+   * @param[in]  pid   Идентификатор пользователя
+   *
+   * @return     Статус указывающий на необходимое действие
    */
-  void Process(std::istream &is, std::ostream &os);
+  Status Process(std::istream &is, std::ostream &os, size_t pid);
 
   /**
    * @brief      Задает разделитель для вывода
@@ -158,6 +177,22 @@ class DataBase : public DataHolder {
    * @param      delim    Символ разделителя
    */
   void SetDelim(char delim);
+
+  /**
+   * @brief      Регистрирует нвоого пользователя
+   *
+   * @return     Идентификатор пользователя
+   */
+  int RegisterUser();
+
+  /**
+   * @brief      Удаляет сессию пользователя
+   *
+   * @param[in]  pid   Идентификатор пользователя
+   *
+   * @return     True если сессия с данным ИД существовала, False иначе.
+   */
+  bool EraseUser(size_t pid);
 
  private:
   using Columns = std::vector<std::string>;
@@ -170,7 +205,7 @@ class DataBase : public DataHolder {
    *
    * @param[in]  ids   ИД студентов
    */
-  void ConstructIndex(const std::set<size_t> &ids);
+  Index ConstructIndex(const std::set<size_t> &ids);
 
   /**
    * @brief      Выводит в поток значения указанных полей,
@@ -212,6 +247,6 @@ class DataBase : public DataHolder {
    */
   void Print(std::ostream &os, Columns what_col, const RatingMap &ratings);
 
-  Index _index;
+  std::map<int, Index> _indexes;
   char _delim = ' ';
 };

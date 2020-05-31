@@ -5,4 +5,4 @@
  * Данный файл содержит стандартные значения параметров.
  */
 #define DEBUG
-#define DEFAULT_PORT 8080
+#define DEFAULT_PORT 8989

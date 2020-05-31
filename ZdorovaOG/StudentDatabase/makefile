@@ -5,7 +5,7 @@ OBJS = $(OBJS_DATABASE) $(OBJS_PARSER) $(OBJS_SERVER) _obj
 OUT_TESTS = tests/_test_condition_parsing tests/_test_tokenize
 OUT = _db_local _input_builder $(OUT_TESTS)
 CC	 = g++
-FLAGS	 = -g --std=c++1z -fstack-protector-all -Wall -Wextra -Wunused -Werror -pedantic -pedantic-errors -Wfloat-equal -Wpointer-arith -Wformat-security -Wformat=1 -Wwrite-strings -Wcast-align -Wno-long-long -Woverloaded-virtual -Wnon-virtual-dtor -Wcast-qual -Wno-suggest-attribute=format
+FLAGS	 = -g -O2 --std=c++1z -fstack-protector-all -Wall -Wextra -Wunused -Werror -pedantic -pedantic-errors -Wfloat-equal -Wpointer-arith -Wformat-security -Wformat=1 -Wwrite-strings -Wcast-align -Wno-long-long -Woverloaded-virtual -Wnon-virtual-dtor -Wcast-qual -Wno-suggest-attribute=format
 
 all: db_local db_server tests run_tests
 
