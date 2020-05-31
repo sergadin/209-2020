@@ -79,7 +79,7 @@
 ### ADDRECIPE
 Запускается командой:
 
-    AddRecipe <DETAILNAME>, <FIRTST_ITEM>, <QUANT>, <SECOND_ITEM>, <QUANT>, ... <QUANT>, end
+    AddRecipe <DETAILNAME>, <FIRTST_ITEM>, <QUANT>, <SECOND_ITEM>, <QUANT>, ... <ITEM>, <QUANT>, end
 
 Добавляет рецепт детали на склад.
 
