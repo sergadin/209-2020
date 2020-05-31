@@ -234,7 +234,6 @@ int  main (void)
                           {
                               string check;
                               ss >> check;
-                              x.print();
                               if(check != "end")
                               {
                                   int k=1;
