@@ -34,8 +34,9 @@ Database::Database(const std::string &filename_items, const std::string &filenam
       {
           int quantt;
           ss >> quantt;
-          ss.ignore(2);
+          ss.ignore(1);
           rrecipe[f] = quantt;
+          ss.ignore(1);
       }
       known_recipes[dname] = rrecipe;
   }
@@ -69,8 +70,9 @@ void Database::DatabaseFromFile(const std::string &filename_items, const std::st
       {
           int quantt;
           ss >> quantt;
-          ss.ignore(2);
+          ss.ignore(1);
           rrecipe[f] = quantt;
+          ss.ignore(1);
       }
       known_recipes[dname] = rrecipe;
   }
@@ -94,9 +96,9 @@ void Database::DatabaseToFile(const std::string &filename_items, const std::stri
 
 void Database::print() const
 {
-    std::cout << "Items in storage:\n";
+    std::cout << "\nItems in storage:\n\n";
     data.print();
-    std::cout << "Known recipes:\n";
+    std::cout << "\nKnown recipes:\n\n";
     for(auto elm: known_recipes)
     {
       std::cout << elm.first << " - ";
@@ -107,6 +109,27 @@ void Database::print() const
       std::cout << std::endl;
     }
 
+}
+void Database::send_to_client(int fd) const
+{
+    int k=data.size() +  known_recipes.size();
+    send(fd, &k,4,MSG_WAITALL);
+    data.printclient(fd);
+    for(auto elm: known_recipes)
+    {
+      std::string str = elm.first + " - ";
+      for(auto items: elm.second)
+      {
+          str +=  items.first + " " + std::to_string(items.second) + "; ";
+      }
+      char *chrstr = new char[str.length() + 1];
+      int  zplen  =str.length();
+      strcpy(chrstr, str.c_str());
+
+      send(fd, &zplen,4,MSG_WAITALL);
+      send(fd, chrstr, str.length(), MSG_WAITALL);
+      delete [] chrstr;
+    }
 }
 void Database::AddDetail(const std::string &name, int quant)
 {

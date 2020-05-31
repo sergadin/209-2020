@@ -8,6 +8,19 @@
 #include <map>
 #include <fstream>
 #include <list>
+#include <stdio.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/poll.h>
+#include <netinet/in.h>
+#include <iostream>
+#include <arpa/inet.h>
+#include <netdb.h>
 #include "HashTable.h"
 
 typedef std::string DeviceName;
@@ -28,6 +41,7 @@ struct MakeInfo
 };
 
 
+
 class Database
 {
 private:
@@ -37,6 +51,7 @@ public:
   Database(); //Default constructor does nothing
   Database(const std::string &filename_items, const std::string &filename_recipes);  // Reads the database from files
   void print() const;  // It's clear what he's doing)
+  void send_to_client(int fd) const;
   void DatabaseToFile(const std::string &filename_items, const std::string &filename_recipes) const;  // Writes the database to files
   void DatabaseFromFile(const std::string &filename_items, const std::string &filename_recipes); // Reads the database from files
   void AddDetail(const DeviceName &name, int quant);  // Adds device in the specified quantity
@@ -46,7 +61,7 @@ public:
   MakeInfo CanMake(const DeviceName &name, int quant); //Checking whether a part can be created
   int dbsize() const; // Number of part types
   void MakeDetail(const DeviceName &name, int quant); //Creates a device
-  //vector<DeviceName> MakeFrom(const vector<DeviceName> &details) // Second type of request
+  //map<DeviceName,vector<DeviceName>> MakeFrom(const vector<DeviceName> &details) // Second type of request
 
 };
 

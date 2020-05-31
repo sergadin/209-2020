@@ -1,6 +1,7 @@
 CC=g++
-NAME=server
-
+NAME1=server
+NAME2=client
+DATA=database.cpp HashTable.cpp LinkedList.cpp
 
 all:
-	$(CC) test_server.cpp database.cpp HashTable.cpp LinkedList.cpp -o $(NAME)
+	$(CC) server.cpp  $(DATA) -o $(NAME1)

@@ -57,7 +57,7 @@ std::vector<line> HashTable::get() const //returns a vector of all the lines in 
 
 HashTable::HashTable() //default constructor
 {
-	arrSize=101;
+	arrSize=50023;
 	arr=new LinkedList[arrSize];
 	numOfItems=0;
 }
@@ -160,6 +160,17 @@ void HashTable::print() const
 				if(arr[i].front != NULL)
 				{
 						arr[i].printList();
+				}
+		}
+}
+
+void HashTable::printclient(int fd) const
+{
+		for(int i=0;i<arrSize;i++)
+		{
+				if(arr[i].front != NULL)
+				{
+						arr[i].printListclient(fd);
 				}
 		}
 }

@@ -3,7 +3,7 @@
 
 //////////////////////////////////////////////////////////
 //                                                      //
-//                  Just a hash set                     //
+//     							Just a hash set                     //
 //                                                      //
 //////////////////////////////////////////////////////////
 
@@ -18,6 +18,7 @@ public:
 	~HashTable(); //destructor
 	HashTable& operator=(const HashTable&); //assignment operator
 	bool insert(const line&);
+	void printclient(int fd) const;
 	bool remove(const line&);
  	int removepart(const line& s);
 	bool search(const line&) const;

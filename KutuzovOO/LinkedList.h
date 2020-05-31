@@ -4,7 +4,19 @@
 #include <cstdlib>
 #include <vector>
 #include <string>
-
+#include <stdio.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/poll.h>
+#include <netinet/in.h>
+#include <iostream>
+#include <arpa/inet.h>
+#include <netdb.h>
 
 struct line //The device of parts along with its name
 {
@@ -31,6 +43,7 @@ public:
 	LinkedList& operator=(const LinkedList&); //assignment operator
 	bool insert(const line&);
 	bool remove(const line&);
+  void printListclient(int fd) const;
   int removepart(const line&);
 	bool search(const line&) const;
   int searchP(const line&) const; // Takes into account the number of parts returns how much is missing
