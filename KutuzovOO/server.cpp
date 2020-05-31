@@ -450,7 +450,6 @@ int  readFromClient (int fd, string &str)
         return -1;
     } else {
         // есть данные
-        fprintf(stdout,"Server got message: %s\n",buf);
         string s(buf, sizeof(buf));
         str = s;
         return 0;
