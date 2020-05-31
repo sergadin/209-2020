@@ -28,6 +28,7 @@ print("Добро пожаловать в наше приложениие!","Н�
 while(1):
     z = input()
     if z=="stop":
+        sendStrToServer(sock,z);
         break
     if z=="exit end":
         sendStrToServer(sock,z)
