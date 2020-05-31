@@ -62,8 +62,8 @@ int  main (void)
     act_set[0].events = POLLIN;
     act_set[0].revents = 0;
     int num_set = 1;
-    makedatabase(100,10,"items.txt","recipe.txt");
-    Database x("items.txt","recipe.txt");
+    //makedatabase(20,5,"items.txt","recipe.txt");
+    Database x("test_data.txt","test_recipe.txt");
     while (1) {
         // Проверим, не появились ли данные в каком-либо сокете.
         // В нашем варианте ждем до фактического появления данных.
@@ -116,7 +116,6 @@ int  main (void)
                               cout << det.name << endl;
                               string check;
                               ss >> check;
-                              cout << check.size() << " asda d" << check;
                               if(check.size()==0 ||  !is_number(check))
                               {
                                   int k=1;
@@ -243,6 +242,25 @@ int  main (void)
                               }
                               x.send_to_client(act_set[i].fd);
                           }
+                          else if(zapros == "getquant")
+                          {
+                              string det;
+                              ss >> det;
+                              string check;
+                              ss >> check;
+                              if(check != "end")
+                              {
+                                  int k=1;
+                                  send(act_set[i].fd, &k,4,MSG_WAITALL);
+                                  writeClient(act_set[i].fd,"Input error");
+                                  continue;
+                              }
+                              string answer  = to_string(x.GetQuant(det)) + " " + det + " in stock";
+                              cout << answer << endl;
+                              int k=1;
+                              send(act_set[i].fd, &k,4,MSG_WAITALL);
+                              writeClient(act_set[i].fd,answer);
+                          }
                           else if(zapros == "deletedetail")
                           {
                             line det;
@@ -332,6 +350,71 @@ int  main (void)
                               send(act_set[i].fd, &k,4,MSG_WAITALL);
                               writeClient(act_set[i].fd,"Input error");
                               continue;
+                          }
+                          else if(zapros == "makefrom")
+                          {
+                                string f;
+                                int flag = 0;
+                                vector<DeviceName> vect;
+                                ss.ignore(1);
+                                while(getline(ss,f,','))
+                                {
+                                      if(f == "end")
+                                      {
+                                          flag = 1;
+                                          break;
+                                      }
+                                      vect.push_back(f);
+                                      ss.ignore(1);
+                                }
+                                if(flag == 0)
+                                {
+                                    int k=1;
+                                    send(act_set[i].fd, &k,4,MSG_WAITALL);
+                                    writeClient(act_set[i].fd,"Input error");
+                                    continue;
+                                }
+                                MakeFromInfo inf = x.MakeFrom(vect);
+                                if(inf.all_right == true)
+                                {
+                                    if(inf.Deficit.size() > 0)
+                                    {
+                                        string ans = "You can make : ";
+                                        for(auto elm: inf.Deficit)
+                                        {
+                                            ans += elm.first + " ";
+                                            if(elm.second.size() == 0)
+                                            {
+                                                ans+="with no deficit";
+                                            }
+                                            else
+                                            {
+                                                ans += "with deficit :\"";
+                                                for(auto item: elm.second)
+                                                {
+                                                    ans+=item + " ";
+                                                }
+                                                ans += "\" ";
+                                            }
+                                        }
+                                        int k=1;
+                                        send(act_set[i].fd, &k,4,MSG_WAITALL);
+                                        writeClient(act_set[i].fd,ans);
+                                        continue;
+                                  }
+                                  else
+                                  {
+                                      int k=1;
+                                      send(act_set[i].fd, &k,4,MSG_WAITALL);
+                                      writeClient(act_set[i].fd,"You can't do anything");
+                                      continue;
+                                  }
+                                }
+
+                                int k=1;
+                                send(act_set[i].fd, &k,4,MSG_WAITALL);
+                                writeClient(act_set[i].fd,"Some components are not in stock");
+                                continue;
                           }
                           else{
                           int k=1;

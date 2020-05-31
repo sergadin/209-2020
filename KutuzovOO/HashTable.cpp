@@ -123,10 +123,10 @@ int HashTable::removepart(const line& s)
 	return successOrFail;
 }
 
-bool HashTable::search(const line& s) const //returns 1 if s exist in the hash table, 0 otherwise
+int HashTable::search(const line& s) const //returns 1 if s exist in the hash table, 0 otherwise
 {
 	int hash=hashFunc(s);
-	bool found=arr[hash].search(s);
+	int found=arr[hash].search(s);
 	return found;
 }
 
@@ -185,7 +185,7 @@ void HashTable::HashTableToFile(const std::string &filename_items) const
 				}
 		}
 }
-
+/*
 std::vector<line> HashTable::intersection(const HashTable& h) const //returns a vector of line containing intersection of calling object's data and h's data
 {
 	std::vector<line> ret_v;
@@ -222,3 +222,4 @@ std::vector<line> HashTable::difference(const HashTable& h) const //returns a ve
             ret_v.push_back(v2[i]);
     return ret_v;
 }
+*/

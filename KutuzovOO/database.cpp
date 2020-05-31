@@ -1,5 +1,6 @@
 #include "database.h"
 #include <sstream>
+#include <algorithm>
 
 Database::Database()
 {
@@ -189,6 +190,14 @@ MakeInfo Database::CanMake(const DeviceName &name, int quant)
 
 }
 
+int Database::GetQuant(const DeviceName &name) const
+{
+    line x;
+    x.name = name;
+    x.quant = 1;
+    return data.search(x);
+}
+
 void Database::MakeDetail(const DeviceName &name, int quant)
 {
   if(CanMake(name,quant).type !=all_right)
@@ -208,4 +217,55 @@ void Database::MakeDetail(const DeviceName &name, int quant)
   k.name  = name;
   k.quant = quant;
   data.insert(k);
+}
+
+MakeFromInfo Database::MakeFrom(const std::vector<DeviceName> &details)
+{
+    MakeFromInfo answer;
+    for(auto elm: details)
+    {
+        if((*this).GetQuant(elm) == 0)
+        {
+              answer.all_right = false;
+              return answer;
+        }
+    }
+    std::vector<DeviceName> make;
+    for(auto elm: known_recipes)
+    {
+        int flag = 1;
+        for(auto det: elm.second)
+        {
+            if(std::find(details.begin(), details.end(),det.first) == details.end())
+            {
+                flag = -1;
+                break;
+            }
+            if((*this).GetQuant(det.first) <= det.second)
+            {
+                  flag = -1;
+                  break;
+            }
+        }
+        if(flag==1)
+        {
+            make.push_back(elm.first);
+        }
+    }
+    for(auto elm: make)
+    {
+        std::cout << elm << std::endl;
+        std::vector<DeviceName> v;
+        for(auto det:  known_recipes[elm])
+        {
+            if((*this).GetQuant(det.first) - det.second < 5)
+            {
+                v.push_back(det.first);
+            }
+        }
+        answer.Deficit[elm] = v;
+    }
+
+    answer.all_right = true;
+    return answer;
 }

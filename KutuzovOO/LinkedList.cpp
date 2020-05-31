@@ -168,16 +168,16 @@ int LinkedList::searchP(const line& s) const
 	}
 	return s.quant;
 }
-bool LinkedList::search(const line& s) const
+int LinkedList::search(const line& s) const
 {
 	Node* temp=front;
 	while(temp!=NULL) //Traverse list
 	{
 		if(temp->data.name ==s.name)
-			return true;
+			return temp->data.quant;
 		temp = temp->next;
 	}
-	return false;
+	return 0;
 }
 
 std::vector<line> LinkedList::get() const

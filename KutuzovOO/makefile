@@ -5,3 +5,5 @@ DATA=database.cpp HashTable.cpp LinkedList.cpp
 
 all:
 	$(CC) server.cpp  $(DATA) -o $(NAME1)
+
+	

@@ -45,7 +45,7 @@ public:
 	bool remove(const line&);
   void printListclient(int fd) const;
   int removepart(const line&);
-	bool search(const line&) const;
+	int search(const line&) const;
   int searchP(const line&) const; // Takes into account the number of parts returns how much is missing
 	std::vector<line> get() const;
   void printList() const;
