@@ -36,7 +36,8 @@ while(1):
         break
     sendStrToServer(sock,z)
     a = getIntFromServer(sock)
-    print(a)
+    print("Сервер ответил:")
     for i in range(a):
         b = getIntFromServer(sock)
         print(getStrFromServer(sock,b))
+    print("Ввведите ваш запрос:")
