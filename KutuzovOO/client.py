@@ -21,8 +21,6 @@ def sendStrToServer(sock,z):
     packed_data = packer.pack(z.encode('utf-8'))
     sock.sendall(packed_data)
 
-
-
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_address = ('localhost', 5555)
 sock.connect(server_address)

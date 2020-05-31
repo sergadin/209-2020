@@ -66,7 +66,6 @@ void makedatabase(int size_, int levels,const std::string &namefileI, const std:
     }
     ofs.close();
     offs.close();
-
 }
 
 
