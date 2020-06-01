@@ -306,6 +306,10 @@ int  main (void)
                                 writeClient(act_set[i].fd,"Input error");
                                 continue;
                               }
+                              for (i=0; i<num_set; i++)
+                              {
+                                  close(act_set[i]);
+                              }
                               cout << "Good, bye\n";
                               close(sock);
                               return 0;
