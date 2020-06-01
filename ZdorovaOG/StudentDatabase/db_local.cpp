@@ -7,10 +7,11 @@
 
 int main() {
   DataBase db;
+  auto pid = db.RegisterUser();
   db.Load("__database.csv");
   while (std::cin) {
     try {
-      db.Process(std::cin, std::cout);
+      db.Process(std::cin, std::cout, pid);
     } catch (std::exception &ex) {
       std::cerr << ex.what() << std::endl;
     }

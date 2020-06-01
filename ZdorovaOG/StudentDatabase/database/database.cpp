@@ -11,14 +11,12 @@
 #include "util.h"
 
 void DataHolder::Insert(const Student &s) {
-  std::lock_guard<std::mutex> lock(_mutex);
   size_t id = _data.size();
   _data.push_back(s);
   _index.Insert(id, s);
 }
 
 bool DataHolder::Remove(size_t id) {
-  std::lock_guard<std::mutex> lock(_mutex);
   if (!_index.HasId(id)) return false;
   return _index.Remove(id, _data[id]);
 }
@@ -224,7 +222,7 @@ DataBase::Status DataBase::Process(std::istream &is, std::ostream &os,
 Index DataBase::ConstructIndex(const std::set<size_t> &ids) {
   Index index;
   for (auto id : ids) index.Insert(id, _data[id]);
-  return std::move(index);
+  return index;
 }
 
 void DataBase::Print(std::ostream &os, Columns what_col, const IdSet &ids) {
@@ -251,9 +249,13 @@ void DataBase::Print(std::ostream &os, Columns what_col,
 void DataBase::SetDelim(char delim) { _delim = delim; }
 
 int DataBase::RegisterUser() {
+  std::lock_guard<std::mutex> lock(_mutex);
   int id = _indexes.size();
   _indexes[id] = base::_index;
   return id;
 }
 
-bool DataBase::EraseUser(size_t pid) { return _indexes.erase(pid); }
+bool DataBase::EraseUser(size_t pid) { 
+  std::lock_guard<std::mutex> lock(_mutex);
+  return _indexes.erase(pid); 
+}
