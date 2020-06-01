@@ -23,6 +23,8 @@ class student
         student( const char * my_name="",double rt=0,int gr=0){ rating=rt; group=gr; strcpy(name, my_name);}
 		~student(){	name[0]=0; rating = 0; group = 0;}
 		void print(FILE * fp = stdout);
+		void write(int sock);
+		
         char *get_name(){ return name;}
 		double get_rt(){	return rating;}
 		int get_gr(){	return group;}
@@ -63,6 +65,7 @@ class list
         int add( student * prime);
 		int del_it(student * prime);
         void print( FILE * stream = stdout );
+		void write(int sock);
         void del(){   root->del(); root = 0;}
 		
 		int is_empty(){return (root == 0);}
@@ -95,6 +98,7 @@ class tree
         tree_node * root;
         tree_node * curr;
 		void rec_print( tree_node * node, int deg,  FILE * stream);
+		void rec_write( tree_node * node, int deg, int sock);
 		tree_node * parent_ret(tree_node * node);
     public:
         tree(student * prime ){   root = new tree_node( prime ); curr = 0;}
@@ -104,6 +108,7 @@ class tree
         int add( student * prime );
         int del_it( student * prime );
         void print ( FILE * stream = stdout);
+		void write(int sock);
         void del(){   root->del(); root = 0;}
 		
 		int is_empty(){return (root == 0);}
@@ -146,6 +151,7 @@ class hash
         int add(student * prime);
 		int del_it(student * prime);
         void print( FILE * stream = stdout );
+		void write(int sock);
         void del(){   for(int i=0; i<HASH; i++)	root[i]->del();}
 		
 		int get_index( int group){	return hash_fun(group);}
@@ -227,7 +233,7 @@ class comand
 	public:
 		comand(){ name_root = 0; rat_root = 0; gr_root = 0;}
 		~comand(){ name_root = 0; rat_root = 0; gr_root = 0;}
-		int analyze();
+		int analyze(char * com);
 		int analyze_upd();
 		cond_type find_cond(char *);
 		
@@ -266,6 +272,7 @@ class Session
 		int add( student * prime);
 		int del_it(student * elem);
 		void print(FILE * stream = stdout);
+		void write( int sock );
 		void eraze(){	if(root)	root->del(); root = 0; curr = 0;}
 		
 		int inside(student * elem);
@@ -287,7 +294,11 @@ class Database
 		Database(hash * base = 0){ my_hash = base; sess = new Session();}
 		~Database(){ my_hash = 0; delete sess; }
 		void base_print(FILE * stream = stdout){ my_hash->print(stream);}
+		void base_write(int sock){ my_hash->write(sock);}
+		
 		void sess_print(FILE * stream = stdout){ sess->print(stream);}
+		void sess_write(int sock){ sess->write(sock);}
+		
 		int add(student * prime){	my_hash->add(prime);}
 		void clear_sess(){	sess->eraze();}
 		void do_select(comand * cmd);

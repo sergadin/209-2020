@@ -1,4 +1,5 @@
  #include "struct.h"
+#include "head.h"
 
 int eq(double x)
 {
@@ -22,6 +23,14 @@ int tmp_correct(double res, cond_type O)//Проверка на корректн
 
 void student :: print( FILE * fp)
 {	fprintf( fp ,"%s \t%1.2f \t%d\n", name, rating, group );}
+
+void student :: write( int sock)
+{	
+	char pr[LEN];
+	sprintf( pr ,"%s \t%1.2f \t%d", name, rating, group );
+	write_socket(sock, pr);
+}
+
 
 student & student ::operator = (student &&x)//move
 {
@@ -99,6 +108,20 @@ void list :: print( FILE * stream )
     while( curr )
     {
         curr->data->print(stream);
+        curr = curr->next;
+    }
+    //fprintf( stream, "End of the list.\n");
+}
+
+void list :: write( int sock)
+{
+	char pr[LEN];
+    sprintf( pr, "List :\n");
+	write_socket(sock, pr);
+    curr = root;
+    while( curr )
+    {
+        curr->data->write(sock);
         curr = curr->next;
     }
     //fprintf( stream, "End of the list.\n");
@@ -224,6 +247,24 @@ void tree :: rec_print( tree_node * node, int tab,  FILE * stream)
 	if(node->right)	rec_print( node->right, tab+1, stream);
 	if(node->left)	rec_print( node->left, tab+1, stream);
 }
+
+void tree :: write( int sock)
+{
+	char pr[LEN];
+	sprintf( pr, "Tree :\n");
+	write_socket(sock, pr);
+	if(root)	rec_write(root, 0, sock);
+	//fprintf( stream, "End of the tree.\n");
+	return;
+}
+
+void tree :: rec_write( tree_node * node, int tab,  int sock)
+{
+	//for(int i = 0 ;  i < tab; i++)	sprintf(pr + 2*i, "  ");
+	node->data->write(sock);
+	if(node->right)	rec_write( node->right, tab+1, sock);
+	if(node->left)	rec_write( node->left, tab+1, sock);
+}
 //functions for hash
 
 int hash :: add( student * prime )
@@ -320,6 +361,32 @@ void hash :: print ( FILE * stream )
 		printf("Database is empty!\n");
 }
 
+void hash :: write( int sock)
+{
+	char pr[LEN];
+	int count = 0;
+	for( int i = 0 ; i < HASH; i++)
+	{
+		if(!root[i])	continue;
+		count ++;
+		curr = root[i];
+		//printf("\nHash[%d] starts here :", i);
+		while(curr)
+		{
+			write_socket(sock, " ");
+			sprintf(pr, "Group = %d\n", curr->group);
+			write_socket(sock, pr);
+			curr->my_list->write(sock);
+			write_socket(sock, " ");
+			curr->my_tree->write(sock);
+			curr = curr->next;
+		}
+		write_socket(sock, " ");
+	}
+	if(count == 0)
+		write_socket(sock, "Database is empty!\n");
+}
+
 int hash :: fill(int n, FILE * in)
 {
 	int gr;
@@ -398,50 +465,24 @@ void comand :: print(FILE * stream)
 	printf("\n");
 }
 
-int comand :: analyze_upd()
-{
-	char buff[100];
-	while(scanf("%s", buff)!=0)
-	{
-		if(strcmp(buff, "end")==0)	break;
-		else if(strcmp(buff, "group")==0)
-		{
-			int gr;
-			if(scanf(" = %d", &gr)==0) return 1;
-			gr_root = new cond_for_gr(SET, gr);
-		}
-		else if(strcmp(buff, "rating")==0)
-		{
-			double rat;
-			if(scanf(" = %lf", &rat)==0) return 1;
-			rat_root = new cond_for_rat(SET, rat);
-		}
-		else if(strcmp(buff, "name")==0)
-		{
-			if(scanf(" = %s", buff)==0) return 1;
-			name_root = new cond_for_name(SET, buff);
-		}
-		else	return 1;
-	}
-	return 0;
-}
-
-
-int comand :: analyze()
+int comand :: analyze(char * com)
 {
 	char buff[100];
 	char sign[3];
 	cond_type C;
-	while(scanf("%s", buff)!=0)
+	while(sscanf(com, "%s", buff)!=0)
 	{
 		if(strcmp(buff, "end")==0)	break;
 		else if(strcmp(buff, "group")==0)
 		{
-			if(scanf("%s", sign)==0) return 1;
+			com = strstr(com + 1 , " ");
+			if(sscanf(com, "%s", sign)==0) return 1;
+			com = strstr(com + 1 , " ");
 			C = find_cond(sign);
 			if(C == COND_NONE)	return 1;
 			int gr;
-			if(scanf("%d", &gr)==0) return 1;
+			if(sscanf(com, "%d", &gr)==0) return 1;
+			com = strstr(com + 1 , " ");
 			cond_for_gr * node = new cond_for_gr(C, gr);
 			cond_for_gr * next = gr_root;
 			gr_root = node;
@@ -449,11 +490,14 @@ int comand :: analyze()
 		}
 		else if(strcmp(buff, "rating")==0)
 		{
-			if(scanf("%s", sign)==0) return 1;
+			com = strstr(com + 1 , " ");
+			if(sscanf(com, "%s", sign)==0) return 1;
+			com = strstr(com + 1 , " ");
 			C = find_cond(sign);
 			if(C == COND_NONE)	return 1;
 			double rat;
-			if(scanf("%lf", &rat)==0) return 1;
+			if(sscanf(com, "%lf", &rat)==0) return 1;
+			com = strstr(com + 1 , " ");
 			cond_for_rat * node = new cond_for_rat(C, rat);
 			cond_for_rat * next = rat_root;
 			rat_root = node;
@@ -461,10 +505,13 @@ int comand :: analyze()
 		}
 		else if(strcmp(buff, "name")==0)
 		{
-			if(scanf("%s", sign)==0) return 1;
+			com = strstr(com + 1 , " ");
+			if(sscanf(com, "%s", sign)==0) return 1;
+			com = strstr(com + 1 , " ");
 			C = find_cond(sign);
 			if(C == COND_NONE)	return 1;
-			if(scanf("%s", buff)==0) return 1;
+			if(sscanf(com, "%s", buff)==0) return 1;
+			com = strstr(com + 1 , " ");
 			cond_for_name * node = new cond_for_name(C, buff);
 			cond_for_name * next = name_root;
 			name_root = node;
@@ -1089,6 +1136,24 @@ void Session :: print( FILE * stream )
     //fprintf( stream, "End of the list.\n");
 }
 
+void Session :: write( int sock )
+{
+	if(!root)
+	{
+		write_socket(sock, "Session is empty\n");
+		return ;
+	}
+    write_socket(sock, "Session :\n");
+    curr = root;
+    while( curr )
+    {
+        curr->data->write(sock);
+        curr = curr->next;
+    }
+	curr = 0;
+    //fprintf( stream, "End of the list.\n");
+}
+
 int Session :: inside(student * elem)
 {
 	double res;
@@ -1114,6 +1179,25 @@ int Session :: inside(student * elem)
 
 int main(int argc, char *argv[])
 {
+	fd_set active_set, read_set;
+    int i, opt, sock;
+    struct sockaddr_in addr;
+    char end[4];
+    strcpy(end, "end");
+    opt = 1;
+    sock = socket(PF_INET, SOCK_STREAM, 0);
+    if (sock < 0) {   perror ("Cannot create socket\n");   return -1;   }
+    puts("Socket created\n");
+    setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, sizeof(opt));
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(PORT);
+    addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    if (bind(sock, (struct sockaddr *)&addr, sizeof(addr)) < 0) {   perror("Cannot bind socket\n");   return -2;}
+    puts("Bind done\n");
+    if (listen(sock, 3) < 0) {   perror("Cannot be listened\n");   return -3;}
+    FD_ZERO(&active_set);
+    FD_SET(sock, &active_set);
+	
 	int n=atoi(argv[1]);
 	if((argc < 2)||n < 1)	return 0;
 	FILE * in = fopen(argv[2], "r");
@@ -1125,156 +1209,179 @@ int main(int argc, char *argv[])
 	Database * Base = new Database(my_hash);
 	my_hash = 0;
 	comand * cmd = new comand();
-	char com[100];
-	char *tmp;
-	int quit = 1;
-	while(quit)
-	{
-		cmd->clear();
-		printf("Input comand : ");
-		if(!scanf("%s", com))	continue;
-		switch(com[0])
-		{
-			case 'p':
-				{
-					Base->base_print(stdout);
-					break;
-				}
-			case 'i':
-				{
-					if(strstr(com,"insert")==com)
-					{
-						int gr;
-						double rt;
-						char name[64];
-						scanf("%s %lf %d", name, &rt, &gr);
-						student * prime = new student( name, rt, gr);
+	char tmp[LEN];
+	char * com;
+    int quit=1;
+    puts("Listen\n");
+    int st_sel=0;
+    while (true) {
+        read_set = active_set;
+        if (select(FD_SETSIZE, &read_set, 0, 0, 0) < 0) {
+            perror("Cannot select\n");
+            return -4;
+        }
+        if(!st_sel)  puts("Select comands in process");
+        st_sel++;
+        for (i = 0; i < FD_SETSIZE; i++)
+        {
+            if (FD_ISSET(i, &read_set))
+            {
+                if (i == sock)
+                {
+                    struct sockaddr_in client;
+                    socklen_t size = sizeof(client);
+                    int new_sock = accept(sock, (struct sockaddr *)&client, &size);
+                    if (new_sock < 0) {   perror ("cannot accept\n");   return -5;   }
+                    FD_SET(new_sock, &active_set);
+                }
+                else
+                {
+                    char buf[LEN];
+                    if(read_socket(i, buf) < 0) {   close(i);   FD_CLR(i, &active_set);}
+                    else
+                    {
+                        write_socket(i, buf);
+                        strcpy(tmp,buf);
+						com = tmp;
+                        quit = 1;
+						switch(com[0])
+						{
+							case 'p':
+								{
+									//Base->base_print(stdout);
+									Base->base_write(i);
+									break;
+								}
+							case 'i':
+								{
+									if(strstr(com,"insert")==com)
+									{
+										com = com + 7;
+										int gr;
+										double rt;
+										char name[64];
+										sscanf(com, "%s %lf %d", name, &rt, &gr);
+										student * prime = new student( name, rt, gr);
+
+										int ret = Base->add(prime);
+
+										if(ret == 1)	write_socket(i,"Already in base!\n");
+										else
+										{
+											write_socket(i,"inserted : ");
+											prime->write(i);
+										}
+										prime = 0;
+									}
+									break;
+								}
+							case 's':
+								{
+									if(strstr(com,"select")==com)
+									{
+										Base->clear_sess();
+
+										cmd->type = SELECT; 
+										int ret = cmd->analyze(com + 7);
+										if( ret == 1 )
+										{
+											cmd->type = CMD_NONE;
+											continue;
+										}
+										char pr[LEN];
+										if( ret < 0 )
+										{
+											sprintf(pr, "We have conter conditions! Error %3d\n", -ret);
+											write_socket(i,pr);
+											cmd->type = CMD_NONE;
+											continue;
+										}
+										//cmd->print();
+										Base->do_select( cmd);
+										sprintf(pr,"Selected %d elements\n", Base->sess_size());
+										write_socket(i,pr);
+									}
+									else if(strstr(com, "s_pr"))
+									{
+										Base->sess_write(i);
+									}
+									else if(strstr(com, "stop"))
+									{
+										quit = 2;
+									}
+									break;
+								}
+							case 'r':
+								{
+									if(strstr(com,"reselect")==com)
+									{
+										cmd->type = RESELECT;
+										int ret = cmd->analyze(com + 9);
+										if( ret == 1 )
+										{
+											cmd->type = CMD_NONE;
+											continue;
+										}
+										char pr[LEN];
+										if( ret < 0 )
+										{
+											sprintf(pr, "We have conter conditions! Error %3d\n", -ret);
+											write_socket(i,pr);
+											cmd->type = CMD_NONE;
+											continue;
+										}
+										//cmd->print();
+										Base->reselect(cmd);
+										sprintf(pr,"Reselected %d elements\n", Base->sess_size());
+										write_socket(i,pr);
+									}
+									break;
+								}
+							case 'q':
+								{
+									if(strstr(com,"quit")==com)	quit = 0;
+									break;
+								}
+							default:
+								continue;
+						}
 						
-						int ret = Base->add(prime);
-						
-						if(ret == 1)	printf("Already in base!\n");
-						else
-						{
-							printf("inserted - ");
-							prime->print();
-						}
-						prime = 0;
-					}
-					break;
-				}
-			case 'd':
-				{
-					/*
-					if(strstr(com,"del_it")==com)
-					{
-						int gr;
-						double rt;
-						char name[64];
-						scanf("%s %lf %d", name, &rt, &gr);
-						student * prime = new student( name, rt, gr);
-						int ret = my_hash->del_it(prime);
-						if(ret == 1)	printf("Not in base!\n");
-						else
-						{
-							printf("del_ited - ");
-							prime->print();
-						}
-						prime = 0;
-					}
-					else if(strstr(com,"delete")==com)
-					{
-						sess->eraze();
-						cmd->type = DELETE; 
-						int ret = cmd->analyze();
-						if( ret == 1 )
-						{
-							cmd->type = CMD_NONE;
-							continue;
-						}
-						cmd->print();
-					}
-					*/
-					break;
-				}
-			case 's':
-				{
-					if(strstr(com,"select")==com)
-					{
-						Base->clear_sess();
-						
-						cmd->type = SELECT; 
-						int ret = cmd->analyze();
-						if( ret == 1 )
-						{
-							cmd->type = CMD_NONE;
-							continue;
-						}
-						if( ret < 0 )
-						{
-							printf("We have conter conditions! Error %3d\n", -ret);
-							cmd->type = CMD_NONE;
-							continue;
-						}
-						cmd->print();
-						Base->do_select( cmd);
-						printf("Selected %d elements\n", Base->sess_size());
-					}
-					else if(strstr(com, "s_pr"))
-					{
-						Base->sess_print();
-					}
-					break;
-				}
-			case 'u':
-				{
-					if(strstr(com,"update")==com)
-					{
-						cmd->type = UPDATE;
-						int ret = cmd->analyze_upd( );
-						if( ret == 1 )
-						{
-							cmd->type = CMD_NONE;
-							continue;
-						}
-						cmd->print();
-						Base->update(cmd);
-					}
-					break;
-				}
-			case 'r':
-				{
-					if(strstr(com,"reselect")==com)
-					{
-						cmd->type = RESELECT;
-						int ret = cmd->analyze();
-						if( ret == 1 )
-						{
-							cmd->type = CMD_NONE;
-							continue;
-						}
-						if( ret < 0 )
-						{
-							printf("We have conter conditions! Error %3d\n", -ret);
-							cmd->type = CMD_NONE;
-							continue;
-						}
-						cmd->print();
-						Base->reselect(cmd);
-						printf("Relected %d elements\n", Base->sess_size());
-					}
-					break;
-				}
-			case 'q':
-				{
-					if(strcmp(com,"quit")==0)	quit = 0;
-					break;
-				}
-			default:
-				continue;
-		}
-	}
+                        if (quit == 0)
+                        {
+                            strcpy(buf,"quit;");
+                            strcpy(end,"ent");
+                            write_socket(i, end);
+                            puts("Select comands ends with success\n");
+                            puts("Listen\n");
+                            st_sel=0;
+                            close(i);
+                            FD_CLR(i, &active_set);
+                        }
+                        else if (quit == 2)
+                        {
+                            strcpy(buf,"stop;");
+                            strcpy(end,"ent");
+                            write_socket(i, end);
+                            puts("Select comands ends with success\n");
+                            puts("Clossing server\n");
+                            puts("Please wait some moments\n");
+                            close(i);
+                            FD_CLR(i, &active_set);
+                            return 0;
+                        }
+                        else
+                        {
+                            strcpy(end,"end");
+                            write_socket(i, end);
+                        }
+                    }
+                }
+            }
+        }
+    }
     return 0;
 }
+
 
 // functions for select
 
@@ -1412,16 +1519,12 @@ void Database :: rec_sel_tree(tree_node * curr, cond_for_name * n_eq, char * min
 	else if( strcmp(tmp, max) > 0)
 	{	if(curr->get_left())	rec_sel_tree(curr->get_left(), n_eq, min, smn, max, smx, cmd);
 	}
-	else if(( strcmp(tmp, min) == 0) && smn)
+	else if(( strcmp(tmp, min) == 0) && !smn)
 	{
-		if(sel_rat(curr->get_data(), cmd))
-			sess->add(curr->get_data());//Это нам подходит
 		if(curr->get_right())	rec_sel_tree(curr->get_right(), n_eq, min, smn, max, smx, cmd);
 	}
-	else if(( strcmp(tmp, max) == 0) && smx)
+	else if(( strcmp(tmp, max) == 0) && !smx)
 	{
-		if(sel_rat(curr->get_data(), cmd))
-			sess->add(curr->get_data());//Это нам подходит
 		if(curr->get_left())	rec_sel_tree(curr->get_left(), n_eq, min, smn, max, smx, cmd);
 	}
 	else
