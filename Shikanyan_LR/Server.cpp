@@ -1,14 +1,58 @@
-#include <iostream>
+#include <stdio.h>
+#include <errno.h>
 #include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+
+
+
+#include <iostream>
 #include <string>
 #include <vector>
 #include <fstream>
-#include <iomanip> // for setw (tab) 
-#include <ctime> 
+#include <iomanip> // for setw (tab)
+#include <ctime>
 #include <sstream>
 #include <map>
-#include <algorithm>   
+#include <algorithm>
 using namespace std;
+
+// Определимся с номером порта и другими константами.
+#define PORT    5555
+#define BUFLEN  512
+
+// Две вспомогательные функции для чтения/записи (см. ниже)
+int   readFromClient(int fd, char *buf);
+
+
+int  readFromClient (int fd, char *buf)
+{
+    int  nbytes;
+    nbytes = read(fd,buf,BUFLEN);
+    if ( nbytes<0 )
+    {
+        // ошибка чтения
+        perror ("Server: read failure");
+        return -1;
+    }
+    else if ( nbytes==0 )
+    {
+        // больше нет данных
+        return -1;
+    }
+    else
+    {
+        // есть данные
+        fprintf(stdout,"Server got message: %s\n",buf);
+        return 0;
+    }
+}
 
 
 
@@ -29,8 +73,8 @@ string random_name()
 string int_to_string(int i)
 {
 	string str;
-	stringstream ss;      
-	ss << i;    
+	stringstream ss;
+	ss << i;
 	str = ss.str();
 	return str;
 }
@@ -59,7 +103,7 @@ bool number_or_not(const string &com, int i)
 {
 	if(com[i] == '0' || com[i] == '1' || com[i] == '2' || com[i] == '3' || com[i] == '4')
 	{
-		return 1; 
+		return 1;
 	}
 	if(com[i] == '5' || com[i] == '6' || com[i] == '7' || com[i] == '8' || com[i] == '9')
 	{
@@ -81,7 +125,7 @@ bool pole_or_not(const string &com)
 {
 	if(com == "teacher" || com == "group" || com == "subject" || com == "date_time" || com == "room")
 	{
-		return 1; 
+		return 1;
 	}
 	return 0;
 }
@@ -90,29 +134,29 @@ bool comand_or_not(const string &com)
 {
 	if(com == "select" || com == "reselect" || com == "print")
 	{
-		return 1; 
+		return 1;
 	}
 	if(com == "generate" || com == "insert" || com == "remove" || com == "save")
 	{
-		return 1; 
+		return 1;
 	}
 	return 0;
 }
-  
-class MyException 
+
+class MyException
 {
 
   int code_;
   string message_;
 public:
 	MyException(int code, const string& message) : code_(code), message_(message) {}
-  	const string& message() const 
+  	const string& message() const
 	{ return message_; }
 	int code() const
 	{ return code_; }
 };
-  
-  
+
+
 struct crit
 {
     string pole;
@@ -121,7 +165,7 @@ struct crit
     string val;
 };
 
-struct info 
+struct info
 {
 	int index;
     string teacher;
@@ -131,8 +175,8 @@ struct info
     string subject;
     void print()
     {
-    	cout << endl << setw(10) << teacher << setw(5) << group << setw(6) << date_time; 
-		cout << setw(6) << room << setw(10) << subject << "   " << index;
+    	cout << endl << setw(10) << teacher << setw(5) << group << setw(6) << date_time;
+		cout << setw(6) << room << setw(10) << subject;
 	}
 	void clear()
 	{
@@ -153,12 +197,12 @@ struct proverka_insert_and_remove
     int room;
 };
 
-struct condition // ���� �������
+struct condition // ���� �������
 {
 	string comand;
 	vector<crit> criteri;
 	void make(const string &one_zapr)
-	{	
+	{
 		int i=0, q=0, i_copy, poin=0, coord_of_point;
 		crit cr;
 		string rab;
@@ -167,9 +211,10 @@ struct condition // ���� �������
 		{
 			comand.push_back(one_zapr[i]);
 			i++;
-		} 
+		}
 		if(comand_or_not(comand) == 0)
 		{
+			cout << "Ne comanda - " << comand;
 			throw MyException(-3, "Ne comanda");
 		}
  		i_copy = i;
@@ -181,7 +226,7 @@ struct condition // ���� �������
 			}
 			i++;
 		}
-		i = i_copy + 1;//��������� �� ������ �����
+		i = i_copy + 1;//��������� �� ������ �����
 		i_copy++;
 		poin = 0;
 		if(comand == "insert" || comand == "remove" || comand == "print")
@@ -215,7 +260,7 @@ struct condition // ���� �������
 				{
 					throw MyException(892, "V komande generate ne korectno zadano chislo");
 				}
-				cr.val += one_zapr[i]; 
+				cr.val += one_zapr[i];
 				i++;
 			}
 			criteri.push_back(cr);
@@ -264,7 +309,7 @@ struct condition // ���� �������
 			{
 				cout << prov.date_time << prov.group << prov.room << prov.subject << prov.teacher;
 				throw MyException(8, "Ykazani ne vse pola");
-			} 
+			}
 		}
 		else if(comand == "select" || comand == "reselect" || comand == "insert" || comand == "remove")
 		{
@@ -277,20 +322,20 @@ struct condition // ���� �������
 						throw MyException(-1, "= and =");
 					}
 					poin = 1;
-					
+
 				}
 				if(one_zapr[i] == ' ')
 				{
 					if(poin = 0)
 					{
-						throw MyException(-1, "Net ="); 
+						throw MyException(-1, "Net =");
 					}
 					poin = 0;
 				}
 				i++;
 			}
 			i = i_copy;
-			while(i < one_zapr.size() - 3) 
+			while(i < one_zapr.size() - 3)
 			{
 				while(one_zapr[i] != '=')
 				{
@@ -340,12 +385,12 @@ struct condition // ���� �������
 				}
 				else if(comand == "select" || comand == "reselect")
 				{
-					poin = 0; 
+					poin = 0;
 					while(one_zapr[i] != '-' && one_zapr[i] != ' ')
 					{
 						if(number_or_not(one_zapr,i) == 0)
 						{
-							if(one_zapr[i] != '*' || poin == 1)  
+							if(one_zapr[i] != '*' || poin == 1)
 							{
 								throw MyException(4, "Ne corectnoe chislo");
 							}
@@ -369,7 +414,7 @@ struct condition // ���� �������
 						{
 							if(number_or_not(one_zapr,i) == 0)
 							{
-								if(one_zapr[i] != '*' || poin == 1)  
+								if(one_zapr[i] != '*' || poin == 1)
 								{
 									throw MyException(6, "Ne corectnoe chislo");
 								}
@@ -415,9 +460,9 @@ struct condition // ���� �������
 					criteri.push_back(cr);
 					cr.low_val.clear();
 					cr.high_val.clear();
-					cr.pole.clear();		
+					cr.pole.clear();
 				}
-				else if(comand == "insert" || comand == "remove")//���������, �� ������ �����
+				else if(comand == "insert" || comand == "remove")//���������, �� ������ �����
 				{
 					while(one_zapr[i] != ' ')
 					{
@@ -433,8 +478,8 @@ struct condition // ���� �������
 					cr.low_val.clear();
 					cr.high_val.clear();
 					cr.pole.clear();
-				}	
-				
+				}
+
 				i++;
 			}
 			if(comand == "insert" || comand == "remove")
@@ -462,7 +507,7 @@ struct condition // ���� �������
 			cout << " low val - " << criteri[i].low_val << " val - " << criteri[i].val << endl;
     		i++;
 		}
-    	
+
 	}
 };
 
@@ -472,17 +517,83 @@ struct resultat
     string stroka;
     vector<info> inf;
     void print()
-    {	
+    {
     	if(stroka.empty() == 1)
-    	{
-    		for(int i = 0;i < inf.size();i++)
-    		{
-    			inf[i].print();	
+	    {
+	    	for(int i = 0;i < inf.size();i++)
+	    	{
+	    			inf[i].print();
+				}
 			}
+			else
+			{
+				cout << endl << stroka;
+			}
+	}
+	void send_to_cl(int fd)
+	{
+		char ch[512];
+		string stt;
+		int  nbytes, how, len;
+    unsigned char *s;
+
+		if(stroka.empty() == 1)
+		{
+			how = inf.size();
+      if(how == 0)
+      {
+        how = 1;
+        send(fd, &how, 4, MSG_WAITALL);
+        stt.append("No matching answers found");
+        len = stt.size();
+        send(fd, &len, 4, MSG_WAITALL);
+        strcpy(ch,stt.c_str());
+        nbytes = send(fd,ch,strlen(ch)+1,MSG_WAITALL);
+        if ( nbytes<0 )
+        {
+            perror ("Server: write failure");
+        }
+        stt.clear();
+      }
+      else
+      {
+  			send(fd, &how, 4, MSG_WAITALL); /* читаем длину сообщения */
+  			for(int i = 0;i < inf.size();i++)
+  			{
+  					stt.append(inf[i].teacher);
+  					stt.append("  ");
+  					stt.append(inf[i].group);
+  					stt.append("  ");
+  					stt.append(inf[i].date_time);
+  					stt.append("  ");
+  					stt.append(inf[i].room);
+  					stt.append("  ");
+  					stt.append(inf[i].subject);
+            stt.resize(stt.size() - 1);
+  					len = stt.size();
+  					send(fd, &len, 4, MSG_WAITALL);
+  					strcpy(ch,stt.c_str());
+  					nbytes = send(fd,ch,strlen(ch)+1,MSG_WAITALL);
+  					if ( nbytes<0 )
+  					{
+  							perror ("Server: write failure");
+  					}
+  					stt.clear();
+  			}
+      }
 		}
 		else
 		{
-			cout << endl << stroka;
+			how = 1;
+			send(fd, &how, 4, MSG_WAITALL);
+			len = stroka.size();
+			send(fd, &len, 4, MSG_WAITALL);
+			strcpy(ch,stroka.c_str());
+			nbytes = send(fd,ch,strlen(ch)+1,MSG_WAITALL);
+			if ( nbytes<0 )
+			{
+					perror ("Server: write failure");
+			}
 		}
 	}
 	void clear()
@@ -501,15 +612,21 @@ public:
 	{
 		res.push_back(el);
 	}
-	void print()
+	void print(int f)
 	{
-		int i=0;
-		cout << endl <<  "This is result" << endl;
+		int i=0, how;
+		how = res.size();
+		send(f, &how, 4, MSG_WAITALL); /* читаем длину сообщения */
+    fprintf (stdout,"Vsego otvetov - %d\n\n",how);
 		while(i < res.size())
 		{
-			res[i].print();
+			res[i].send_to_cl(f);
 			i++;
 		}
+	}
+	void clear()
+	{
+		res.clear();
 	}
 };
 
@@ -519,19 +636,19 @@ class Query
 private:
 	vector<condition> com;
 public:
-	Query(const string &zapr) // ��������� �� end-�� � ���������, ��� end ��������� � ����� end ������ 
+	void make(const string &zapr) // ��������� �� end-�� � ���������, ��� end ��������� � ����� end ������
 	{
 		int q = 0, i = 0;
 		string one_zapr;
 		condition s;
 		if(zapr[zapr.size()-4] != ' ' || zapr[zapr.size()-3] != 'e' || zapr[zapr.size()-2] != 'n' || zapr[zapr.size()-1] != 'd')
 		{
-			throw MyException(13, "Zapros konchaetsa ne ' end' ");
+			throw MyException(13, "Zapros konchaetsa ne na 'end' ");
 		}
-		while(i < zapr.size()-3)   //��������� ������ �� �������� 
+		while(i < zapr.size()-3)   //��������� ������ �� ��������
 		{
 			if(zapr[i] == ' ' && zapr[i+1] == 'e' && zapr[i+2] == 'n' && zapr[i+3] == 'd')
-			{ 
+			{
 				one_zapr=zapr.substr(q,i+4-q);
 				s.make(one_zapr);
 				com.push_back(s);
@@ -550,6 +667,10 @@ public:
 	condition elem(int i)
 	{
 		return com[i];
+	}
+	void clear()
+	{
+		com.clear();
 	}
 };
 
@@ -615,7 +736,7 @@ public:
 	Database(const string &file_name)
 	{
 		string a;
-		info line; 
+		info line;
 		int i = 0;
 		ifstream in;
 		in.open(file_name.c_str());
@@ -663,11 +784,11 @@ public:
 				line.room.clear();
 				line.subject.clear();
 				line.teacher.clear();
-				
+
 	        }
 	    }
 	    in.close();
-		i=0;	
+		i=0;
 		cout << "This is BAZA" << endl;
 	    while(i < inf.size())
 	    {
@@ -745,13 +866,14 @@ public:
 		}
 		else
 		{
-			for( iter = mp_g.begin(); iter != mp_g.end(); ++iter) 
+			for( iter = mp_g.begin(); iter != mp_g.end(); ++iter)
 			{
 				if(more(group_low,iter->first) == iter->first && more(iter->first,group_high) == group_high)
-				{				
+				{
 					ig.insert(ig.end(), mp_g[iter->first].begin(), mp_g[iter->first].end());
 				}
 		 	}
+      sort (ig.begin(), ig.end());
 		}
 		if(d == 0)
 		{
@@ -762,13 +884,14 @@ public:
 		}
 		else
 		{
-			for( iter = mp_d.begin(); iter != mp_d.end(); ++iter) 
+			for( iter = mp_d.begin(); iter != mp_d.end(); ++iter)
 			{
 				if(more(date_time_low,iter->first) == iter->first && more(iter->first,date_time_high) == date_time_high)
-				{				
+				{
 					id.insert(id.end(), mp_d[iter->first].begin(), mp_d[iter->first].end());
 				}
 		 	}
+      sort (id.begin(), id.end());
 		}
 		if(r == 0)
 		{
@@ -779,13 +902,14 @@ public:
 		}
 		else
 		{
-			for( iter = mp_r.begin(); iter != mp_r.end(); ++iter) 
+			for( iter = mp_r.begin(); iter != mp_r.end(); ++iter)
 			{
 				if(more(room_low,iter->first) == iter->first && more(iter->first,room_high) == room_high)
-				{				
+				{
 					ir.insert(ir.end(), mp_r[iter->first].begin(), mp_r[iter->first].end());
 				}
 		 	}
+      sort (ir.begin(), ir.end());
 		}
 		if(s == 0)
 		{
@@ -833,7 +957,7 @@ public:
 			else if(c.criteri[i].pole == "subject")
 			{
 				subject = c.criteri[i].val;
-				
+
 			}
 			i++;
 		}
@@ -843,7 +967,7 @@ public:
 		set_intersection(vdgr.begin(), vdgr.end(),vts.begin(), vts.end(),back_inserter(v));
 		return v;
 	}
-	
+
 	void save()
 	{
 		ofstream out;
@@ -895,7 +1019,7 @@ public:
 				inf.subject = random_name();
 				inf.index = global_index;
 	        	global_index++;
-				add_elem(inf);	
+				add_elem(inf);
 				number--;
 			}
 			otvet.stroka = "GENERATE is OK";
@@ -988,7 +1112,7 @@ public:
 					q--;
 				}
 			}
-			otvet.stroka = "RESELECT is OK";	
+			otvet.stroka = "RESELECT is OK";
 		}
 		else if(one_zapr.comand == "print")
 		{
@@ -1106,21 +1230,131 @@ public:
 
 int main(void)
 {
-    string st, base = "Base.txt";
-	condition s;
-	Result res;
-	getline(cin,st);
-	try
-	{
-		Database baza(base);
-		Query zapros(st);
-		res = baza.process(zapros);
-		res.print();
-	}
-	catch(MyException& my) 
-	{
- 		cerr << endl << "!!!! " << my.message() << " !!!!" << endl << "Code - " << my.code();
-	}
 
-	return 0;
+	    int     i, err, opt=1, how=1,len;
+	    int     sock, new_sock;
+	    fd_set  active_set, read_set;
+	    struct  sockaddr_in  addr;
+	    struct  sockaddr_in  client;
+	    char    buf[BUFLEN],ch[512];
+	    socklen_t  size;
+
+			string st, base = "Base.txt";
+			condition s;
+			Result res;
+			Database baza(base);
+			Query zapros;
+
+	    // Создаем TCP сокет для приема запросов на соединение
+	    sock = socket (PF_INET, SOCK_STREAM, 0);
+	    if ( sock<0 ) {
+	        perror ("Server: cannot create socket");
+	        exit (EXIT_FAILURE);
+	    }
+	    setsockopt(sock,SOL_SOCKET,SO_REUSEADDR,(char*)&opt,sizeof(opt));
+
+	    // Заполняем адресную структуру и
+	    // связываем сокет с любым адресом
+	    addr.sin_family = AF_INET;
+	    addr.sin_port = htons(PORT);
+	    addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	    err = bind(sock,(struct sockaddr*)&addr,sizeof(addr));
+	    if ( err<0 ) {
+	        perror ("Server: cannot bind socket");
+	        exit (EXIT_FAILURE);
+	    }
+
+	    // Создаем очередь на 3 входящих запроса соединения
+	    err = listen(sock,3);
+	    if ( err<0 ) {
+	        perror ("Server: listen queue failure");
+	        exit(EXIT_FAILURE);
+	    }
+
+	    // Подготавливаем множества дескрипторов каналов ввода-вывода.
+	    // Для простоты не вычисляем максимальное значение дескриптора,
+	    // а далее будем проверять все дескрипторы вплоть до максимально
+	    // возможного значения FD_SETSIZE.
+	    FD_ZERO(&active_set);
+	    FD_SET(sock, &active_set);
+
+	    // Основной бесконечный цикл проверки состояния сокетов
+	    while (1) {
+	        // Проверим, не появились ли данные в каком-либо сокете.
+	        // В нашем варианте ждем до фактического появления данных.
+	        read_set = active_set;
+	        if ( select(FD_SETSIZE,&read_set,NULL,NULL,NULL)<0 ) {
+	            perror("Server: select  failure");
+	            exit (EXIT_FAILURE);
+	        }
+
+	        // Данные появились. Проверим в каком сокете.
+	        for (i=0; i<FD_SETSIZE; i++) {
+	            if ( FD_ISSET(i,&read_set) ) {
+	                if ( i==sock ) {
+	                    // пришел запрос на новое соединение
+	                    size = sizeof(client);
+	                    new_sock = accept(sock,(struct sockaddr*)&client,&size);
+	                    if ( new_sock<0 ) {
+	                        perror("accept");
+	                        exit (EXIT_FAILURE);
+	                    }
+	                    fprintf (stdout, "Server: connect from host %s, port %hu.\n",
+	                            inet_ntoa(client.sin_addr),
+	                            ntohs(client.sin_port));
+	                    FD_SET(new_sock, &active_set);
+	                }
+									else
+									{
+	                    // пришли данные в уже существующем соединени
+	                    err = readFromClient(i,buf);
+	                    if ( err<0 )
+											{
+	                        // ошибка или конец данных
+	                        close (i);
+	                        FD_CLR(i,&active_set);
+	                    }
+											else
+											{
+	                        // а если это команда закончить работу?
+	                        if ( strstr(buf,"stop") )
+													{
+	                            close(i);
+	                            FD_CLR (i,&active_set);
+	                        }
+													else
+													{
+	                            // данные прочитаны нормально
+															st = string(buf);
+                         								     cout << "this is st -" << st << "----" << endl;
+															try
+															{
+																zapros.make(st);
+																res = baza.process(zapros);
+																res.print(i);
+  																res.clear();
+  																zapros.clear();
+                            								    memset(buf,0,st.size());
+															}
+															catch(MyException& my)
+															{
+
+																	cout <<  "!!!! " << my.message() << " !!!!" << endl << "Code - " << my.code() << endl;
+                                  strcpy(ch,my.message().c_str());
+                                  send(i, &how, 4, MSG_WAITALL);
+                                  send(i, &how, 4, MSG_WAITALL);
+                                  len = my.message().size();
+                                  send(i, &len, 4, MSG_WAITALL);
+                                  send(i,ch,strlen(ch)+1,MSG_WAITALL);
+                                  memset(buf,0,st.size());
+															}
+	                        }
+	                    }
+	                }
+	            }
+	        }
+	    }
+
+
+			return 0;
 }

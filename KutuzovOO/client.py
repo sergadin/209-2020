@@ -38,5 +38,7 @@ while(1):
     print("Сервер ответил:")
     for i in range(a):
         b = getIntFromServer(sock)
-        print(getStrFromServer(sock,b))
+        for j in range(b)
+            c = getIntFromServer(sock)
+            print(getStrFromServer(sock,b))
     print("Ввведите ваш запрос:")
