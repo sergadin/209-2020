@@ -8,78 +8,62 @@
 #include "database/database.h"
 #include "server/client_socket.h"
 #include "server/server.h"
+#include "server/socket_stream.h"
 
-enum QueryType { NewUser = 0, CloseDB = 1, Request = 2 };
-
-QueryType GetType(std::istream& is) {
-  std::string s;
-  std::getline(is, s);
-  if (s == "new_user") return QueryType::NewUser;
-  if (s == "close_db") return QueryType::CloseDB;
-  return QueryType::Request;
-}
-
-int GetUID(std::istream& is) {
-  std::string s;
-  std::getline(is, s);
-  return std::stoi(s);
-}
+using Status = DataBase::Status;
 
 int main(int argc, char const* argv[]) {
   int port = DEFAULT_PORT;
   if (argc > 1) port = std::stoi(argv[1]);
 
-  std::map<int, DataBase> dbs;
-  int max_users = 0;
+  DataBase db;
+  db.Load("__database.csv");
+  db.SetDelim(',');
 
   Server server;
   server.SetPort(port);
 
   server.OnAccept([&](std::weak_ptr<ClientSocket> socket) {
     if (auto s = socket.lock()) {
-      s->Write("Connected");
-      std::stringstream is(s->Read());
-      std::stringstream os;
-
-      auto qtype = GetType(is);
-      switch (qtype) {
-        case QueryType::NewUser: {
-          auto& db = dbs[max_users];
-          db.Load("__database.csv");
-          db.SetDelim(',');
-          s->Write(std::to_string(max_users));
-          ++max_users;
-          break;
-        }
-        case QueryType::CloseDB: {
-          auto uid = GetUID(is);
-          dbs.erase(uid);
-          s->Write("Closed");
-          break;
-        }
-        case QueryType::Request: {
-          auto uid = GetUID(is);
-          auto& db = dbs[uid];
-          try {
-            while (is.peek() != EOF) {
-              db.Process(is, os);
-            }
-            s->Write(os.str());
-          } catch (std::exception& ex) {
-            s->Write("Error:\n" + std::string(ex.what()));
-          }
-          break;
-        }
-        default:
-          s->Write(
-              "Something really bad happens. PLease contact your IT "
-              "administrator.");
-          s->Close();
-          throw std::logic_error("Unexpected request type");
+      SocketStream is(s->FileDescriptor());
+      SocketStream os(s->FileDescriptor());
+      std::string key;
+      is >> key;
+      if (key == "Xo4y_3a4eT") {
+        os << "+\7" << std::flush;
+        auto pid = db.RegisterUser();
+        s->SetPID(pid);
+      } else {
+        os << "Error: incorrect key" << std::flush;
+        s->Close();
       }
-      s->Close();
     }
   });
-  server.Listen();
+  server.OnRead([&](std::weak_ptr<ClientSocket> socket) {
+    if (auto s = socket.lock()) {
+      SocketStream is(s->FileDescriptor());
+      SocketStream os(s->FileDescriptor());
+      Status status = Status::Ok;
+      try {
+        status = db.Process(is, os, s->GetPID());
+      } catch (std::exception& ex) {
+        std::cerr << ex.what() << std::endl;
+        os << "Error:\n" << ex.what() << '\n';
+      }
+      while (is.get() != '\7')
+        ;
+      os << '\7' << std::flush;
+      if (status != Status::Ok) s->Close();
+      if (status == Status::Shutdown) {
+        exit(0);
+      }
+    }
+  });
+  std::cout << "Server started" << std::endl;
+  try {
+    server.Listen();
+  } catch (std::exception& ex) {
+    std::cerr << ex.what() << std::endl;
+  }
   return 0;
 }

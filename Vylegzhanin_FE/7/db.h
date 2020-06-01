@@ -4,14 +4,37 @@
 #include <map>
 #include <set>
 #include <vector>
+#include <sstream>
 using namespace std;
 
 #include "matrix.h"
 #include "exceptions.h"
 
+typedef enum{ERRC_OK, ERRC_BADISTREAM, ERRC_BADDATA, ERRC_SHUTDOWN, ERRC_UNKNOWN} err_code_t;
+
 struct QueryResult {
-	int err_code;
+	err_code_t err_code;
+	string err_msg;
 	vector<Matrix> output;
+
+public:
+	QueryResult():
+		err_code(ERRC_OK),
+		err_msg(),
+		output()
+		{}
+
+	QueryResult(vector<Matrix>& data):
+		err_code(ERRC_OK),
+		err_msg(),
+		output(data)
+		{}
+
+	QueryResult(err_code_t code, string msg):
+		err_code(code),
+		err_msg(msg),
+		output()
+		{}
 };
 
 class Database {
@@ -39,8 +62,7 @@ public:
 
 	QueryResult InteractWithMatrix(const Matrix& mat);
 
-	//бесполезная обёртка; надо или обобщить, или заменить, или убрать
-	QueryResult InteractWithMatrixFromIfstream(ifstream& fin);
+	QueryResult InteractWithMatrixFromBinaryStream(istream& in_stream);
 };
 
 #endif //DB_H

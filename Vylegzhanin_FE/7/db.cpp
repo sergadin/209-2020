@@ -16,7 +16,7 @@ Database::~Database() {
 void Database::SaveToFile() const {
 	ofstream fout(filename_);
 	if(!fout) {
-		throw ServerException("Database::SaveToFile", "Unable to save file");
+		throw ServerException("Unable to save file");
 	}
 	fout.write("DBASE",5);
 
@@ -39,7 +39,7 @@ void Database::SaveToFile() const {
 		for(auto set_it = m_set.begin(); set_it != m_set.end(); set_it++) {
 			int n = set_it->n_;
 			write_int(fout, &n);
-			set_it->WriteToFout(fout);//печать матрицы
+			set_it->WriteToOstream(fout);//печать матрицы
 		}
 	}
 
@@ -52,6 +52,8 @@ Database::Database(const string filename) {
 }
 
 void Database::ReloadFromFile(const string filename) {
+	cout << "{loading db from file named '" << filename << "'..." << endl;
+
 	filename_ = filename;
 	ifstream fin(filename);
 
@@ -82,6 +84,9 @@ void Database::ReloadFromFile(const string filename) {
 	}
 
 	fin.close();
+
+
+	cout << "db loaded successfully}." << endl;
 }
 
 bool Database::ContainsMatricesWithWidth(int m) const {
@@ -90,7 +95,7 @@ bool Database::ContainsMatricesWithWidth(int m) const {
 
 const set<Matrix>& Database::MatricesWithWidth(int m) const {
 	if(!ContainsMatricesWithWidth(m)) {
-		throw DatabaseException("Database::MatricesWithWidth", "matrices with that width not found");
+		throw DatabaseException("matrices with that width not found");
 	}
 
 	return data_.find(m)->second;
@@ -141,7 +146,7 @@ void Database::PrintInfo() const {
 
 QueryResult Database::InteractWithMatrix(const Matrix& mat) {
 	QueryResult result;
-	result.err_code = 0;
+	result.err_code = ERRC_OK;
 
 	cout << "db is interacting with mat=" << endl;
 	mat.Print();
@@ -158,26 +163,50 @@ QueryResult Database::InteractWithMatrix(const Matrix& mat) {
 	const set<Matrix>& right_multiplies = MatricesWithWidth(mat.m_);
 
 
-	cout << "found " << right_multiplies.size() << " matrices to multiply with. namely: {{" << endl; 
+	cout << "found " << right_multiplies.size() << " matrices to multiply with";
+	cout << endl;
+ 
+//	cout << ". namely: {{" << endl; 
 
 	for(auto it = right_multiplies.begin(); it != right_multiplies.end(); it++) {
-		cout << "we can multiply by" << endl;
-		it->Print();
-		cout << endl << "and get" << endl;
-		Matrix temp = mat * (*it);
-		temp.Print();
-		cout << endl;
-		result.output.push_back(temp);
+//		cout << "we can multiply by" << endl;
+//		it->Print();
+//		cout << endl << "and get" << endl;
+//		Matrix temp = mat * (*it);
+//		temp.Print();
+//		cout << endl;
 
-//		result.output.push_back(mat * (*it));
+//		result.output.push_back(temp);
+
+		result.output.push_back(mat * (*it));
 	}
-	cout << "}}. returning this list." << endl;
+//	cout << "}}. returning this list." << endl;
+
+
 	return result;
 }
 
-QueryResult Database::InteractWithMatrixFromIfstream(ifstream& fin) {
-	int n,m;
-	fin >> n;
-	fin >> m;
-	return InteractWithMatrix(Matrix(n, m, fin));
+QueryResult Database::InteractWithMatrixFromBinaryStream(istream& in_stream) {
+	int n = -1, m = -1;
+	Matrix mat(1,1);//заглушка
+
+	try{
+		read_int(in_stream, &n);
+		read_int(in_stream, &m);
+		mat = Matrix(n, m, in_stream);
+	}
+	catch(NullPtrException ex) {
+		return QueryResult(ERRC_BADISTREAM, ex.Message());
+	}
+	catch(MatrixSizeException ex) {
+		if(n == -1 && m == -1) {
+			return QueryResult(ERRC_BADISTREAM, ex.Message());
+		}
+		return QueryResult(ERRC_BADDATA, ex.Message());
+	}
+	catch(...) {
+
+	}
+
+	return InteractWithMatrix(mat);
 }

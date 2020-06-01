@@ -19,8 +19,11 @@ int main() {
 
 	Database db("temp.dbase");
 	
-	db.HandleQuery(ma);
-
+	QueryResult qr = db.InteractWithMatrix(ma);
+	cout << "err_msg='" << qr.err_msg << "'; res:" << endl;
+	for(auto it = qr.output.begin(); it != qr.output.end(); it++) {
+		it->Print();
+	}
 //	db.AddMatrix(ma);
 //	db.AddMatrix(mc);
 

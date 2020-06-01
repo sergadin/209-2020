@@ -6,18 +6,19 @@ F=-Wall -Werror -Wformat-security -Wignored-qualifiers -Winit-self -Wswitch-defa
 	-Wstrict-null-sentinel  -Wold-style-cast -Woverloaded-virtual \
 	-Wsign-promo -std=gnu++0x
 
+matrix.cpp: matrix.h exceptions.h
+db.cpp: matrix.cpp db.h
+matrixtest.cpp: db.cpp 
+server.cpp: db.cpp server.h
+servtest.cpp: server.cpp
+
 %.o: %.cpp
 	c++ -c $F $< -o $@
 
-matrix.cpp: matrix.h exceptions.h
-db.cpp: exceptions.h db.h
-matrixtest.cpp: db.h matrix.h 
-server.cpp: server.h
-servtest.cpp: db.h matrix.h server.h
-
 test_matrix: matrix.o db.o matrixtest.o
-	c++ $F matrix.o db.o matrixtest.o -o test_matrix
+	c++ $F matrix.o db.o matrixtest.o -o testmatrix
+	./testmatrix
 
 test_server: matrix.o db.o server.o servtest.o
-	c++ $F matrix.o db.o server.o servtest.o -o test_server
-
+	c++ $F matrix.o db.o server.o servtest.o -o testserver
+	./testserver

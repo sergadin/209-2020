@@ -17,15 +17,18 @@ ClientSocket::ClientSocket(int fileDescriptor, Server &server)
 
 ClientSocket::~ClientSocket() {}
 
-int ClientSocket::fileDescriptor() const { return _fileDescriptor; }
+int ClientSocket::FileDescriptor() const { return _fileDescriptor; }
+
+void ClientSocket::SetPID(size_t pid) { _pid = pid; }
+
+size_t ClientSocket::GetPID() const { return _pid; }
 
 void ClientSocket::Close() { _server.Close(_fileDescriptor); }
 
 void ClientSocket::Write(const std::string &data) {
-  auto data_ = data + "\7";
   auto result =
-      send(_fileDescriptor, reinterpret_cast<const void *>(data_.c_str()),
-           data_.size(), 0);
+      send(_fileDescriptor, reinterpret_cast<const void *>(data.c_str()),
+           data.size(), 0);
 
   if (result == -1) throw std::runtime_error(std::string(strerror(errno)));
 }
@@ -33,22 +36,14 @@ void ClientSocket::Write(const std::string &data) {
 std::string ClientSocket::Read() {
   std::string message;
 
-  char buffer[256] = {0};
-  ssize_t numBytes = 0;
+  char buffer[256];
+  memset(buffer, 0, 256);
+  ssize_t num_bytes = 0;
 
-  while (true) {
-    numBytes = recv(_fileDescriptor, buffer, sizeof(buffer), MSG_DONTWAIT);
-    if (message.size() > 0 && numBytes == -1) {
-#ifdef DEBUG
-      std::cerr << "Socket error" << std::endl;
-#endif
-      numBytes = 0;
-    }
-    buffer[numBytes] = 0;
+  while ((num_bytes = recv(_fileDescriptor, buffer, sizeof(buffer),
+                           MSG_DONTWAIT)) > 0) {
+    buffer[num_bytes] = 0;
     message += buffer;
-    if (message.size() > 0 && message.back() == '\7')
-      break;
   }
-  message.pop_back();
   return message;
 }

@@ -20,73 +20,52 @@ def get_word(s):
 
 
 class DataBaseClient:
-    def __init__(self, addr='localhost', port=8080, timeout=10, buffsize=4096):
+    def __init__(self, addr='localhost', port=8989, timeout=10, buffsize=4096):
         self.port = port
         self.addr = addr
         self.timeout = timeout
         self.buffsize = buffsize
-        self.id = self.raw_query('new_user')
+        self.sock = socket.socket()
+        self.connected = False
+        print('Try to connect')
+        self.sock.connect((self.addr, self.port))
+        is_pinged = self.query('Xo4y_3a4eT', 2, socket.MSG_WAITALL, True)
+        if is_pinged != '+':
+            raise Exception('Server abort connection. Relaunch program')
         print('Session started')
+        self.connected = True
 
     def __del__(self):
-        self.raw_query(f'close_db\n{self.id}')
-
-    def read(self, s):
-        try:
-            data = s.recv(self.buffsize)
-            return data
-        except (ConnectionResetError, ConnectionAbortedError, BlockingIOError, AttributeError, OSError) as ex:
-            print(ex)
-            return b''
-
-    def raw_query(self, request):
-        with socket.socket() as s:
-            status = ''
-            s.setblocking(0)
-            s.settimeout(self.timeout)
-            print('Try to connect')
-            s.connect((self.addr, self.port))
-            while True:
-                data_part = self.read(s)
-                data_part = data_part.decode()
-                if data_part.find('\7') >= 0:
-                    status += data_part[:data_part.find('\7')]
-                    data = status[data_part.find('\7'):]
-                    break
-                else:
-                    status += data_part
-            print(status)
-            print('Process request')
-            s.send((request+'\7').encode())
-            while True:
-                data_part = self.read(s)
-                data_part = data_part.decode()
-                if data_part.find('\7') >= 0:
-                    data += data_part[:data_part.find('\7')]
-                    break
-                else:
-                    data += data_part
-            print('Done')
-            return data
+        if self.connected:
+            self.query('disconnect')
+        self.sock.close()
 
     def check(self, request):
-        req_type = get_word(request)
-        if req_type in ['help', 'add', 'delete']:
+        req_type = get_word(request).lower()
+        if req_type in ['help', 'disconnect', 'delete', 'exit']:
             return True
         return compare_lowered_postfix(request.rstrip(), 'end')
 
-    def query(self, request):
-        if self.check(request):
-            return self.raw_query(f'request\n{self.id}\n{request}')
+    def query(self, request, buffsize=None, flag=0, skip_check=False):
+        if skip_check or self.check(request):
+            self.sock.send((request + ' \7').encode())
+            data = ''
+            while True:
+                data_part = self.sock.recv(self.buffsize if buffsize is None else buffsize, flag)
+                data_part = data_part.decode()
+                data += data_part
+                if data_part[-1] == '\7':
+                    break
+            return data[:-1]
         else:
             print('Request should ends with "end"')
             return ''
 
 
-addr, port = 'localhost', 8080
+addr, port = 'localhost', 8989
 use_previous_inp = False
 
-inp = input('Type server addr and port separated by comma.\nFor default ("localhost", 8080) just press Enter\n')
+inp = input('Type server addr and port separated by comma.\nFor default ("localhost", 8989) just press Enter\n')
 if inp.strip() != '':
     addr, port = inp.split(',')
 
@@ -97,15 +76,15 @@ while True:
         inp = input()
     use_previous_inp = False
 
-    if compare_lowered_prefix(inp, 'exit'):
-        break
-
     data = cli.query(inp.strip())
     if data != '':
         if compare_lowered_prefix(data, 'help:'):
             print(data)
         elif compare_lowered_prefix(data, 'error:'):
             print(data)
+        elif data == 'disconnected':
+            cli.connected = False
+            break
         else:
             df = pandas.read_csv(StringIO(data))
             print(df)
