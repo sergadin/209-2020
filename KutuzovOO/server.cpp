@@ -308,7 +308,7 @@ int  main (void)
                               }
                               for (i=0; i<num_set; i++)
                               {
-                                  close(act_set[i]);
+                                  close(act_set[i].fd);
                               }
                               cout << "Good, bye\n";
                               close(sock);
