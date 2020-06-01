@@ -11,12 +11,14 @@
 #include "util.h"
 
 void DataHolder::Insert(const Student &s) {
+  std::lock_guard<std::mutex> lock(_mutex);
   size_t id = _data.size();
   _data.push_back(s);
   _index.Insert(id, s);
 }
 
 bool DataHolder::Remove(size_t id) {
+  std::lock_guard<std::mutex> lock(_mutex);
   if (!_index.HasId(id)) return false;
   return _index.Remove(id, _data[id]);
 }
@@ -91,47 +93,50 @@ void DataHolder::Save(std::ostream &os) {
   os.write(&buffer[0], buffer.size());
 }
 
-void DataBase::Select(std::istream &is) {
+void DataBase::Select(std::istream &is, size_t pid) {
+  std::lock_guard<std::mutex> lock(_mutex);
 #ifdef DEBUG
   LOG_DURATION("Process selection");
 #endif
   auto process_tree = ParseExpression(is);
-  ConstructIndex(process_tree->Process(base::_index));
+  _indexes[pid] = ConstructIndex(process_tree->Process(base::_index));
 }
 
-void DataBase::Reselect(std::istream &is) {
+void DataBase::Reselect(std::istream &is, size_t pid) {
 #ifdef DEBUG
   LOG_DURATION("Process selection");
 #endif
   auto process_tree = ParseExpression(is);
-  ConstructIndex(process_tree->Process(_index));
+  _indexes[pid] = ConstructIndex(process_tree->Process(_indexes[pid]));
 }
 
-void DataBase::Print(std::istream &is, std::ostream &os) {
+void DataBase::Print(std::istream &is, std::ostream &os, size_t pid) {
   auto [fields, sortby] = ParseFieldList(is);
   if (fields.empty()) fields = {"name", "group", "rating", "info"};
   for (const auto &col : fields) {
     os << col << (col == fields.back() ? '\n' : _delim);
   }
   if (sortby == "id") {
-    Print(os, fields, _index.GetIds());
+    Print(os, fields, _indexes[pid].GetIds());
   } else if (sortby == "name") {
-    Print(os, fields, _index.GetNameMap());
+    Print(os, fields, _indexes[pid].GetNameMap());
   } else if (sortby == "group") {
-    Print(os, fields, _index.GetGroupMap());
+    Print(os, fields, _indexes[pid].GetGroupMap());
   } else if (sortby == "rating") {
-    Print(os, fields, _index.GetRatingMap());
+    Print(os, fields, _indexes[pid].GetRatingMap());
   } else {
     throw std::logic_error("Uknown sort_by field");
   }
 }
 
-void DataBase::Delete() {
-  for (auto id : _index.GetIds()) Remove(id);
-  _index.Clear();
+void DataBase::Delete(size_t pid) {
+  std::lock_guard<std::mutex> lock(_mutex);
+  for (auto id : _indexes[pid].GetIds()) Remove(id);
+  _indexes[pid].Clear();
 }
 
 void DataBase::Add(std::istream &is) {
+  std::lock_guard<std::mutex> lock(_mutex);
   Student s;
   s.name = ParseString(is);
   s.group = ParseInteger(is);
@@ -140,18 +145,19 @@ void DataBase::Add(std::istream &is) {
   Insert(s);
 }
 
-void DataBase::Process(std::istream &is, std::ostream &os) {
+DataBase::Status DataBase::Process(std::istream &is, std::ostream &os,
+                                   size_t pid) {
   std::string query;
   is >> query;
   for (auto &c : query) c = std::tolower(c);
   if (query == "select") {
-    Select(is);
+    Select(is, pid);
   } else if (query == "reselect") {
-    Reselect(is);
+    Reselect(is, pid);
   } else if (query == "print") {
-    Print(is, os);
+    Print(is, os, pid);
   } else if (query == "delete") {
-    Delete();
+    Delete(pid);
   } else if (query == "add") {
     Add(is);
   } else if (query == "dump") {
@@ -161,7 +167,11 @@ void DataBase::Process(std::istream &is, std::ostream &os) {
   } else if (query == "save") {
     Save("__database.txt");
   } else if (query == "exit") {
-    exit(0);
+    os << "disconnected";
+    return Status::Shutdown;
+  } else if (query == "disconnect") {
+    os << "disconnected";
+    return Status::Close;
   } else if (query == "help") {
     os << "Help:\n";
     os << "This is the student database.  Usage:\n"
@@ -208,11 +218,13 @@ void DataBase::Process(std::istream &is, std::ostream &os) {
   } else {
     throw std::logic_error("Unknown request. Use help for info");
   }
+  return Status::Ok;
 }
 
-void DataBase::ConstructIndex(const std::set<size_t> &ids) {
-  _index.Clear();
-  for (auto id : ids) _index.Insert(id, _data[id]);
+Index DataBase::ConstructIndex(const std::set<size_t> &ids) {
+  Index index;
+  for (auto id : ids) index.Insert(id, _data[id]);
+  return std::move(index);
 }
 
 void DataBase::Print(std::ostream &os, Columns what_col, const IdSet &ids) {
@@ -237,3 +249,11 @@ void DataBase::Print(std::ostream &os, Columns what_col,
 }
 
 void DataBase::SetDelim(char delim) { _delim = delim; }
+
+int DataBase::RegisterUser() {
+  int id = _indexes.size();
+  _indexes[id] = base::_index;
+  return id;
+}
+
+bool DataBase::EraseUser(size_t pid) { return _indexes.erase(pid); }

@@ -3,7 +3,7 @@
 
 //////////////////////////////////////////////////////////
 //                                                      //
-//                  Just a hash set                     //
+//     							Just a hash set                     //
 //                                                      //
 //////////////////////////////////////////////////////////
 
@@ -18,16 +18,17 @@ public:
 	~HashTable(); //destructor
 	HashTable& operator=(const HashTable&); //assignment operator
 	bool insert(const line&);
+	void printclient(int fd) const;
 	bool remove(const line&);
  	int removepart(const line& s);
-	bool search(const line&) const;
+	int search(const line&) const;
   int searchP(const line&) const; // Takes into account the number of parts returns how much is missing
 	int size() const; //return numOfItems
 	int maxSize() const; //return arrSize
 	double loadFactor() const;
-	std::vector<line> intersection(const HashTable&) const;
-	std::vector<line> unions(const HashTable&) const;
-	std::vector<line> difference(const HashTable&) const;
+	//std::vector<line> intersection(const HashTable&) const;
+	//std::vector<line> unions(const HashTable&) const;
+//	std::vector<line> difference(const HashTable&) const;
 	void HashTableToFile(const std::string &filename_items) const;
 	void print() const;
 

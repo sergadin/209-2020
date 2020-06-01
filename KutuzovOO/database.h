@@ -8,6 +8,19 @@
 #include <map>
 #include <fstream>
 #include <list>
+#include <stdio.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/poll.h>
+#include <netinet/in.h>
+#include <iostream>
+#include <arpa/inet.h>
+#include <netdb.h>
 #include "HashTable.h"
 
 typedef std::string DeviceName;
@@ -27,6 +40,14 @@ struct MakeInfo
    }
 };
 
+struct MakeFromInfo
+{
+    bool all_right;
+    std::map<DeviceName,std::vector<DeviceName>> Deficit;
+};
+
+
+
 
 class Database
 {
@@ -37,8 +58,10 @@ public:
   Database(); //Default constructor does nothing
   Database(const std::string &filename_items, const std::string &filename_recipes);  // Reads the database from files
   void print() const;  // It's clear what he's doing)
+  void send_to_client(int fd) const;
   void DatabaseToFile(const std::string &filename_items, const std::string &filename_recipes) const;  // Writes the database to files
   void DatabaseFromFile(const std::string &filename_items, const std::string &filename_recipes); // Reads the database from files
+  int GetQuant(const DeviceName &name) const;
   void AddDetail(const DeviceName &name, int quant);  // Adds device in the specified quantity
   void AddRecipe(const DeviceName &name, Recipe rec);  // Adds a recipe
   int deleteDetail(const DeviceName &name);  // Removes an item from the warehouse
@@ -46,7 +69,7 @@ public:
   MakeInfo CanMake(const DeviceName &name, int quant); //Checking whether a part can be created
   int dbsize() const; // Number of part types
   void MakeDetail(const DeviceName &name, int quant); //Creates a device
-  //vector<DeviceName> MakeFrom(const vector<DeviceName> &details) // Second type of request
+  MakeFromInfo MakeFrom(const std::vector<DeviceName> &details); // Second type of request
 
 };
 

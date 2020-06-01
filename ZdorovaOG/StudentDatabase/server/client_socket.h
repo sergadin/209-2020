@@ -18,11 +18,14 @@ class ClientSocket {
   ClientSocket(int fileDescriptor, Server &server);
   ~ClientSocket();
 
-  int fileDescriptor() const;
+  int FileDescriptor() const;
+
+  void SetPID(size_t pid);
+  size_t GetPID() const;
 
   void Close();
-  void Write(const std::string &data);
 
+  void Write(const std::string &data);
   std::string Read();
 
   ClientSocket(const ClientSocket &) = delete;
@@ -30,5 +33,6 @@ class ClientSocket {
 
  private:
   int _fileDescriptor = -1;
+  size_t _pid = -1;
   Server &_server;
 };

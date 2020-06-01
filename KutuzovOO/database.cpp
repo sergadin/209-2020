@@ -1,5 +1,6 @@
 #include "database.h"
 #include <sstream>
+#include <algorithm>
 
 Database::Database()
 {
@@ -34,8 +35,9 @@ Database::Database(const std::string &filename_items, const std::string &filenam
       {
           int quantt;
           ss >> quantt;
-          ss.ignore(2);
+          ss.ignore(1);
           rrecipe[f] = quantt;
+          ss.ignore(1);
       }
       known_recipes[dname] = rrecipe;
   }
@@ -69,8 +71,9 @@ void Database::DatabaseFromFile(const std::string &filename_items, const std::st
       {
           int quantt;
           ss >> quantt;
-          ss.ignore(2);
+          ss.ignore(1);
           rrecipe[f] = quantt;
+          ss.ignore(1);
       }
       known_recipes[dname] = rrecipe;
   }
@@ -94,9 +97,9 @@ void Database::DatabaseToFile(const std::string &filename_items, const std::stri
 
 void Database::print() const
 {
-    std::cout << "Items in storage:\n";
+    std::cout << "\nItems in storage:\n\n";
     data.print();
-    std::cout << "Known recipes:\n";
+    std::cout << "\nKnown recipes:\n\n";
     for(auto elm: known_recipes)
     {
       std::cout << elm.first << " - ";
@@ -107,6 +110,27 @@ void Database::print() const
       std::cout << std::endl;
     }
 
+}
+void Database::send_to_client(int fd) const
+{
+    int k=data.size() +  known_recipes.size();
+    send(fd, &k,4,MSG_WAITALL);
+    data.printclient(fd);
+    for(auto elm: known_recipes)
+    {
+      std::string str = elm.first + " - ";
+      for(auto items: elm.second)
+      {
+          str +=  items.first + " " + std::to_string(items.second) + "; ";
+      }
+      char *chrstr = new char[str.length() + 1];
+      int  zplen  =str.length();
+      strcpy(chrstr, str.c_str());
+
+      send(fd, &zplen,4,MSG_WAITALL);
+      send(fd, chrstr, str.length(), MSG_WAITALL);
+      delete [] chrstr;
+    }
 }
 void Database::AddDetail(const std::string &name, int quant)
 {
@@ -166,6 +190,14 @@ MakeInfo Database::CanMake(const DeviceName &name, int quant)
 
 }
 
+int Database::GetQuant(const DeviceName &name) const
+{
+    line x;
+    x.name = name;
+    x.quant = 1;
+    return data.search(x);
+}
+
 void Database::MakeDetail(const DeviceName &name, int quant)
 {
   if(CanMake(name,quant).type !=all_right)
@@ -185,4 +217,55 @@ void Database::MakeDetail(const DeviceName &name, int quant)
   k.name  = name;
   k.quant = quant;
   data.insert(k);
+}
+
+MakeFromInfo Database::MakeFrom(const std::vector<DeviceName> &details)
+{
+    MakeFromInfo answer;
+    for(auto elm: details)
+    {
+        if((*this).GetQuant(elm) == 0)
+        {
+              answer.all_right = false;
+              return answer;
+        }
+    }
+    std::vector<DeviceName> make;
+    for(auto elm: known_recipes)
+    {
+        int flag = 1;
+        for(auto det: elm.second)
+        {
+            if(std::find(details.begin(), details.end(),det.first) == details.end())
+            {
+                flag = -1;
+                break;
+            }
+            if((*this).GetQuant(det.first) <= det.second)
+            {
+                  flag = -1;
+                  break;
+            }
+        }
+        if(flag==1)
+        {
+            make.push_back(elm.first);
+        }
+    }
+    for(auto elm: make)
+    {
+        std::cout << elm << std::endl;
+        std::vector<DeviceName> v;
+        for(auto det:  known_recipes[elm])
+        {
+            if((*this).GetQuant(det.first) - det.second < 5)
+            {
+                v.push_back(det.first);
+            }
+        }
+        answer.Deficit[elm] = v;
+    }
+
+    answer.all_right = true;
+    return answer;
 }

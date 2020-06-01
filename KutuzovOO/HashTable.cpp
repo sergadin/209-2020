@@ -57,7 +57,7 @@ std::vector<line> HashTable::get() const //returns a vector of all the lines in 
 
 HashTable::HashTable() //default constructor
 {
-	arrSize=101;
+	arrSize=50023;
 	arr=new LinkedList[arrSize];
 	numOfItems=0;
 }
@@ -123,10 +123,10 @@ int HashTable::removepart(const line& s)
 	return successOrFail;
 }
 
-bool HashTable::search(const line& s) const //returns 1 if s exist in the hash table, 0 otherwise
+int HashTable::search(const line& s) const //returns 1 if s exist in the hash table, 0 otherwise
 {
 	int hash=hashFunc(s);
-	bool found=arr[hash].search(s);
+	int found=arr[hash].search(s);
 	return found;
 }
 
@@ -163,6 +163,17 @@ void HashTable::print() const
 				}
 		}
 }
+
+void HashTable::printclient(int fd) const
+{
+		for(int i=0;i<arrSize;i++)
+		{
+				if(arr[i].front != NULL)
+				{
+						arr[i].printListclient(fd);
+				}
+		}
+}
 void HashTable::HashTableToFile(const std::string &filename_items) const
 {
 		std::ofstream ofs(filename_items);
@@ -174,7 +185,7 @@ void HashTable::HashTableToFile(const std::string &filename_items) const
 				}
 		}
 }
-
+/*
 std::vector<line> HashTable::intersection(const HashTable& h) const //returns a vector of line containing intersection of calling object's data and h's data
 {
 	std::vector<line> ret_v;
@@ -211,3 +222,4 @@ std::vector<line> HashTable::difference(const HashTable& h) const //returns a ve
             ret_v.push_back(v2[i]);
     return ret_v;
 }
+*/

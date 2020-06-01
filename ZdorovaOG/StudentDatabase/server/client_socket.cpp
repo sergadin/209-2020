@@ -6,8 +6,10 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <iostream>
 #include <stdexcept>
 
+#include "../config/config.h"
 #include "server.h"
 
 ClientSocket::ClientSocket(int fileDescriptor, Server &server)
@@ -15,7 +17,11 @@ ClientSocket::ClientSocket(int fileDescriptor, Server &server)
 
 ClientSocket::~ClientSocket() {}
 
-int ClientSocket::fileDescriptor() const { return _fileDescriptor; }
+int ClientSocket::FileDescriptor() const { return _fileDescriptor; }
+
+void ClientSocket::SetPID(size_t pid) { _pid = pid; }
+
+size_t ClientSocket::GetPID() const { return _pid; }
 
 void ClientSocket::Close() { _server.Close(_fileDescriptor); }
 
@@ -30,14 +36,14 @@ void ClientSocket::Write(const std::string &data) {
 std::string ClientSocket::Read() {
   std::string message;
 
-  char buffer[256] = {0};
-  ssize_t numBytes = 0;
+  char buffer[256];
+  memset(buffer, 0, 256);
+  ssize_t num_bytes = 0;
 
-  while ((numBytes = recv(_fileDescriptor, buffer, sizeof(buffer),
-                          MSG_DONTWAIT)) > 0) {
-    buffer[numBytes] = 0;
+  while ((num_bytes = recv(_fileDescriptor, buffer, sizeof(buffer),
+                           MSG_DONTWAIT)) > 0) {
+    buffer[num_bytes] = 0;
     message += buffer;
   }
-
   return message;
 }

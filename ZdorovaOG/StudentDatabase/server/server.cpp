@@ -141,7 +141,7 @@ void Server::Listen() {
           auto itSocket =
               std::find_if(_clientSockets.begin(), _clientSockets.end(),
                            [&](std::shared_ptr<ClientSocket> socket) {
-                             return socket->fileDescriptor() == i;
+                             return socket->FileDescriptor() == i;
                            });
 
           if (itSocket != _clientSockets.end() && _handleRead)
@@ -162,8 +162,19 @@ void Server::Listen() {
       std::lock_guard<std::mutex> lock(_staleFileDescriptorsMutex);
 
       for (auto &&fileDescriptor : _staleFileDescriptors) {
+        sockaddr_in clientAddress;
+        auto clientAddressLength = sizeof(clientAddress);
+        getpeername(fileDescriptor,
+                    reinterpret_cast<sockaddr *>(&clientAddress),
+                    reinterpret_cast<socklen_t *>(&clientAddressLength));
+
         FD_CLR(fileDescriptor, &masterSocketSet);
         ::close(fileDescriptor);
+#ifdef DEBUG
+        std::cerr << "Connection with " << inet_ntoa(clientAddress.sin_addr)
+                  << ':' << ntohs(clientAddress.sin_port) << " was closed"
+                  << std::endl;
+#endif
       }
 
       _staleFileDescriptors.clear();
@@ -177,7 +188,7 @@ void Server::Close(int fileDescriptor) {
   _clientSockets.erase(
       std::remove_if(_clientSockets.begin(), _clientSockets.end(),
                      [&](std::shared_ptr<ClientSocket> socket) {
-                       return socket->fileDescriptor() == fileDescriptor;
+                       return socket->FileDescriptor() == fileDescriptor;
                      }),
       _clientSockets.end());
 

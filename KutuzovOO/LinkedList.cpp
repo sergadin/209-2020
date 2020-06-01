@@ -50,7 +50,7 @@ int LinkedList::removepart(const line& s)
 	if(temp->data==s) //s is first string in list
 	{
 		if (temp->data.quant < s.quant ) {
-				throw 1;
+				return -1;
 		}
 		if(temp->data.quant == s.quant ){
 			front=temp->next;
@@ -67,7 +67,7 @@ int LinkedList::removepart(const line& s)
 			if(temp->next->data==s)
 			{
 				if (temp->next->data.quant < s.quant ) {
-						throw 1;
+						return -1;
 				}
 				if(temp->next->data.quant == s.quant){
 					Node* deletedNode=temp->next;
@@ -134,6 +134,23 @@ std::ostream& operator<< (std::ostream &out, const LinkedList &p)
     return out;
 }
 
+void LinkedList:: printListclient(int fd) const
+{
+    Node* temp=front;
+    while(temp!=NULL)
+    {
+        std::string str = temp->data.name +  " " + std::to_string(temp->data.quant) + ";";
+				char *chrstr = new char[str.length() + 1];
+				int  zplen  =str.length();
+			  strcpy(chrstr, str.c_str());
+				send(fd, &zplen,4,MSG_WAITALL);
+			  send(fd, chrstr, str.length(), MSG_WAITALL);
+				delete [] chrstr;
+        temp = temp->next;
+    }
+}
+
+
 int LinkedList::searchP(const line& s) const
 {
 	Node* temp=front;
@@ -151,16 +168,16 @@ int LinkedList::searchP(const line& s) const
 	}
 	return s.quant;
 }
-bool LinkedList::search(const line& s) const
+int LinkedList::search(const line& s) const
 {
 	Node* temp=front;
 	while(temp!=NULL) //Traverse list
 	{
 		if(temp->data.name ==s.name)
-			return true;
+			return temp->data.quant;
 		temp = temp->next;
 	}
-	return false;
+	return 0;
 }
 
 std::vector<line> LinkedList::get() const
