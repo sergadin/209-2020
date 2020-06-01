@@ -6,14 +6,11 @@ def getStrFromServer(sock,a):
     f = str(a)+'s'
     packer = struct.Struct(f)
     data = sock.recv(a)
-  #  print("str data : ",data)
     return data.decode('utf-8')
 def getIntFromServer(sock):
     unpacker = struct.Struct('i')
     data = sock.recv(unpacker.size,socket.MSG_WAITALL)
-#    print("int data : ",data)
     int_val = unpacker.unpack(data)
- #   print("4islo :",int_val)
     return int_val[0]
 def sendStrToServer(sock,z):
     k = len(z)
@@ -35,7 +32,6 @@ def mesegeFromServer(sock):
             print(getStrFromServer(sock,b))
     else:
         b=getIntFromServer(sock);
-        print(b)
         print("\033[34m mesege from server>","\033[30m", getStrFromServer(sock,b))
    
  
@@ -45,6 +41,7 @@ sock.connect(server_address)
 print("\033[32m Welcome to our app!")
 print("\033[32m write your request",end='>')
 while(1):
+    print("\033[30m")
     z = input()
     sendStrToServer(sock,z)
     if z=="stop end":
