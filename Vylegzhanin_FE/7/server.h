@@ -21,6 +21,8 @@ using namespace std;
 #define QUEUE_LEN 5
 #define BUFFER_SIZE 1024
 
+typedef enum {Q_STANDARD, Q_SHUTDOWN, Q_CLEAR} input_code_t;
+
 //сервер
 class DbServer {
 	Database db_;
@@ -32,7 +34,7 @@ class DbServer {
 	int server_fd_;
 	int client_fd_;
 
-	void GetInputMessage();
+	void GetInputMessage(int length);
 	//получает от соединения сообщение
 	//(перед которым отправлена его длина)
 	//и сохраняет его в буфер
@@ -46,7 +48,7 @@ class DbServer {
 	void SendInteger(int num);
 	//отправляет одно число
 
-	void HandleQuery();
+	void HandleQuery(int length);
 	//выполняется в цикле: получает запрос и отвечает на него
 	//(используя другие функции)
 
