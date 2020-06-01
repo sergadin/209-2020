@@ -1,5 +1,6 @@
 #include <fstream>
 #include <iostream>
+#include <cstdio>
 #include <map>
 #include <set>
 using namespace std;
@@ -37,7 +38,7 @@ void Database::SaveToFile() const {
 		write_int(fout, &set_size);
 
 		for(auto set_it = m_set.begin(); set_it != m_set.end(); set_it++) {
-			int n = set_it->n_;
+			int n = set_it->GetN();
 			write_int(fout, &n);
 			set_it->WriteToOstream(fout);//печать матрицы
 		}
@@ -102,7 +103,7 @@ const set<Matrix>& Database::MatricesWithWidth(int m) const {
 }
 
 void Database::InsertMatrix(const Matrix& mat) {
-	int m = mat.m_;
+	int m = mat.GetM();
 	set<Matrix> new_set;
 
 	if (ContainsMatricesWithWidth(m)) {
@@ -151,7 +152,7 @@ QueryResult Database::InteractWithMatrix(const Matrix& mat) {
 	cout << "db is interacting with mat=" << endl;
 	mat.Print();
 	cout << "let us see..." << endl;
-	if(!ContainsMatricesWithWidth(mat.m_)) {
+	if(!ContainsMatricesWithWidth(mat.GetM())) {
 		cout << "found no matrices to multiply with" << endl;
 		cout << "try adding new matrix to the base..." << endl;
 		InsertMatrix(mat);
@@ -160,52 +161,47 @@ QueryResult Database::InteractWithMatrix(const Matrix& mat) {
 	}
 
 
-	const set<Matrix>& right_multiplies = MatricesWithWidth(mat.m_);
+	const set<Matrix>& right_multiplies = MatricesWithWidth(mat.GetM());
 
 
 	cout << "found " << right_multiplies.size() << " matrices to multiply with";
 	cout << endl;
  
-//	cout << ". namely: {{" << endl; 
+	cout << ". namely: {{" << endl; 
 
 	for(auto it = right_multiplies.begin(); it != right_multiplies.end(); it++) {
-//		cout << "we can multiply by" << endl;
-//		it->Print();
-//		cout << endl << "and get" << endl;
-//		Matrix temp = mat * (*it);
-//		temp.Print();
-//		cout << endl;
+		cout << "we can multiply by" << endl;
+		it->Print();
+		cout << endl << "and get" << endl;
+		Matrix temp = mat * (*it);
+		temp.Print();
+		cout << endl;
 
-//		result.output.push_back(temp);
+		result.output.push_back(temp);
 
-		result.output.push_back(mat * (*it));
+//		result.output.push_back(mat * (*it));
 	}
-//	cout << "}}. returning this list." << endl;
+	cout << "}}. returning this list." << endl;
 
 
 	return result;
 }
 
-QueryResult Database::InteractWithMatrixFromBinaryStream(istream& in_stream) {
-	int n = -1, m = -1;
+QueryResult Database::InteractWithMatrixFromBuffer(char* buf) {
+	
 	Matrix mat(1,1);//заглушка
 
 	try{
-		read_int(in_stream, &n);
-		read_int(in_stream, &m);
-		mat = Matrix(n, m, in_stream);
+		mat = Matrix(buf);
 	}
 	catch(NullPtrException ex) {
 		return QueryResult(ERRC_BADISTREAM, ex.Message());
 	}
 	catch(MatrixSizeException ex) {
-		if(n == -1 && m == -1) {
-			return QueryResult(ERRC_BADISTREAM, ex.Message());
-		}
 		return QueryResult(ERRC_BADDATA, ex.Message());
 	}
 	catch(...) {
-
+		cout << "catched something unknown in InteractWithMatrixFromBuffer" << endl << flush;
 	}
 
 	return InteractWithMatrix(mat);

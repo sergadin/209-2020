@@ -17,29 +17,36 @@ using namespace std;
 
 #include "db.h"
 
-#define DEFAULT_PORT 1234
+#define DEFAULT_PORT 1235
+#define QUEUE_LEN 5
+#define BUFFER_SIZE 1024
 
 //сервер
 class DbServer {
 	Database db_;
 	int port_;
-	char buf_[1024];
-	int as_;
+    struct sockaddr_in address_;
+	socklen_t address_len_;
 
-    struct sockaddr_in server_address_;
+	char buf_[BUFFER_SIZE];
+	int server_fd_;
+	int client_fd_;
 
-	char* GetInputMessage(int ms_input);
+	void GetInputMessage();
 	//получает от соединения сообщение
-	//(перед которым отправлена его длина).
-	//[[[архитектура ещё не совсем продумана]]]
+	//(перед которым отправлена его длина)
+	//и сохраняет его в буфер
 
 	void SendQueryResult(QueryResult qr);
 	//отправляет ответ на запрос
 
+	void SendData(const void* pdata, size_t len);
+	//отправляет что угодно
+
 	void SendInteger(int num);
 	//отправляет одно число
 
-	void HandleQuery(int ms_input);
+	void HandleQuery();
 	//выполняется в цикле: получает запрос и отвечает на него
 	//(используя другие функции)
 
