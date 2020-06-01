@@ -40,7 +40,5 @@ while(1):
     for i in range(a):
         time.sleep(0.01)
         b = getIntFromServer(sock)
-        for j in range(b)
-            c = getIntFromServer(sock)
-            print(getStrFromServer(sock,b))
+        print(getStrFromServer(sock,b))
     print("Ввведите ваш запрос:")
