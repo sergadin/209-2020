@@ -5,8 +5,11 @@
 using namespace std;
 
 bool isEqual(std::istream &is, const std::string &s) {
-  for (char c : s)
-    if (std::tolower(is.get()) != std::tolower(c)) return false;
+  for (char c : s) {
+    char ic = is.peek();
+    if (std::tolower(ic) != std::tolower(c)) return false;
+    is.ignore();
+  }
   return true;
 }
 
@@ -47,6 +50,16 @@ Token ReadToken(istream &is) {
       return {name, TokenType::STRING};
     } else if (std::isalpha(c)) {
       switch (std::tolower(c)) {
+        case 'i':
+          if (isEqual(is, "d"))
+            return {"id", TokenType::COLUMN};
+          else {
+            if (isEqual(is, "nfo"))
+              return {"info", TokenType::COLUMN};
+            else
+              throw logic_error("Unknown token. Expected: info");
+          }
+          break;
         case 'n':
           if (isEqual(is, "ame"))
             return {"name", TokenType::COLUMN};

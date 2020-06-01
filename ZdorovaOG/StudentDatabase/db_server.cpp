@@ -17,7 +17,7 @@ int main(int argc, char const* argv[]) {
   if (argc > 1) port = std::stoi(argv[1]);
 
   DataBase db;
-  db.Load("__database.csv");
+  db.Load(DB_INPUT);
   db.SetDelim(',');
 
   Server server;

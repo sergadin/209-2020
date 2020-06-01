@@ -42,7 +42,7 @@ class DataBaseClient:
 
     def check(self, request):
         req_type = get_word(request).lower()
-        if req_type in ['help', 'disconnect', 'delete', 'exit']:
+        if req_type in ['help', 'disconnect', 'delete', 'exit', 'save']:
             return True
         return compare_lowered_postfix(request.rstrip(), 'end')
 
@@ -85,6 +85,8 @@ while True:
         elif data == 'disconnected':
             cli.connected = False
             break
+        elif data == "Done":
+            print(data)
         else:
             df = pandas.read_csv(StringIO(data))
             print(df)
