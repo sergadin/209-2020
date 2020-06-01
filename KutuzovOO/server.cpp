@@ -37,7 +37,7 @@ int  main (void)
     struct  sockaddr_in  addr;
     struct  sockaddr_in  client;
     char    buf[BUFLEN];
-    socklen_t  size=10000;
+    socklen_t  size=0;
     sock = socket (PF_INET, SOCK_STREAM, 0);
     if ( sock<0 ) {
         perror ("Server: cannot create socket");
