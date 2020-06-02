@@ -79,9 +79,28 @@ class DataBase {
         for (auto it : it_vector) os << *it << '\n';
   }
 
-  void RawEditionSelectName(std::string str);
-  void SelectGroup(int g);
-  void SelectRating(double r);
+  void PrintName(std::ostream &os) {
+    for (const auto &[group_id, group] : group_data)
+      for (const auto &[name, it_vector] : group.it_by_name)
+        for (auto it : it_vector) os << (*it).name << '\n';
+  }
+  void PrintGroup(std::ostream &os) {
+    for (const auto &[group_id, group] : group_data)
+      for (const auto &[name, it_vector] : group.it_by_name)
+        for (auto it : it_vector) os << (*it).group << '\n';
+  }
+  void PrintRating(std::ostream &os) {
+    for (const auto &[group_id, group] : group_data)
+      for (const auto &[name, it_vector] : group.it_by_name)
+        for (auto it : it_vector) os << (*it).rating << '\n';
+  }
+
+
+  void SelectName(std::string str);
+  void SelectGroupMore(int g);
+  void SelectGroupLess(int g);
+  void SelectRatingMore(double r);
+  void SelectRatingLess(double r);
 
   void Load(const std::string &filename);
   void Save(const std::string &filename);
