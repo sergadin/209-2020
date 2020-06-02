@@ -15,6 +15,11 @@ void read_int(istream& in_stream, int* pnum) {
 	in_stream.read(reinterpret_cast<char*>(pnum), sizeof(int));
 }
 
+int int_from_buffer(char* buf){
+	int* ptr = reinterpret_cast<int*>(buf);
+	return *ptr;
+}
+
 Matrix::~Matrix() {
 	for(int i = 0; i < n_; i++) {
 		delete[] data_[i];
@@ -53,7 +58,7 @@ Matrix::Matrix(int n, int m) {
 
 Matrix::Matrix(int n, int m, istream& in_stream) {
 	if (!in_stream) {
-		throw NullPtrException("bad data pointer");
+		throw NullPtrException("bad istream& in_stream");
 	}
 
 	CheckDimensions(n,m);
@@ -70,9 +75,33 @@ Matrix::Matrix(int n, int m, istream& in_stream) {
 	}
 }
 
+Matrix::Matrix(char* buf) {
+	if(!buf) {
+		throw NullPtrException("bad char* buffer");
+	}
+
+	n_ = int_from_buffer(buf);
+	buf += sizeof(int);
+	m_ = int_from_buffer(buf);
+	buf += sizeof(int);
+
+	CheckDimensions(n_,m_);
+
+
+	data_ = new int*[n_];
+
+	for(int i = 0; i < n_; i++) {
+		data_[i] = new int[m_];
+		for(int j = 0; j < m_; j++) {
+			data_[i][j] = int_from_buffer(buf);
+			buf += sizeof(int);
+		}
+	}
+}
+
 Matrix::Matrix(int n, int m, int** data) {
 	if (data == NULL) {
-		throw NullPtrException("bad data pointer");
+		throw NullPtrException("bad int* data");
 	}
 
 	CheckDimensions(n,m);
@@ -150,7 +179,7 @@ int Matrix::GetElem(int i, int j) const {
 }
 
 Matrix operator*(const Matrix& lhs, const Matrix& rhs) {
-
+	cout << "trying to multiply" << lhs.GetN() << "x" << lhs.GetM() << " and " << rhs.GetN() << "x" << rhs.GetM() << endl << flush;
 
 	if(lhs.GetM() != rhs.GetN()) {
 		throw MatrixSizeException("non-consistent dimensions while multiplicating", lhs.GetM(), rhs.GetN());

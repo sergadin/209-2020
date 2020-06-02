@@ -10,50 +10,19 @@
 
 using namespace std;
 
-string more(const string &com1,const string &com2)
-{
-	if(com1.size()>com2.size())
-	{
-		return com1;
-	}
-	if(com1.size()<com2.size())
-	{
-		return com2;
-	}
-	if(com1>=com2)
-	{
-		return com1;
-	}
-	else
-	{
-		return com2;
-	}
-}
-
 int main(void)
 {
-	int q,i;
-	for(q=0;q<2;q++)
-	{
-		cout << q << endl;
-		for(i=0;i<3;i++)
-		{
-			cout << "i-" << i << endl;
-			if(i==2)
-			{
-				break;
-			}
-		}
-	}
-	/*map <int,int> m;
-	map <int,int> :: iterator it;
-	m[1]=1;
-	m[2]=2;
-	m[3]=3;
-	for( it = m.begin(); it != m.end(); ++it) 
-	{
-		cout << it->first << " : " << it->second << endl;
- 	}*/
+	char ch[232], ch2[10] = "123456780";
+	string st;
+	string s("dwd qwdqdq");
+	string s2("2222dwd qwdqdq");
+	st = string(ch2);
+	s.append(" 11 11");
+	strcpy(ch,s.c_str());
+	cout << st << endl << st.size() << endl;
+	cout << ch << strlen(ch) << endl; // 6, ?????? ????? ??????
+	strcpy(ch,s2.c_str());
+	cout << ch << strlen(ch);
 
-return 0;
+	return 0;
 }

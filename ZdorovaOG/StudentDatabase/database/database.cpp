@@ -7,18 +7,17 @@
 #include <stdexcept>
 
 #include "../parser/condition_parser.h"
+#include "../parser/token.h"
 #include "../tests/profile.h"
 #include "util.h"
 
 void DataHolder::Insert(const Student &s) {
-  std::lock_guard<std::mutex> lock(_mutex);
   size_t id = _data.size();
   _data.push_back(s);
   _index.Insert(id, s);
 }
 
 bool DataHolder::Remove(size_t id) {
-  std::lock_guard<std::mutex> lock(_mutex);
   if (!_index.HasId(id)) return false;
   return _index.Remove(id, _data[id]);
 }
@@ -112,7 +111,7 @@ void DataBase::Reselect(std::istream &is, size_t pid) {
 
 void DataBase::Print(std::istream &is, std::ostream &os, size_t pid) {
   auto [fields, sortby] = ParseFieldList(is);
-  if (fields.empty()) fields = {"name", "group", "rating", "info"};
+  if (fields.empty()) fields = {"id", "name", "group", "rating", "info"};
   for (const auto &col : fields) {
     os << col << (col == fields.back() ? '\n' : _delim);
   }
@@ -125,7 +124,7 @@ void DataBase::Print(std::istream &is, std::ostream &os, size_t pid) {
   } else if (sortby == "rating") {
     Print(os, fields, _indexes[pid].GetRatingMap());
   } else {
-    throw std::logic_error("Uknown sort_by field");
+    throw std::logic_error("Unknown sort_by field");
   }
 }
 
@@ -133,6 +132,13 @@ void DataBase::Delete(size_t pid) {
   std::lock_guard<std::mutex> lock(_mutex);
   for (auto id : _indexes[pid].GetIds()) Remove(id);
   _indexes[pid].Clear();
+}
+
+void DataBase::Delete(size_t pid, const std::vector<size_t> &ids){
+  for (auto id : ids) {
+    Remove(id);
+    _indexes[pid].Remove(id, _data[id]);
+  }
 }
 
 void DataBase::Add(std::istream &is) {
@@ -152,20 +158,35 @@ DataBase::Status DataBase::Process(std::istream &is, std::ostream &os,
   for (auto &c : query) c = std::tolower(c);
   if (query == "select") {
     Select(is, pid);
+    os << "Done";
   } else if (query == "reselect") {
     Reselect(is, pid);
+    os << "Done";
   } else if (query == "print") {
     Print(is, os, pid);
   } else if (query == "delete") {
     Delete(pid);
+    os << "Done";
+  } else if (query == "remove") {
+    auto tokens = Tokenize(is);
+    std::vector<size_t> ids;
+    for(auto& token : tokens)
+      if(token.type == TokenType::INTEGER)
+        ids.push_back(std::stoi(token.value));
+      else
+        throw std::logic_error("Expected only integer numbers");
+    Delete(pid, ids);
+    os << "Done";
   } else if (query == "add") {
     Add(is);
+    os << "Done";
   } else if (query == "dump") {
-    std::string file_name;
-    std::getline(is, file_name);
+    std::string file_name = ParseString(is);
     Save(file_name);
+    os << "Done";
   } else if (query == "save") {
-    Save("__database.txt");
+    Save(DB_INPUT);
+    os << "Done";
   } else if (query == "exit") {
     os << "disconnected";
     return Status::Shutdown;
@@ -178,10 +199,12 @@ DataBase::Status DataBase::Process(std::istream &is, std::ostream &os,
        << "  select [conditions] end\n"
        << "  reselect [conditions] end\n"
        << "  print <columns> [sortby <column>] end\n"
-       << "  add <student-name>, <student-group>, <student-rating>\n"
+       << "  add <student-name> <student-group> <student-rating>"
+          "<student-info> end\n"
        << "  delete\n"
        << "  save\n"
-       << "  dump <file-name>\n"
+       << "  remove <list-of-ids> end\n"
+       << "  dump <file-name> end\n"
        << "  exit\n\n";
     os << "Request types:\n"
        << "  select      Make selection on the full data with given "
@@ -192,9 +215,12 @@ DataBase::Status DataBase::Process(std::istream &is, std::ostream &os,
        << "  add         Add new student to database w/o saving to file\n"
        << "  delete      Remove last selection from the full data w/o saving "
           "to file\n"
+       << "  remove      Remove given ids from the full data w/o saving "
+          "to file\n"
        << "  save        Save changes to default database file "
           "'__databse.txt'\n"
        << "  dump        Save changes to given file\n"
+       << "  disconnect  Disconnect from database\n"
        << "  exit        Close program\n\n";
     os << "Columns of database:\n"
        << "  name        string:  Student full name\n"
@@ -210,11 +236,12 @@ DataBase::Status DataBase::Process(std::istream &is, std::ostream &os,
        << "  (<complex-condition>) <logical-operation={or, and}> "
           "<simple-condition>\n\n";
     os << "Examples:\n"
-       << "  add Ivanov I.I., 209, 4.7\n"
+       << "  add \"Ivanov I.I.\" 209 4.7 \"Good boy\" end\n"
        << "  select (name == \"Iv*\" or name == \"Pe*\") and rating > 3.5 end\n"
        << "  reselect group < 210 end\n"
-       << "  print name group rating end\n"
-       << "  dump changed.txt\n";
+       << "  print id name group rating end\n"
+       << "  remove 42 666 2048 end\n"
+       << "  dump \"changed.csv\" end\n";
   } else {
     throw std::logic_error("Unknown request. Use help for info");
   }
@@ -224,13 +251,16 @@ DataBase::Status DataBase::Process(std::istream &is, std::ostream &os,
 Index DataBase::ConstructIndex(const std::set<size_t> &ids) {
   Index index;
   for (auto id : ids) index.Insert(id, _data[id]);
-  return std::move(index);
+  return index;
 }
 
 void DataBase::Print(std::ostream &os, Columns what_col, const IdSet &ids) {
   for (auto id : ids) {
     for (const auto &col : what_col) {
-      _data.at(id).Print(os, col);
+      if(col=="id")
+        os << id;
+      else
+        _data.at(id).Print(os, col);
       os << (col == what_col.back() ? '\n' : _delim);
     }
   }
@@ -251,9 +281,13 @@ void DataBase::Print(std::ostream &os, Columns what_col,
 void DataBase::SetDelim(char delim) { _delim = delim; }
 
 int DataBase::RegisterUser() {
+  std::lock_guard<std::mutex> lock(_mutex);
   int id = _indexes.size();
   _indexes[id] = base::_index;
   return id;
 }
 
-bool DataBase::EraseUser(size_t pid) { return _indexes.erase(pid); }
+bool DataBase::EraseUser(size_t pid) { 
+  std::lock_guard<std::mutex> lock(_mutex);
+  return _indexes.erase(pid); 
+}

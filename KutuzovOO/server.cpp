@@ -37,7 +37,7 @@ int  main (void)
     struct  sockaddr_in  addr;
     struct  sockaddr_in  client;
     char    buf[BUFLEN];
-    socklen_t  size;
+    socklen_t  size=0;
     sock = socket (PF_INET, SOCK_STREAM, 0);
     if ( sock<0 ) {
         perror ("Server: cannot create socket");
@@ -306,11 +306,11 @@ int  main (void)
                                 writeClient(act_set[i].fd,"Input error");
                                 continue;
                               }
-                              cout << "Good, bye\n";
                               for (i=0; i<num_set; i++)
                               {
-                                  close (act_set[i].fd);
+                                  close(act_set[i].fd);
                               }
+                              cout << "Good, bye\n";
                               close(sock);
                               return 0;
                           }

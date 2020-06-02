@@ -157,7 +157,7 @@ std::string ParseString(std::istream &is) {
 
 int ParseInteger(std::istream &is) {
   auto token = ReadToken(is);
-  if (token.type == TokenType::STRING)
+  if (token.type == TokenType::INTEGER)
     return std::stoi(token.value);
   else
     throw logic_error("Expected integer number");
@@ -165,7 +165,7 @@ int ParseInteger(std::istream &is) {
 
 double ParseFloat(std::istream &is) {
   auto token = ReadToken(is);
-  if (token.type == TokenType::STRING)
+  if (token.type == TokenType::FLOAT || token.type == TokenType::INTEGER)
     return std::stod(token.value);
   else
     throw logic_error("Expected real number");
