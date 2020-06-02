@@ -179,7 +179,7 @@ int Matrix::GetElem(int i, int j) const {
 }
 
 Matrix operator*(const Matrix& lhs, const Matrix& rhs) {
-
+	cout << "trying to multiply" << lhs.GetN() << "x" << lhs.GetM() << " and " << rhs.GetN() << "x" << rhs.GetM() << endl << flush;
 
 	if(lhs.GetM() != rhs.GetN()) {
 		throw MatrixSizeException("non-consistent dimensions while multiplicating", lhs.GetM(), rhs.GetN());

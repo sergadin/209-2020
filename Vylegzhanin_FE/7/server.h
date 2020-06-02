@@ -24,10 +24,8 @@ using namespace std;
 #define DEFAULT_PORT 1235
 #define QUEUE_LEN 5
 #define BUFFER_SIZE 1024
-
+#define MAXIMAL_TIMEOUT {3,0}
 typedef enum {Q_STANDARD, Q_SHUTDOWN, Q_CLEAR} input_code_t;
-
-struct timeval MAXIMAL_TIMEOUT = {3,0};
 
 struct Client {
 	int fd_;
@@ -36,7 +34,6 @@ public:
 		fd_(fd)
 		{}
 	int GetFd() {return fd_;}
-	void SetFd(int fd) {fd_ = fd;}
 };
 
 //сервер
@@ -51,15 +48,14 @@ class DbServer {
 	fd_set rfds_;
 	vector<Client> clients_;
 
+	bool time_to_stop_;
+
     struct sockaddr_in address_;
 	socklen_t address_len_;
 
-	bool time_to_stop_;
-
-	int current_client_fd_;
+	vector<Client>::iterator current_client_fd_;
 	//клиент, с которым сервер работает в настоящий момент
-	//(к нему обращаются остальные методы)
-
+	//(именно с ним взаимодействуют все методы ниже)
 
 	void GetInputMessage(int length);
 	//получает от соединения сообщение заданной длины

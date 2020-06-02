@@ -26,8 +26,6 @@ void DbServer::GetInputMessage(int length) {
 	}
 }
 
-
-
 void DbServer::SendQueryResult(QueryResult qr) {
 	//отправляет ответ на запрос по текущему адресу
 
@@ -58,7 +56,7 @@ void DbServer::SendQueryResult(QueryResult qr) {
 
 	future_len = sizeof(err_code_t) + overall_integers_n * sizeof(int);
 
-	cout << "sending all that we want: " << matrix_n << " matrices (" << overall_integers_n << " integers) = " << future_len << " bytes." << endl << flush;
+//	cout << "sending all that we want: " << matrix_n << " matrices (" << overall_integers_n << " integers) = " << future_len << " bytes." << endl << flush;
 
 	SendInteger(future_len);
 	SendData(&qr.err_code, sizeof(err_code_t));
@@ -80,32 +78,41 @@ void DbServer::SendQueryResult(QueryResult qr) {
 }
 
 int DbServer::GetData(void* pdata, size_t len) {
-	return recv(current_client_fd_, pdata, len, MSG_WAITALL);
+	return recv(current_client_fd_->GetFd(), pdata, len, MSG_WAITALL);
 }
 
 void DbServer::SendData(const void* pdata, size_t len) {
 //	cout << "sending something (" << len << " bytes)" << "... "<<flush;
-	write(current_client_fd_, pdata, len);
+	write(current_client_fd_->GetFd(), pdata, len);
 //	cout <<"...sent." << endl << flush;
 }
 
 int DbServer::GetInteger(int* pnum) {
-	return recv(current_client_fd_, pnum, sizeof(int), MSG_WAITALL);
+	return recv(current_client_fd_->GetFd(), pnum, sizeof(int), MSG_WAITALL);
 }
 
 void DbServer::SendInteger(int num){
 //	cout << "sending integer num = " << num << "... " << flush;
-	write(current_client_fd_, &num, sizeof(int));//удобнее для дебага
+	write(current_client_fd_->GetFd(), &num, sizeof(int));//удобнее для дебага
 //	cout << "...sent." << endl << flush;
 }
 
 void DbServer::HandleQuery(int length){
 	//выполняется в цикле: получает запрос и отвечает на него
 	//(используя другие функции)
-	cout <<  "enter HandleQuery" << endl << flush;
+//	cout <<  "enter HandleQuery" << endl << flush;
+	try {
+		GetInputMessage(length);
+	}
+	catch(QueryException qe) {
+		SendQueryResult(QueryResult(ERRC_BADDATA, qe.Message()));
+	}
+	catch(...) {
+		cout << "unknown exception in DbServer::HandleQuery" << endl;
+		SendQueryResult(QueryResult(ERRC_UNKNOWN, "unknown exception in DbServer::HandleQuery"));
+		return;
+	}
 
-	GetInputMessage(length);
-	
 	QueryResult res = db_.InteractWithMatrixFromBuffer(buf_);
 
 	SendQueryResult(res);
@@ -115,12 +122,17 @@ void DbServer::HandleQuery(int length){
  // ------------ public: -----------------------
 DbServer::DbServer(int port, const string filename):
 	db_(filename),
-	port_(port)
+	port_(port),
+	buf_(),
+	server_fd_(socket(AF_INET,SOCK_STREAM, 0)),
+	rfds_(),
+	clients_(1,Client(server_fd_)),
+	time_to_stop_(false)
 	{
+
 	cout << "{creating server..." << endl;
 
-
-	server_fd_ = socket(AF_INET, SOCK_STREAM, 0);
+//	server_fd_ = socket(AF_INET, SOCK_STREAM, 0);
 	if(server_fd_ == -1) {
 		throw ServerException("cannot get socket");
 	}
@@ -155,8 +167,8 @@ DbServer::DbServer(int port, const string filename):
     }
 
 
-    clients_.push_back(Client(server_fd_));
-    time_to_stop_ = false;
+  //  clients_.push_back(Client(server_fd_));
+  //  time_to_stop_ = false;
 
 	cout << "done.}" << endl;
 }
@@ -172,17 +184,23 @@ DbServer::~DbServer() {
 
 void DbServer::InteractWithCurrentClient() {
 
-	cout << "starting to interact with client " << current_client_fd_ << "; waiting for data..." << endl;
+	cout << "starting to interact with client " << current_client_fd_->GetFd() << "; waiting for data..." << endl;
 
 	int future_len = 0;
 		
-	recv(current_client_fd_, &future_len, sizeof(int), MSG_WAITALL);
-
+	GetInteger(&future_len);
 	cout << "received future_len = " << future_len << endl;
 
-	if(future_len <= 0) {
-		cout << "non-positive future_len" << endl;
+	if(future_len < 0) {
+		cout << "negative future_len" << endl;
 		throw QueryException("message len should be positive");
+	}
+
+	if(future_len == 0) {
+	//пустое сообщение посылается, если клиент разрывает соединение
+		cout << "client " << current_client_fd_->GetFd() << " left." << endl;
+		clients_.erase(current_client_fd_);
+		return;
 	}
 
 	if(future_len == BUFFER_SIZE) {
@@ -192,11 +210,8 @@ void DbServer::InteractWithCurrentClient() {
 
 
 	int code;
-	recv(current_client_fd_, &code, sizeof(input_code_t), MSG_WAITALL);
+	GetData(&code, sizeof(input_code_t));
 	cout << "input_code = " << code << endl << flush;
-	/*
-	TODO: получение типа сообщения из вх.данных
-	*/
 	
 	if(code == Q_STANDARD) {
 		cout << "got standard type; len = " << future_len - sizeof(int) << "; let's handle it!" << endl;
@@ -249,15 +264,15 @@ void DbServer::MainLoop() {
 				throw ServerException("cannot select");
 			}
 			if(select_output == 0) {
-//				cout << "nothing to select" << endl;
 				continue;
 			}
 
 
 			cout << "there's something to select" << endl;
-			for(auto it = clients_.begin()+1; it != clients_.end(); it++) {
+			for(auto it = clients_.begin()+1; it < clients_.end(); it++) {
 				if(FD_ISSET(it->GetFd(), &rfds_)) {
-					current_client_fd_ = it->GetFd();
+					current_client_fd_ = it;
+					//current_client_fd_ = it->GetFd();
 					InteractWithCurrentClient();
 				}
 			}

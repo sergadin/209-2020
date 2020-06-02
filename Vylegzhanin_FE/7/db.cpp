@@ -130,13 +130,13 @@ void Database::PrintInfo() const {
 		cout << "of form [(-)x" << it->first << "]: " << curr_num << " matrices." << endl;
 
 		//--{более подробное---
-		///*
+		/*
 		cout << "namely:" << endl;
 		for(auto m_it = (it->second).begin(); m_it != (it->second).end(); m_it++) {
 			m_it->Print();
 		}
 		cout << endl;
-		//*/
+		*/
 		//---более подробное}--
 		
 	}
@@ -148,10 +148,10 @@ QueryResult Database::InteractWithMatrix(const Matrix& mat) {
 	QueryResult result;
 	result.err_code = ERRC_OK;
 
-	cout << "db is interacting with mat=" << endl;
-	mat.Print();
-	cout << "let us see..." << endl;
-	if(!ContainsMatricesWithWidth(mat.GetM())) {
+//	cout << "db is interacting with mat=" << endl;
+//	mat.Print();
+//	cout << "let us see..." << endl;
+	if(!ContainsMatricesWithWidth(mat.GetN())) {
 		cout << "found no matrices to multiply with" << endl;
 		cout << "try adding new matrix to the base..." << endl;
 		InsertMatrix(mat);
@@ -160,27 +160,27 @@ QueryResult Database::InteractWithMatrix(const Matrix& mat) {
 	}
 
 
-	const set<Matrix>& right_multiplies = MatricesWithWidth(mat.GetM());
+	const set<Matrix>& right_multiplies = MatricesWithWidth(mat.GetN());
 
 
 	cout << "found " << right_multiplies.size() << " matrices to multiply with";
 	cout << endl;
  
-	cout << ". namely: {{" << endl; 
+//	cout << ". namely: {{" << endl; 
 
 	for(auto it = right_multiplies.begin(); it != right_multiplies.end(); it++) {
-		cout << "we can multiply by" << endl;
-		it->Print();
-		cout << endl << "and get" << endl;
-		Matrix temp = mat * (*it);
-		temp.Print();
-		cout << endl;
+//		cout << "we can multiply by" << endl;
+//		it->Print();
+//		cout << endl << "and get" << endl;
+//		Matrix temp = mat * (*it);
+//		temp.Print();
+//		cout << endl;
 
-		result.output.push_back(temp);
+//		result.output.push_back(temp);
 
-//		result.output.push_back(mat * (*it));
+		result.output.push_back((*it) * mat);
 	}
-	cout << "}}. returning this list." << endl;
+//	cout << "}}. returning this list." << endl;
 
 
 	return result;
