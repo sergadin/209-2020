@@ -9,21 +9,20 @@ using namespace std;
 #include "server.h"
 
 void DbServer::GetInputMessage(int length) {
-	//получает от соединения сообщение
-	//(перед которым отправлена его длина)
+	//получает от соединения сообщение заданной длины
 	//и сохраняет его в буфер
 
-	
 	bzero(buf_, BUFFER_SIZE);
+	//очистка буфера
 
-	int read_bytes = recv(client_fd_, buf_, length, MSG_WAITALL);
+	int read_bytes = GetData(buf_, length);
 
-	if(read_bytes < length) {
+	if(read_bytes != length) {
 		cout << "read " << read_bytes << " bytes instead of claimed " << length << endl;
-		throw QueryException("message must be not full");
+		throw QueryException("read wrong amount of bytes");
 	}
 	else {
-		cout << "successfully read " << read_bytes << "=" <<  length << " bytes" << endl << flush;
+		cout << "successfully read " << length << " bytes" << endl << flush;
 	}
 }
 
@@ -31,7 +30,6 @@ void DbServer::GetInputMessage(int length) {
 
 void DbServer::SendQueryResult(QueryResult qr) {
 	//отправляет ответ на запрос по текущему адресу
-	cout << "enter SendQueryResult" << endl << flush;
 
 	int future_len = 0;
 	if(qr.err_code != ERRC_OK) {
@@ -81,17 +79,24 @@ void DbServer::SendQueryResult(QueryResult qr) {
 
 }
 
+int DbServer::GetData(void* pdata, size_t len) {
+	return recv(current_client_fd_, pdata, len, MSG_WAITALL);
+}
+
 void DbServer::SendData(const void* pdata, size_t len) {
-	cout << "sending something (" << len << " bytes)" << "... "<<flush;
-	write(client_fd_, pdata, len);
-	cout <<"...sent." << endl << flush;
+//	cout << "sending something (" << len << " bytes)" << "... "<<flush;
+	write(current_client_fd_, pdata, len);
+//	cout <<"...sent." << endl << flush;
+}
+
+int DbServer::GetInteger(int* pnum) {
+	return recv(current_client_fd_, pnum, sizeof(int), MSG_WAITALL);
 }
 
 void DbServer::SendInteger(int num){
-	cout << "sending integer num = " << num << "... " << flush;
-//	SendData(&num, sizeof(int));
-	write(client_fd_, &num, sizeof(int));//удобнее для дебага
-	cout << "...sent." << endl << flush;
+//	cout << "sending integer num = " << num << "... " << flush;
+	write(current_client_fd_, &num, sizeof(int));//удобнее для дебага
+//	cout << "...sent." << endl << flush;
 }
 
 void DbServer::HandleQuery(int length){
@@ -149,15 +154,68 @@ DbServer::DbServer(int port, const string filename):
     	throw ServerException("i can't hear you");
     }
 
+
+    clients_.push_back(Client(server_fd_));
+    time_to_stop_ = false;
+
 	cout << "done.}" << endl;
 }
 
 DbServer::~DbServer() {
-	cout << "{shutting down server..." << endl;
+	cout << "{shutting down server..." << endl << flush;
 
 	close(server_fd_);
 
-	cout << "done.}" << endl;
+	cout << "done.}" << endl << flush;
+}
+
+
+void DbServer::InteractWithCurrentClient() {
+
+	cout << "starting to interact with client " << current_client_fd_ << "; waiting for data..." << endl;
+
+	int future_len = 0;
+		
+	recv(current_client_fd_, &future_len, sizeof(int), MSG_WAITALL);
+
+	cout << "received future_len = " << future_len << endl;
+
+	if(future_len <= 0) {
+		cout << "non-positive future_len" << endl;
+		throw QueryException("message len should be positive");
+	}
+
+	if(future_len == BUFFER_SIZE) {
+		cout << "message is too long" << endl;
+		throw QueryException("message is too long");
+	}
+
+
+	int code;
+	recv(current_client_fd_, &code, sizeof(input_code_t), MSG_WAITALL);
+	cout << "input_code = " << code << endl << flush;
+	/*
+	TODO: получение типа сообщения из вх.данных
+	*/
+	
+	if(code == Q_STANDARD) {
+		cout << "got standard type; len = " << future_len - sizeof(int) << "; let's handle it!" << endl;
+		HandleQuery(future_len - sizeof(int));
+		cout << "query answered." << endl << flush;
+	}
+
+	if(code == Q_CLEAR) {
+		db_.Clear();
+		SendQueryResult(QueryResult());
+	}
+
+	if(code == Q_SHUTDOWN) {
+		cout << "sending message about shutdown" << endl;
+		SendQueryResult(QueryResult(ERRC_SHUTDOWN, "Recieved 'shutdown'."));
+		cout << "message sent" << endl;
+		time_to_stop_ = true;
+	}
+
 }
 
 void DbServer::MainLoop() {
@@ -167,75 +225,66 @@ void DbServer::MainLoop() {
 	cout << "SERVER IS NOW ON" << endl;
 	
 //	int cycle_iteration = 0;
+	try{
 
-	while(true) {
-		cout << "entering the cycle" << endl;
+		while(!time_to_stop_) {
+//			cout << "entering the cycle" << endl;
+			FD_ZERO(&rfds_);
+			FD_SET(server_fd_, &rfds_);
+			int max_fd = 0;
 
-		client_fd_ = accept(server_fd_, reinterpret_cast<struct sockaddr *>(&address_), &address_len_);
-		if(client_fd_ < 0) {
-			throw ServerException("cannot accept connection");
-		}
-		cout << "connected; waiting for data..." << flush;
-		try {
-			int future_len = 0;
-				
-			recv(client_fd_, &future_len, sizeof(int), MSG_WAITALL);
+			for(auto it = clients_.begin(); it != clients_.end(); it++) {
+				FD_SET(it->GetFd(), &rfds_);
 
-			cout << "received future_len = " << future_len << endl;
-
-			if(future_len < 0) {
-				cout << "negative future_len" << endl;
-				throw QueryException("message len should be positive");
+				if(it->GetFd() > max_fd) {
+					max_fd = it->GetFd();
+				}
 			}
 
-			if(future_len == BUFFER_SIZE) {
-				cout << "message is too long" << endl;
-				throw QueryException("message is too long");
+			struct timeval tv = MAXIMAL_TIMEOUT;
+
+//			cout << "max_fd=" << max_fd << endl;
+			int select_output =  select(max_fd+1, &rfds_, NULL, NULL, &tv);
+			if(select_output == -1) {
+				throw ServerException("cannot select");
+			}
+			if(select_output == 0) {
+//				cout << "nothing to select" << endl;
+				continue;
 			}
 
 
-			int code;
-			recv(client_fd_, &code, sizeof(input_code_t), MSG_WAITALL);
-			cout << "input_code = " << code << endl << flush;
-			/*
-			TODO: получение типа сообщения из вх.данных
-			*/
-			
-			if(code == Q_STANDARD) {
-				cout << "got standard type; len = " << future_len - sizeof(int) << "; let's handle it!" << endl;
-				HandleQuery(future_len - sizeof(int));
-				cout << "query answered." << endl << flush;
+			cout << "there's something to select" << endl;
+			for(auto it = clients_.begin()+1; it != clients_.end(); it++) {
+				if(FD_ISSET(it->GetFd(), &rfds_)) {
+					current_client_fd_ = it->GetFd();
+					InteractWithCurrentClient();
+				}
 			}
-
-			if(code == Q_CLEAR) {
-				db_.Clear();
-				SendQueryResult(QueryResult());
+			if(FD_ISSET(server_fd_, &rfds_)) {
+				cout << "new client" << endl;
+				int new_client_sock = accept(server_fd_, NULL, NULL);
+				clients_.push_back(Client(new_client_sock));
 			}
-
-			if(code == Q_SHUTDOWN) {
-				cout << "sending message about shutdown" << endl;
-				SendQueryResult(QueryResult(ERRC_SHUTDOWN, "Recieved 'shutdown'."));
-				break;//для while
-			}
-		}
-		catch(ServerException se) {
-			cout << "ошибка на сервере" << endl;
-			cout << se.Message() << endl;
-			break;
-			/*
-			TODO: сообщение об ошибке 
-			*/
-		}
-		catch(Exception e) {
-			cout << "неизвестная ошибка" << endl;
-			cout << e.Message() << endl;
-			break;
-			/*
-			TODO: отправка клиенту сообщение об ошибке
-			*/
 		}
 	}
+	catch(ServerException se) {
+		cout << "ошибка на сервере" << endl;
+		cout << se.Message() << endl;
 
+		return;
+		/*
+		TODO: сообщение об ошибке 
+		*/
+	}
+	catch(Exception e) {
+		cout << "неизвестная ошибка" << endl;
+		cout << e.Message() << endl;
+		return;
+		/*
+		TODO: отправка клиенту сообщение об ошибке
+		*/
+	}
 
 	cout << "SERVER IS NOW OFF" << endl;
 } 

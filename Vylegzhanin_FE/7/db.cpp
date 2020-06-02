@@ -43,7 +43,6 @@ void Database::SaveToFile() const {
 			set_it->WriteToOstream(fout);//печать матрицы
 		}
 	}
-
 	fout.close();
 
 }

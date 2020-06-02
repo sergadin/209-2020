@@ -1,7 +1,7 @@
 import socket
 import struct
 
-int_struct = struct.Struct('<I')
+int_struct = struct.Struct('<i')
 intsize = 4
 input_codenames = ['ERRC_OK','ERRC_BADISTREAM','ERRC_BADDATA','ERRC_SHUTDOWN',
              'ERRC_UNKNOWN']
@@ -47,6 +47,7 @@ command_switcher = {
 
 def SendMatrix(sock, n, m, mat):
     print('sending matrix {}x{}...'.format(n,m),end='')
+    print('(mat={})'.format(mat))
     SendInt(sock, n)
     SendInt(sock, m)
     for i in range(n):
@@ -61,7 +62,7 @@ def ComposeArrPacker(length, prefix, typical):
     return struct.Struct(s[:-1])
 
 def ComposeIntArrPacker(length):
-    return GetArrPacker(length, '<', 'I')
+    return GetArrPacker(length, '<', 'i')
 
 def SendData(sock, data, packer):
     sock.sendall(packer.pack(*data))
@@ -70,6 +71,7 @@ def SendSingleVar(sock, var, packer):
     sock.sendall(packer.pack(var))
 
 def SendInt(sock, var):
+    print('sending int {}'.format(var))
     sock.sendall(int_struct.pack(var))
 
 def GetData(sock, length, unpacker):
@@ -112,18 +114,18 @@ while True:
         command_switcher[s](sock)
         print('waiting for answer...')
         future_len = GetInt(sock)
-        print('future_len={}'.format(future_len))
+  #      print('future_len={}'.format(future_len))
         err_code = GetInt(sock)
-        print('err_code={}'.format(input_codenames[err_code]))
+
         if input_codenames[err_code] == 'ERRC_OK':
             matrices_n = GetInt(sock)
-            print('matrices_n={}'.format(matrices_n))
+            print('recieved {} matrices, namely:'.format(matrices_n))
             for i in range(matrices_n):
                 mat = GetMatrix(sock)
-                print('recieved matrix:')
-                print(mat)
+#                print('recieved matrix:')
+                print(*mat, sep='\n')
         else:
-            print("it's not ok")
+            print("it's not ok: err_code = {}".format(input_codenames[err_code]))
             error_message = GetStr(sock, future_len-intsize)
             print('message: "{}"'.format(error_message))
     except Exception as e:
