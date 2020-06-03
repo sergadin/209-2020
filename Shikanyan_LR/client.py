@@ -7,7 +7,7 @@ import struct
 host = '127.0.0.1'
 port = 5555  # web
 
-
+#select subject=Math end print end reselect group=320-* end print end reselect teacher=Shikanyan end print end
 def getStrFromServer(sock,a):
     data = sock.recv(a)
     #data.decode('utf-8')
@@ -40,7 +40,11 @@ s.connect((remote_ip , port))
 while 1:
     print('Введите команду:')
     request = input()
+    l = len(request)
+    packer = struct.Struct('i')
+    packed_data = packer.pack(l)
     try:
+        s.sendall(packed_data)
         s.sendall(request.encode('utf-8'))
     except socket.error:
         print ('Send failed')

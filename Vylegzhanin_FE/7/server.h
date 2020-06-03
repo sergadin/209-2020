@@ -10,6 +10,10 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <algorithm>
+#include <vector>
+#include <sys/select.h>
+
 #include <string>
 #include <iostream>
 #include <istream>
@@ -17,39 +21,69 @@ using namespace std;
 
 #include "db.h"
 
-#define DEFAULT_PORT 1234
+#define DEFAULT_PORT 1235
+#define QUEUE_LEN 5
+#define BUFFER_SIZE 1024
+#define MAXIMAL_TIMEOUT {3,0}
+typedef enum {Q_STANDARD, Q_SHUTDOWN, Q_CLEAR} input_code_t;
+
+struct Client {
+	int fd_;
+public:
+	Client(int fd):
+		fd_(fd)
+		{}
+	int GetFd() {return fd_;}
+};
 
 //сервер
 class DbServer {
 	Database db_;
 	int port_;
-	char buf_[1024];
-	int as_;
 
-    struct sockaddr_in server_address_;
 
-	char* GetInputMessage(int ms_input);
-	//получает от соединения сообщение
-	//(перед которым отправлена его длина).
-	//[[[архитектура ещё не совсем продумана]]]
+	char buf_[BUFFER_SIZE];
+	int server_fd_;
+
+	fd_set rfds_;
+	vector<Client> clients_;
+
+	bool time_to_stop_;
+
+    struct sockaddr_in address_;
+	socklen_t address_len_;
+
+	vector<Client>::iterator current_client_fd_;
+	//клиент, с которым сервер работает в настоящий момент
+	//(именно с ним взаимодействуют все методы ниже)
+
+	void GetInputMessage(int length);
+	//получает от соединения сообщение заданной длины
+	//и сохраняет его в буфер
 
 	void SendQueryResult(QueryResult qr);
 	//отправляет ответ на запрос
 
+	void SendData(const void* pdata, size_t len);
 	void SendInteger(int num);
-	//отправляет одно число
+	//обёрки для write
 
-	void HandleQuery(int ms_input);
+	int GetData(void* pdata, size_t len);
+	int GetInteger(int* pnum);
+	//обёртки для recv
+
+	void HandleQuery(int length);
 	//выполняется в цикле: получает запрос и отвечает на него
 	//(используя другие функции)
+
+	void InteractWithCurrentClient();
 
 public:
 	DbServer(int port, const string filename);
 	~DbServer();
 
 	void MainLoop();
-	//клиент подключается, передаёт матрицу,
-	//получает обратно набор матриц, отключается.
+	//взаимодействие с клиентами
 };
 
 

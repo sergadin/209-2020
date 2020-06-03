@@ -306,6 +306,10 @@ int  main (void)
                                 writeClient(act_set[i].fd,"Input error");
                                 continue;
                               }
+                              for (i=0; i<num_set; i++)
+                              {
+                                  close(act_set[i].fd);
+                              }
                               cout << "Good, bye\n";
                               close(sock);
                               return 0;
@@ -450,7 +454,6 @@ int  readFromClient (int fd, string &str)
         return -1;
     } else {
         // есть данные
-        fprintf(stdout,"Server got message: %s\n",buf);
         string s(buf, sizeof(buf));
         str = s;
         return 0;

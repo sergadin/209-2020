@@ -62,7 +62,7 @@ public:
 
 	QueryResult InteractWithMatrix(const Matrix& mat);
 
-	QueryResult InteractWithMatrixFromBinaryStream(istream& in_stream);
+	QueryResult InteractWithMatrixFromBuffer(char* buf);
 };
 
 #endif //DB_H

@@ -1,0 +1,10 @@
+apple, 100
+bag, 0
+banana, 65
+egg, 70
+metal, 40
+pine, 100
+rope, 0
+skin, 0
+water, 100
+wood, 55

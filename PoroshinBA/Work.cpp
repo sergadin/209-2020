@@ -1,6 +1,6 @@
 #include "Headbase.h"
 
-void DataBase::RawEditionSelectName(std::string str) {
+void DataBase::SelectName(std::string str) {
   for (auto it = group_data.begin(); it != group_data.end(); it++) {
     auto &group = group_data[it->first];
     auto &students = group.students_by_rating;
@@ -17,16 +17,25 @@ void DataBase::RawEditionSelectName(std::string str) {
   }
 }
 
-void DataBase::SelectGroup(int g) {
+void DataBase::SelectGroupMore(int g) {
   for (auto it = group_data.begin(); it != group_data.end();) {
-    if (it->first != g)
+    if (it->first < g)
       it = group_data.erase(it);
     else
       it++;
   }
 }
 
-void DataBase::SelectRating(double r) {
+void DataBase::SelectGroupLess(int g) {
+  for (auto it = group_data.begin(); it != group_data.end();) {
+    if (it->first > g)
+      it = group_data.erase(it);
+    else
+      it++;
+  }
+}
+
+void DataBase::SelectRatingMore(double r) {
   for (auto it = group_data.begin(); it != group_data.end(); it++) {
     auto &group = group_data[it->first];
     auto &students = group.students_by_rating;
@@ -34,6 +43,21 @@ void DataBase::SelectRating(double r) {
     while (student_it != students.end()) {
       auto stud = *student_it;
       if (stud.rating < r)
+        student_it = Remove(stud);
+      else
+        student_it++;
+    }
+  }
+}
+
+void DataBase::SelectRatingLess(double r) {
+  for (auto it = group_data.begin(); it != group_data.end(); it++) {
+    auto &group = group_data[it->first];
+    auto &students = group.students_by_rating;
+    auto student_it = students.begin();
+    while (student_it != students.end()) {
+      auto stud = *student_it;
+      if (stud.rating > r)
         student_it = Remove(stud);
       else
         student_it++;
@@ -126,7 +150,7 @@ void DataBase::SortRating(std::ostream &os) {
   }
 }
 
-/*void DataBase::Process(std::istream &is, std::ostream &os) {  //Work in progress...
+void DataBase::Process(std::istream &is, std::ostream &os) {  //New unchecked
   std::string query;
   is >> query;
   for (auto &c : query) c = std::tolower(c);
@@ -135,13 +159,113 @@ void DataBase::SortRating(std::ostream &os) {
     for (auto &d : query) d = std::tolower(d);
 
     if (query == "name") {
-      
-    } else if (query == "groups") {
+      is >> query;
+      SelectName(query); 
+    } else if (query == "group") {
+      is >> query;
+      for (auto &c : query) c = std::tolower(c);
+      if (query == "between") {
+        is >> query;
+        int l = stoi(query);
+        is >> query;
+        int m = stoi(query);
+        SelectGroupMore(l);
+        SelectGroupLess(m);
+      } else if (query == "more") {
+        is >> query;
+        double r = stoi(query);
+        SelectGroupMore(r);
+      } else if (query == "less") {
+        is >> query;
+        double r = stoi(query);
+        SelectGroupLess(r);
+      } 
+      else {os << "Incorrect query" << '\n';}
 
-    } else if (query == "rating")
-
+    } else if (query == "rating") {
+      is >> query;
+      for (auto &c : query) c = std::tolower(c);
+      if (query == "between") {
+        is >> query;
+        double l = stod(query);
+        is >> query;
+        double m = stod(query);
+        SelectRatingMore(l);
+        SelectRatingLess(m);
+      } else if (query == "more") {
+        is >> query;
+        double r = stod(query);
+        SelectRatingMore(r);
+      } else if (query == "less") {
+        is >> query;
+        double r = stod(query);
+        SelectRatingLess(r);
+      } 
+      else {os << "Incorrect query" << '\n';}
+    }
+    else {os << "Incorrect query" << '\n';}
   }
-}*/
+
+  else if (query == "sort") {
+    is >> query;
+    for (auto &d : query) d = std::tolower(d);
+
+    if (query == "name") {
+      SortName(os);
+    } else if (query == "group") {
+      SortGroup(os);
+    } else if (query == "rating") {
+      SortRating(os);
+    } else {os << "Incorrect query" << '\n';}
+  }
+
+  else if (query == "save") {
+    is >> query;
+    Save(query);
+  }
+
+  else if (query == "load") {
+    is >> query;
+    Load(query);
+  }
+
+  else if (query == "print") {
+    is >> query;
+    if (query == "all") {
+      PrintAll(os);
+    } else if (query == "name") {
+      PrintName(os);
+    } else if (query == "group") {
+      PrintName(os);
+    } else if (query == "rating") {
+      PrintName(os);
+    } 
+    else {os << "Incorrect query" << '\n';}
+  }
+
+  else if (query == "insert") {  //Добавить проверки
+    Student Bogdan;
+    is >> query;
+    Bogdan.name = query;
+    is >> query;
+    Bogdan.group = stoi(query);
+    is >> query;
+    Bogdan.rating = stod(query);
+    Insert(Bogdan);
+  }
+
+  else if (query == "remove") {  //Добавить проверки
+    Student Bogdan;
+    is >> query;
+    Bogdan.name = query;
+    is >> query;
+    Bogdan.group = stoi(query);
+    is >> query;
+    Bogdan.rating = stod(query);
+    Remove(Bogdan);
+  }
+  else {os << "Incorrect query" << '\n';}
+}
 
 int main() {
   DataBase db;
