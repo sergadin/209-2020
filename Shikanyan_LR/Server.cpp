@@ -28,13 +28,14 @@ using namespace std;
 #define BUFLEN  512
 
 // Две вспомогательные функции для чтения/записи (см. ниже)
-int   readFromClient(int fd, char *buf);
+int   readFromClient(int fd, char *buf,string &str);
 
 
-int  readFromClient (int fd, char *buf)
+int  readFromClient (int fd, char *buf,string &str)
 {
-    int  nbytes;
-    nbytes = read(fd,buf,BUFLEN);
+    int  nbytes, len;
+    recv(fd, &len, 4, MSG_WAITALL);
+    nbytes = recv(fd, buf, len, MSG_WAITALL);
     if ( nbytes<0 )
     {
         // ошибка чтения
@@ -49,7 +50,8 @@ int  readFromClient (int fd, char *buf)
     else
     {
         // есть данные
-        fprintf(stdout,"Server got message: %s\n",buf);
+        string s(buf, len);
+        str = s;
         return 0;
     }
 }
@@ -569,7 +571,8 @@ struct resultat
   					stt.append(inf[i].room);
   					stt.append("  ");
   					stt.append(inf[i].subject);
-            stt.resize(stt.size() - 1);
+            //stt.append("  ");
+            stt.resize(stt.size());
   					len = stt.size();
   					send(fd, &len, 4, MSG_WAITALL);
   					strcpy(ch,stt.c_str());
@@ -769,7 +772,7 @@ public:
 	            	i++;
 				}
 				i++;
-	            while(i < a.size())
+	            while(i < a.size()-1)
 	            {
 	            	line.subject.push_back(a[i]);
 	            	i++;
@@ -1307,7 +1310,7 @@ int main(void)
 									else
 									{
 	                    // пришли данные в уже существующем соединени
-	                    err = readFromClient(i,buf);
+	                    err = readFromClient(i,buf,st);
 	                    if ( err<0 )
 											{
 	                        // ошибка или конец данных
@@ -1317,16 +1320,16 @@ int main(void)
 											else
 											{
 	                        // а если это команда закончить работу?
-	                        if ( strstr(buf,"stop") )
+	                        if ( st == "stop" )
 													{
+                              cout << "this is stop" << endl;
 	                            close(i);
 	                            FD_CLR (i,&active_set);
 	                        }
 													else
 													{
+                              cout << "this is st -" << st << "----" << endl;
 	                            // данные прочитаны нормально
-															st = string(buf);
-                         								     cout << "this is st -" << st << "----" << endl;
 															try
 															{
 																zapros.make(st);
