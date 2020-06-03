@@ -698,6 +698,11 @@ public:
 		mp_d[in.date_time].push_back(in.index);
 		mp_s[in.subject].push_back(in.index);
 	}
+  void push_ses()
+  {
+    vector <info> vec;
+    ses.push_back(vec);
+  }
 	void del_el_from_maps(info in)
 	{
 		int i = 0;
@@ -742,20 +747,8 @@ public:
 		info line;
 		int i = 0;
 		ifstream in;
-    vector <info> vec;
 		in.open(file_name.c_str());
 		global_index = 0;
-    ses.push_back(vec);
-    ses.push_back(vec);
-    ses.push_back(vec);
-    ses.push_back(vec);
-    ses.push_back(vec);
-    ses.push_back(vec);
-    ses.push_back(vec);
-    ses.push_back(vec);
-    ses.push_back(vec);
-    ses.push_back(vec);
-    ses.push_back(vec);
 	    if (in.is_open())
 	    {
 	        while (getline(in, a))
@@ -1321,6 +1314,7 @@ int main(void)
 	                    fprintf (stdout, "Server: connect from host %s, port %hu.\n",
 	                            inet_ntoa(client.sin_addr),
 	                            ntohs(client.sin_port));
+                      baza.push_ses();
 	                    FD_SET(new_sock, &active_set);
 	                }
 									else
@@ -1350,7 +1344,7 @@ int main(void)
 															try
 															{
 																zapros.make(st);
-																res = baza.process(zapros,i);
+																res = baza.process(zapros,i-4);
 																res.print(i);
   																res.clear();
   																zapros.clear();
