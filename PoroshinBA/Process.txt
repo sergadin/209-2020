@@ -1,0 +1,18 @@
+insert <name> <group> <rating>
+remove <name> <group> <rating>
+select 	name	<name*>
+	group	less	<group>
+		more	<group>
+		between	<group> <group>
+	rating	less	<group>
+		more	<group>
+		between	<group> <group>
+load	<filename>
+save	<filename>
+sort	name	//prints as well	(true/false) 3 times as 0||1
+	group	//prints as well	(true/false) 3 times as 0||1
+	rating	//prints as well	(true/false) 3 times as 0||1
+print	<true/false> 3 times as 0||1
+renew
+disconnect
+exit
