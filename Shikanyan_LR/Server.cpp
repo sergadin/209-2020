@@ -683,7 +683,7 @@ class Database
 private:
 	int global_index;
 	vector<info> inf;
-	vector<info> ses;
+	vector<vector<info>> ses;
 	map <string,vector<int> > mp_t;
 	map <string,vector<int> > mp_g;
 	map <string,vector<int> > mp_r;
@@ -742,8 +742,20 @@ public:
 		info line;
 		int i = 0;
 		ifstream in;
+    vector <info> vec;
 		in.open(file_name.c_str());
 		global_index = 0;
+    ses.push_back(vec);
+    ses.push_back(vec);
+    ses.push_back(vec);
+    ses.push_back(vec);
+    ses.push_back(vec);
+    ses.push_back(vec);
+    ses.push_back(vec);
+    ses.push_back(vec);
+    ses.push_back(vec);
+    ses.push_back(vec);
+    ses.push_back(vec);
 	    if (in.is_open())
 	    {
 	        while (getline(in, a))
@@ -975,7 +987,7 @@ public:
 	{
 		ofstream out;
 		int i = 0;
-	    out.open("Base_for_out.txt");
+	    out.open("Base.txt");
 	    if (out.is_open())
 	    {
 	    	while(i < inf.size())
@@ -999,7 +1011,7 @@ public:
 		inf.erase(inf.begin() + i);
 		vector<info>(inf).swap(inf);
 	}
-	resultat resresult_of_zapros(const condition &one_zapr)
+	resultat resresult_of_zapros(const condition &one_zapr,int number)
 	{
 		resultat otvet;
 		if(one_zapr.comand == "save")
@@ -1021,7 +1033,7 @@ public:
 				inf.room = int_to_string(100 + (rand() % 900));
 				inf.subject = random_name();
 				inf.index = global_index;
-	        	global_index++;
+        global_index++;
 				add_elem(inf);
 				number--;
 			}
@@ -1080,7 +1092,7 @@ public:
 		{
 			int i ,q = 0;
 			vector<int> ind_for_sel;
-			ses.clear();
+			ses[number].clear();
 			ind_for_sel = association(one_zapr);
  			for(i = 0;i < ind_for_sel.size();i++)
 			{
@@ -1088,7 +1100,7 @@ public:
 				{
 					q++;
 				}
-				ses.push_back(inf[q]);
+				ses[number].push_back(inf[q]);
 			}
 			otvet.stroka = "SELECT is OK";
 		}
@@ -1097,12 +1109,12 @@ public:
 			int i ,q, status;
 			vector<int> ind_for_sel;
 			ind_for_sel = association(one_zapr);
- 			for(q = 0;q < ses.size();q++)
+ 			for(q = 0;q < ses[number].size();q++)
 			{
 				status = 0;
 				for(i = 0;i < ind_for_sel.size();i++)
 				{
-					if(ind_for_sel[i] == ses[q].index)
+					if(ind_for_sel[i] == ses[number][q].index)
 					{
 						status = 1;
 						break;
@@ -1110,8 +1122,8 @@ public:
 				}
 				if(status == 0 )
 				{
-					ses.erase(ses.begin() + q);
-					vector<info>(ses).swap(ses);
+					ses[number].erase(ses[number].begin() + q);
+					vector<info>(ses[number]).swap(ses[number]);
 					q--;
 				}
 			}
@@ -1126,9 +1138,9 @@ public:
 			prov.room = 0;
 			prov.subject = 0;
 			prov.teacher = 0;
-			while(i < ses.size())
+			while(i < ses[number].size())
 			{
-				otvet.inf.push_back(ses[i]);
+				otvet.inf.push_back(ses[number][i]);
 				i++;
 			}
 			while(q < one_zapr.criteri.size())
@@ -1165,7 +1177,7 @@ public:
 				if(prov.date_time == 0)
 				{
 					i = 0;
-					while(i < ses.size())
+					while(i < ses[number].size())
 					{
 						otvet.inf[i].date_time.clear();
 						i++;
@@ -1174,7 +1186,7 @@ public:
 				if(prov.group == 0)
 				{
 					i = 0;
-					while(i < ses.size())
+					while(i < ses[number].size())
 					{
 						otvet.inf[i].group.clear();
 						i++;
@@ -1183,7 +1195,7 @@ public:
 				if(prov.room == 0)
 				{
 					i = 0;
-					while(i < ses.size())
+					while(i < ses[number].size())
 					{
 						otvet.inf[i].room.clear();
 						i++;
@@ -1192,7 +1204,7 @@ public:
 				if(prov.subject == 0)
 				{
 					i = 0;
-					while(i < ses.size())
+					while(i < ses[number].size())
 					{
 						otvet.inf[i].subject.clear();
 						i++;
@@ -1201,7 +1213,7 @@ public:
 				if(prov.teacher == 0)
 				{
 					i = 0;
-					while(i < ses.size())
+					while(i < ses[number].size())
 					{
 						otvet.inf[i].teacher.clear();
 						i++;
@@ -1211,7 +1223,7 @@ public:
 		}
 		return otvet;
 	}
-	Result process(Query &q)
+	Result process(Query &q,int number)
 	{
 		Result res;
 		resultat one_res;
@@ -1220,7 +1232,7 @@ public:
 		while(i < q.sizee())
 		{
 			one_zapr = q.elem(i);
-			one_res = resresult_of_zapros(one_zapr);
+			one_res = resresult_of_zapros(one_zapr,number);
 			res.add_element(one_res);
 			one_res.clear();
 			i++;
@@ -1236,6 +1248,7 @@ int main(void)
 
 	    int     i, err, opt=1, how=1,len;
 	    int     sock, new_sock;
+      int     number;
 	    fd_set  active_set, read_set;
 	    struct  sockaddr_in  addr;
 	    struct  sockaddr_in  client;
@@ -1293,12 +1306,15 @@ int main(void)
 
 	        // Данные появились. Проверим в каком сокете.
 	        for (i=0; i<FD_SETSIZE; i++) {
-	            if ( FD_ISSET(i,&read_set) ) {
-	                if ( i==sock ) {
+	            if ( FD_ISSET(i,&read_set) )
+              {
+	                if ( i==sock )
+                  {
 	                    // пришел запрос на новое соединение
 	                    size = sizeof(client);
 	                    new_sock = accept(sock,(struct sockaddr*)&client,&size);
-	                    if ( new_sock<0 ) {
+	                    if ( new_sock<0 )
+                      {
 	                        perror("accept");
 	                        exit (EXIT_FAILURE);
 	                    }
@@ -1329,11 +1345,12 @@ int main(void)
 													else
 													{
                               cout << "this is st -" << st << "----" << endl;
+                              cout << "this is number -" << i << "___" << endl;
 	                            // данные прочитаны нормально
 															try
 															{
 																zapros.make(st);
-																res = baza.process(zapros);
+																res = baza.process(zapros,i);
 																res.print(i);
   																res.clear();
   																zapros.clear();
