@@ -9,7 +9,9 @@ class Exception {
 public:
  	Exception(const string& msg):
  		 msg_(msg)
- 		{}
+ 		{
+ 			cout << "Exception '" << msg << "' was thrown." << endl << flush;
+ 		}
  	const string& Message () const {return msg_;}
 };
 

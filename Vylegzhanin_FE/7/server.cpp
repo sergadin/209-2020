@@ -21,9 +21,9 @@ void DbServer::GetInputMessage(int length) {
 		cout << "read " << read_bytes << " bytes instead of claimed " << length << endl;
 		throw QueryException("read wrong amount of bytes");
 	}
-	else {
-		cout << "successfully read " << length << " bytes" << endl << flush;
-	}
+//	else {
+//		cout << "successfully read " << length << " bytes" << endl << flush;
+//	}
 }
 
 void DbServer::SendQueryResult(QueryResult qr) {
@@ -34,8 +34,8 @@ void DbServer::SendQueryResult(QueryResult qr) {
 		//если ошибка -- отправляем только <код ошибки><сообщение> 
 		future_len = sizeof(err_code_t) + qr.err_msg.size();
 
-		cout << "sending err message (" << future_len << "=" << sizeof(err_code_t) << "+" << qr.err_msg.size()<< " bytes)" << endl << flush;
-		cout << "message: '" << qr.err_msg << "'" << endl << flush;
+		cout << "sending message (" << future_len << " bytes): '";
+		cout << qr.err_msg << "'" << endl << flush;
 		SendInteger(future_len);
 		SendData(&qr.err_code, sizeof(qr.err_code));
 		SendData(qr.err_msg.c_str(), qr.err_msg.size());
@@ -105,10 +105,11 @@ void DbServer::HandleQuery(int length){
 		GetInputMessage(length);
 	}
 	catch(QueryException qe) {
+		cout << "QueryException '" << qe.Message() << "' was catched in DbServer::HandleQuery" << endl << flush;
 		SendQueryResult(QueryResult(ERRC_BADDATA, qe.Message()));
 	}
 	catch(...) {
-		cout << "unknown exception in DbServer::HandleQuery" << endl;
+		cout << "unknown exception was catched in DbServer::HandleQuery" << endl;
 		SendQueryResult(QueryResult(ERRC_UNKNOWN, "unknown exception in DbServer::HandleQuery"));
 		return;
 	}
@@ -130,7 +131,7 @@ DbServer::DbServer(int port, const string filename):
 	time_to_stop_(false)
 	{
 
-	cout << "{creating server..." << endl;
+	cout << "Setting up the server..." << flush;
 
 //	server_fd_ = socket(AF_INET, SOCK_STREAM, 0);
 	if(server_fd_ == -1) {
@@ -140,7 +141,7 @@ DbServer::DbServer(int port, const string filename):
 	if(port < 0) {
 		port_ = DEFAULT_PORT;
 	}
-	cout << "using port = " << port_ << endl;
+	cout << "(using port = " << port_ << ")..." << flush;
 
 	address_.sin_family = AF_INET;
 	address_.sin_addr .s_addr = INADDR_ANY;
@@ -163,36 +164,37 @@ DbServer::DbServer(int port, const string filename):
 
     int listen_output = listen(server_fd_, QUEUE_LEN);
     if(listen_output == -1) {
-    	throw ServerException("i can't hear you");
+    	throw ServerException("impossible to listen");
     }
 
 
   //  clients_.push_back(Client(server_fd_));
   //  time_to_stop_ = false;
 
-	cout << "done.}" << endl;
+	cout << "done." << endl;
 }
 
 DbServer::~DbServer() {
-	cout << "{shutting down server..." << endl << flush;
+	cout << "Shutting down server... " << flush;
 
 	close(server_fd_);
 
-	cout << "done.}" << endl << flush;
+	cout << "done." << endl;
 }
 
 
 void DbServer::InteractWithCurrentClient() {
 
-	cout << "starting to interact with client " << current_client_fd_->GetFd() << "; waiting for data..." << endl;
+	cout << "message from client " << current_client_fd_->GetFd() << "." << endl;
+	cout << "Waiting for data...";
 
 	int future_len = 0;
 		
 	GetInteger(&future_len);
-	cout << "received future_len = " << future_len << endl;
+	cout << "(expecting " << future_len << "bytes)..." ;
 
 	if(future_len < 0) {
-		cout << "negative future_len" << endl;
+//		cout << "negative future_len" << endl;
 		throw QueryException("message len should be positive");
 	}
 
@@ -204,30 +206,32 @@ void DbServer::InteractWithCurrentClient() {
 	}
 
 	if(future_len == BUFFER_SIZE) {
-		cout << "message is too long" << endl;
+//		cout << "message is too long" << endl;
 		throw QueryException("message is too long");
 	}
 
 
 	int code;
 	GetData(&code, sizeof(input_code_t));
-	cout << "input_code = " << code << endl << flush;
+	cout << "input_code = " << code << ": ";
 	
 	if(code == Q_STANDARD) {
-		cout << "got standard type; len = " << future_len - sizeof(int) << "; let's handle it!" << endl;
+		cout << "got standard query (" << future_len - sizeof(int) << " bytes of data)." << endl;
 		HandleQuery(future_len - sizeof(int));
 		cout << "query answered." << endl << flush;
 	}
 
 	if(code == Q_CLEAR) {
+		cout << "Clearing database... " << flush;
 		db_.Clear();
+		cout << "done." << endl;
 		SendQueryResult(QueryResult());
 	}
 
 	if(code == Q_SHUTDOWN) {
-		cout << "sending message about shutdown" << endl;
+		cout << "got shutdown command." << endl;
 		SendQueryResult(QueryResult(ERRC_SHUTDOWN, "Recieved 'shutdown'."));
-		cout << "message sent" << endl;
+		cout << "Command answered; preparing to shut down the server." << endl;
 		time_to_stop_ = true;
 	}
 
@@ -268,7 +272,7 @@ void DbServer::MainLoop() {
 			}
 
 
-			cout << "there's something to select" << endl;
+			cout << "new event: ";
 			for(auto it = clients_.begin()+1; it < clients_.end(); it++) {
 				if(FD_ISSET(it->GetFd(), &rfds_)) {
 					current_client_fd_ = it;
@@ -277,28 +281,30 @@ void DbServer::MainLoop() {
 				}
 			}
 			if(FD_ISSET(server_fd_, &rfds_)) {
-				cout << "new client" << endl;
+				cout << "new client." << endl;
 				int new_client_sock = accept(server_fd_, NULL, NULL);
 				clients_.push_back(Client(new_client_sock));
 			}
 		}
 	}
 	catch(ServerException se) {
-		cout << "ошибка на сервере" << endl;
-		cout << se.Message() << endl;
-
-		return;
-		/*
-		TODO: сообщение об ошибке 
-		*/
+		cout << "ServerException '" << se.Message() << "' was catched in DbServer::MainLoop" << endl << flush;
+		cout << "Emergency stop." << endl;
 	}
-	catch(Exception e) {
-		cout << "неизвестная ошибка" << endl;
-		cout << e.Message() << endl;
-		return;
+	catch(QueryException qe) {
+		cout << "QueryException '" << qe.Message() << "' was catched in DbServer::MainLoop" << endl << flush;
+		cout << "Sending report to current client..." << flush;
+		SendQueryResult(QueryResult(ERRC_BADDATA, qe.Message()));
+		cout << "sent." << endl;
+	}
+	catch(Exception ex) {
+		cout << "some other Exception '" << ex.Message() << "' was catched in DbServer::MainLoop" << endl << flush;
 		/*
 		TODO: отправка клиенту сообщение об ошибке
 		*/
+	}
+	catch(...) {
+		cout << "unknown exception was catched in DbServer::MainLoop" << endl << flush;
 	}
 
 	cout << "SERVER IS NOW OFF" << endl;
