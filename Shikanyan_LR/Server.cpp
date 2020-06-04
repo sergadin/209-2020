@@ -39,7 +39,7 @@ int  readFromClient (int fd, char *buf,string &str)
     if ( nbytes<0 )
     {
         // ошибка чтения
-        perror ("Server: read failure");
+        perror ("Server: read failure");//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         return -1;
     }
     else if ( nbytes==0 )
@@ -1241,12 +1241,13 @@ int main(void)
 
 	    int     i, err, opt=1, how=1,len;
 	    int     sock, new_sock;
-      int     number;
+      int     sok_number = 0;
 	    fd_set  active_set, read_set;
 	    struct  sockaddr_in  addr;
 	    struct  sockaddr_in  client;
 	    char    buf[BUFLEN],ch[512];
 	    socklen_t  size;
+      map <int, int> sok;
 
 			string st, base = "Base.txt";
 			condition s;
@@ -1314,7 +1315,6 @@ int main(void)
 	                    fprintf (stdout, "Server: connect from host %s, port %hu.\n",
 	                            inet_ntoa(client.sin_addr),
 	                            ntohs(client.sin_port));
-                      baza.push_ses();
 	                    FD_SET(new_sock, &active_set);
 	                }
 									else
@@ -1324,6 +1324,8 @@ int main(void)
 	                    if ( err<0 )
 											{
 	                        // ошибка или конец данных
+                          cout << "client out" << endl;
+                          sok.erase(sok.find(i));
 	                        close (i);
 	                        FD_CLR(i,&active_set);
 	                    }
@@ -1333,18 +1335,25 @@ int main(void)
 	                        if ( st == "stop" )
 													{
                               cout << "this is stop" << endl;
+                              sok.erase(sok.find(i));
 	                            close(i);
 	                            FD_CLR (i,&active_set);
 	                        }
 													else
 													{
                               cout << "this is st -" << st << "----" << endl;
-                              cout << "this is number -" << i << "___" << endl;
+                              if(sok.find(i) == sok.end())
+                              {
+                                baza.push_ses();
+                                sok[i] = sok_number;
+                                sok_number++;
+                              }
+                              cout << endl << " id of client " << sok[i] << endl;
 	                            // данные прочитаны нормально
 															try
 															{
 																zapros.make(st);
-																res = baza.process(zapros,i-4);
+																res = baza.process(zapros,sok[i]);
 																res.print(i);
   																res.clear();
   																zapros.clear();
