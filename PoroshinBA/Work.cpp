@@ -172,9 +172,10 @@ int DataBase::Process(std::istream &is, std::ostream &os, int user_id) {
   is >> query;
   for (auto &c : query) c = std::tolower(c);
   if (query == "select") {
+    while (true) {
     is >> query;
     for (auto &d : query) d = std::tolower(d);
-
+    if (query == "end") return 0;
     if (query == "name") {
       is >> query;
       SelectName(query, user_id); 
@@ -218,9 +219,9 @@ int DataBase::Process(std::istream &is, std::ostream &os, int user_id) {
         double r = stod(query);
         SelectRatingLess(r, user_id);
       } 
-      else {os << "Incorrect query" << '\n';}
     }
     else {os << "Incorrect query" << '\n';}
+    }
   }
 
   else if (query == "sort") {
