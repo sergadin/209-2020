@@ -156,7 +156,7 @@ void Matrix::Print() const {
 
 void Matrix::WriteToOstream(ostream& fout) const {
 	for(int i = 0; i < n_; i++) {
-		for(int j = 0; j < n_; j++) {
+		for(int j = 0; j < m_; j++) {
 			write_int(fout, &data_[i][j]);
 		}
 	}
@@ -179,9 +179,10 @@ int Matrix::GetElem(int i, int j) const {
 }
 
 Matrix operator*(const Matrix& lhs, const Matrix& rhs) {
-	cout << "trying to multiply" << lhs.GetN() << "x" << lhs.GetM() << " and " << rhs.GetN() << "x" << rhs.GetM() << endl << flush;
+//	cout << "multiplying [" << lhs.GetN() << "x" << lhs.GetM() << "] * [" << rhs.GetN() << "x" << rhs.GetM() << "]...";
 
 	if(lhs.GetM() != rhs.GetN()) {
+		cout << " impossible to multiply." << endl;
 		throw MatrixSizeException("non-consistent dimensions while multiplicating", lhs.GetM(), rhs.GetN());
 	}
 
@@ -201,6 +202,8 @@ Matrix operator*(const Matrix& lhs, const Matrix& rhs) {
 			}
 		}
 	}
+
+	cout << "it's [" << new_n << "x" << new_m << "]." << endl;
 
 	return Matrix(new_n, new_m, newdata);
 }

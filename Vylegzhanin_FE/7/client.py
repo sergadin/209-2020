@@ -1,5 +1,6 @@
 import socket
 import struct
+import sys
 
 int_struct = struct.Struct('<i')
 intsize = 4
@@ -8,25 +9,51 @@ input_codenames = ['ERRC_OK','ERRC_BADISTREAM','ERRC_BADDATA','ERRC_SHUTDOWN',
 
 output_codenames = {'Q_STANDARD':0, 'Q_SHUTDOWN':1, 'Q_CLEAR':2}
 
+HELP_MESSAGE = '\nPossible commands:\n\
+"send_matrix" - sends matrix A ([mxn]) to server;\n\
+if there is at least one matrix B ([kxm]), then\n\
+it returns list of all products B*A;\n\
+else A is added to database.\n\n\
+"shutdown" - closes server and this client.\n\n\
+"cleardbs" - clears the database completely.\n\n\
+"exit" - closes this client.\n\n\
+"help" - shows this message.\n'
+
+
+#
+def ReadInts(num=1, caption='', err_msg="something's wrong; try again."):
+    success = False
+    res = []
+    while not success:
+        print(caption, end='')
+        inp = map(int,input().split())
+        try:
+            res = list(inp)
+            if len(res) != num:
+                raise Exception('wrong len')
+            else:
+                success = True
+        except Exception as e:
+            print(err_msg)
+        finally:
+            if success:
+                return res
+    
+
 def SendStandardCommand(sock):
-    print('Enter n, m', end=':')
-    n,m = map(int,input().split())
-    while n < 0 or m < 0:
-        print('bad size. try typing it again.')
-        print('Enter n, m', end=':')
-        n,m = map(int,input().split())       
-        
-    print('Enter matrix (n rows, m columns)', end=':')
+    n, m = 0, 0
+    while n <= 0 or m <= 0:
+        print('(n, m should be positive)')
+        n, m = ReadInts(2, "Enter n, m:", "It's not two integers. Try again.")
+   
+    print('Enter matrix (n rows, m columns):')
     mat = []
     for i in range(n):
-        row = list(map(int, input().split()))
-        while(len(row) != m):
-            print('bad row size. try typing it again.')
-            row = list(map(int, input().split()))    
+        row = ReadInts(m,
+                       'Enter row of {} integers ({}/{}):'.format(m, i+1, n),
+                       'These are not {} integers; try again.'.format(m))    
         mat.append(row)
-#    print('you entered matrix:')
-#    print(mat)
-#    print('sendind additional data...',end='')
+
     SendInt(sock, intsize*(m*n+3))
     SendInt(sock, output_codenames['Q_STANDARD'])
 #    print('sent.')
@@ -81,25 +108,31 @@ def GetMatrix(sock):
 # Создаем TCP/IP socket
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_address = ('localhost', 1237)
-sock.connect(server_address)
+
+try:
+    sock.connect(server_address)
+except ConnectionRefusedError as cre:
+    print('Server is now off.')
+    sys.exit()
 
 while True:
     try:
-        print('Enter your command (variants: "send_matrix", "shutdown", "cleardbs", "exit")', end=':')
+        print('Enter your command (variants: "send_matrix", "shutdown", "cleardbs", "exit", "help")', end=':')
         s = input()
-        print('entered command "{}"'.format(s))
         if s not in SendUniversalCommand:
             if s == 'exit':
-                print('Goodbye')
+                print('Goodbye.')
                 break
-            print('Unknown command; try again')
+            if s == 'help':
+                print(HELP_MESSAGE)
+                continue
+            print('Unknown command. Try again.')
             continue
         
         SendUniversalCommand[s](sock)
         
         print('waiting for answer...')
         future_len = GetInt(sock)
-  #      print('future_len={}'.format(future_len))
         err_code = GetInt(sock)
 
         if input_codenames[err_code] == 'ERRC_OK':
@@ -108,20 +141,24 @@ while True:
                 print('recieved {} matrices, namely:'.format(matrices_n))
                 for i in range(matrices_n):
                     mat = GetMatrix(sock)
-    #                print('recieved matrix:')
-                    print(*mat, sep='\n')
+                    strend = '.' if i == matrices_n-1 else ',';
+
+                    print(*mat, sep='\n',end=strend+'\n\n')
             else:
-                print("everything's ok")
+                print("command successfully executed")
         elif input_codenames[err_code] == 'ERRC_SHUTDOWN':
-            print('server is shutting down. Goodnight')
+            print('Server is shut down.')
+            print('Closing client.')
             break
         else:
             print("not everything's ok: err_code = {}".format(input_codenames[err_code]))
             error_message = GetStr(sock, future_len - intsize)
             print('message: "{}"'.format(error_message))
+    except IOError as ioe:
+        print("Server is closed by someone else.")
+        break
     except Exception as e:
-        print("Unknown exception! Details:", e)
-        print("Client stopped")
+        print("Client stopped because of unknown exception. Details:", e)
         break
 
 sock.close()
