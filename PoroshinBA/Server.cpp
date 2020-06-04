@@ -13,7 +13,7 @@ int main (void) {
   int port = 55432;
 
   DataBase db;
-  db.Load("database.csv", 0);
+  db.Load("__database.csv", 0);
 
   Server server;
   server.SetPort(port);

@@ -7,9 +7,11 @@ void DataBase::SelectName(std::string str, int user_id) {
     auto student_it = students.begin();
     while (student_it != students.end()) {
       auto stud = *student_it;
-      std::string name = stud.name;
-      int a = str.length();
-      if (str != name.substr(a))
+      //std::string name = stud.name;
+      std::size_t found = stud.name.find(str);
+      if (found == std::string::npos)
+      //size_t a = str.length();
+      //if (str != name.substr(0, a))
         student_it = Remove(stud, user_id);
       else
         student_it++;
@@ -76,8 +78,9 @@ void DataBase::Load(const std::string &filename, int user_id) {
     if(!input) break;
     std::getline(input, buff, ',');
     Bogdan.group = std::stoi(buff);
-    std::getline(input, buff);
+    std::getline(input, buff, ',');
     Bogdan.rating = std::stod(buff);
+    std::getline(input, Bogdan.info);
     Insert(Bogdan, user_id);
   }
   group_data_copied[user_id] = buffer[user_id];
@@ -87,7 +90,7 @@ void DataBase::Load(const std::string &filename, int user_id) {
 void DataBase::Save(const std::string &filename, int user_id) {
   std::ofstream file;
   file.open(filename);
-  PrintAll(file, user_id, 1, 1, 1);
+  PrintAll(file, user_id, 1, 1, 1, 1);
   file.close();
 }
 
@@ -101,7 +104,7 @@ bool compareRatings(Student A, Student B) {
   return (A.rating < B.rating);
 }
 
-void DataBase::SortName(std::ostream &os, int user_id, bool n, bool g, bool r) {
+void DataBase::SortName(std::ostream &os, int user_id, bool n, bool g, bool r, bool i) {
   std::vector<Student> Names;
   for (auto it = buffer[user_id].begin(); it != buffer[user_id].end(); it++) {
     auto &group = buffer[user_id][it->first];
@@ -116,12 +119,13 @@ void DataBase::SortName(std::ostream &os, int user_id, bool n, bool g, bool r) {
   for (auto iter = Names.begin(); iter != Names.end(); iter++){
     if (n == true) os << (*iter).name << ',';
     if (g == true) os << (*iter).group << ',';
-    if (r == true) os << (*iter).rating;
+    if (r == true) os << (*iter).rating << ',';
+    if (i == true) os << (*iter).info;
     os << '\n';
   }
 }
 
-void DataBase::SortGroup(std::ostream &os, int user_id, bool n, bool g, bool r) {
+void DataBase::SortGroup(std::ostream &os, int user_id, bool n, bool g, bool r, bool i) {
   std::vector<Student> Groups;
   for (auto it = buffer[user_id].begin(); it != buffer[user_id].end(); it++) {
     auto &group = buffer[user_id][it->first];
@@ -136,12 +140,13 @@ void DataBase::SortGroup(std::ostream &os, int user_id, bool n, bool g, bool r) 
   for (auto iter = Groups.begin(); iter != Groups.end(); iter++){
     if (n == true) os << (*iter).name << ',';
     if (g == true) os << (*iter).group << ',';
-    if (r == true) os << (*iter).rating;
+    if (r == true) os << (*iter).rating << ',';
+    if (i == true) os << (*iter).info;
     os << '\n';
   }
 }
 
-void DataBase::SortRating(std::ostream &os, int user_id, bool n, bool g, bool r) {
+void DataBase::SortRating(std::ostream &os, int user_id, bool n, bool g, bool r, bool i) {
   std::vector<Student> Ratings;
   for (auto it = buffer[user_id].begin(); it != buffer[user_id].end(); it++) {
     auto &group = buffer[user_id][it->first];
@@ -156,7 +161,8 @@ void DataBase::SortRating(std::ostream &os, int user_id, bool n, bool g, bool r)
   for (auto iter = Ratings.begin(); iter != Ratings.end(); iter++){
     if (n == true) os << (*iter).name << ',';
     if (g == true) os << (*iter).group << ',';
-    if (r == true) os << (*iter).rating;
+    if (r == true) os << (*iter).rating << ',';
+    if (i == true) os << (*iter).info;
     os << '\n';
   }
 }
@@ -233,7 +239,7 @@ int DataBase::Process(std::istream &is, std::ostream &os, int user_id) {
         os << "Choose parameters for print" << '\n';
         return 0;
       }
-      SortName(os, user_id, n, g, r);
+      SortName(os, user_id, n, g, r, 1);
     } else if (query == "group") {
       is >> query;
       int choise = stoi(query);
@@ -246,7 +252,7 @@ int DataBase::Process(std::istream &is, std::ostream &os, int user_id) {
         os << "Choose parameters for print" << '\n';
         return 0;
       }
-      SortGroup(os, user_id, n, g, r);
+      SortGroup(os, user_id, n, g, r, 1);
     } else if (query == "rating") {
       is >> query;
       int choise = stoi(query);
@@ -259,7 +265,7 @@ int DataBase::Process(std::istream &is, std::ostream &os, int user_id) {
         os << "Choose parameters for print" << '\n';
         return 0;
       }
-      SortRating(os, user_id, n, g, r);
+      SortRating(os, user_id, n, g, r, 1);
     } else {os << "Incorrect query" << '\n';}
   }
 
@@ -285,7 +291,7 @@ int DataBase::Process(std::istream &is, std::ostream &os, int user_id) {
       os << "Choose parameters for print" << '\n';
       return 0;
     }
-    PrintAll(os, user_id, n, g, r);
+    PrintAll(os, user_id, n, g, r, 1);
   }
 
   else if (query == "insert") {
@@ -328,6 +334,6 @@ int DataBase::Process(std::istream &is, std::ostream &os, int user_id) {
 }
 
 std::ostream &operator<<(std::ostream &os, const Student &s) {
-  os << s.name << ',' << s.group << ',' << s.rating;
+  os << s.name << ',' << s.group << ',' << s.rating << ',' << s.info;
   return os;
 }

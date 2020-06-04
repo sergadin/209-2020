@@ -16,9 +16,10 @@ struct Student {
   std::string name;
   int group;
   double rating;
+  std::string info;
   bool operator==(const Student &other) {
-    return std::tie(name, group, rating) ==
-           std::tie(other.name, other.group, other.rating);
+    return std::tie(name, group, rating, info) ==
+           std::tie(other.name, other.group, other.rating, other.info);
   }
   bool operator!=(const Student &other) { return !(*this == other); }
 };
@@ -102,12 +103,13 @@ class DataBase {
     return students.erase(student_it1, student_it2);
   }
 
-  void PrintAll(std::ostream &os, int user_id, bool n, bool g, bool r) {  //VERY DANGEROUS
+  void PrintAll(std::ostream &os, int user_id, bool n, bool g, bool r, bool i) {  //VERY DANGEROUS
     for (const auto &[group_id, group] : buffer[user_id])
       for (auto it : group.students_by_rating) {
           if (n == true) os << (it).name << ',';
           if (g == true) os << (it).group << ',';
-          if (r == true) os << (it).rating;
+          if (r == true) os << (it).rating << ',';
+          if (i == true) os << (it).info;
           os << '\n';
         }
   }
@@ -138,9 +140,9 @@ class DataBase {
   void Load(const std::string &filename, int user_id);
   void Save(const std::string &filename, int user_id);
 
-  void SortName(std::ostream &os, int user_id, bool n, bool g, bool r);
-  void SortGroup(std::ostream &os, int user_id, bool n, bool g, bool r);
-  void SortRating(std::ostream &os, int user_id, bool n, bool g, bool r);
+  void SortName(std::ostream &os, int user_id, bool n, bool g, bool r, bool i);
+  void SortGroup(std::ostream &os, int user_id, bool n, bool g, bool r, bool i);
+  void SortRating(std::ostream &os, int user_id, bool n, bool g, bool r, bool i);
 
   int Process(std::istream &is, std::ostream &os, int user_id);
 };
