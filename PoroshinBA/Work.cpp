@@ -178,7 +178,8 @@ int DataBase::Process(std::istream &is, std::ostream &os, int user_id) {
     if (query == "end") return 0;
     if (query == "name") {
       is >> query;
-      SelectName(query, user_id); 
+      SelectName(query, user_id);
+      os << "made it" << '\n';
     } else if (query == "group") {
       is >> query;
       for (auto &c : query) c = std::tolower(c);
@@ -189,14 +190,17 @@ int DataBase::Process(std::istream &is, std::ostream &os, int user_id) {
         int m = stoi(query);
         SelectGroupMore(l, user_id);
         SelectGroupLess(m, user_id);
+        os << "made it" << '\n';
       } else if (query == "more") {
         is >> query;
         double r = stoi(query);
         SelectGroupMore(r, user_id);
+        os << "made it" << '\n';
       } else if (query == "less") {
         is >> query;
         double r = stoi(query);
         SelectGroupLess(r, user_id);
+        os << "made it" << '\n';
       } 
       else {os << "Incorrect query" << '\n';}
 
@@ -210,14 +214,17 @@ int DataBase::Process(std::istream &is, std::ostream &os, int user_id) {
         double m = stod(query);
         SelectRatingMore(l, user_id);
         SelectRatingLess(m, user_id);
+        os << "made it" << '\n';
       } else if (query == "more") {
         is >> query;
         double r = stod(query);
         SelectRatingMore(r, user_id);
+        os << "made it" << '\n';
       } else if (query == "less") {
         is >> query;
         double r = stod(query);
         SelectRatingLess(r, user_id);
+        os << "made it" << '\n';
       } 
     }
     else {os << "Incorrect query" << '\n';}
@@ -241,6 +248,7 @@ int DataBase::Process(std::istream &is, std::ostream &os, int user_id) {
         return 0;
       }
       SortName(os, user_id, n, g, r, 1);
+      os << "made it" << '\n';
     } else if (query == "group") {
       is >> query;
       int choise = stoi(query);
@@ -254,6 +262,7 @@ int DataBase::Process(std::istream &is, std::ostream &os, int user_id) {
         return 0;
       }
       SortGroup(os, user_id, n, g, r, 1);
+      os << "made it" << '\n';
     } else if (query == "rating") {
       is >> query;
       int choise = stoi(query);
@@ -267,17 +276,20 @@ int DataBase::Process(std::istream &is, std::ostream &os, int user_id) {
         return 0;
       }
       SortRating(os, user_id, n, g, r, 1);
+      os << "made it" << '\n';
     } else {os << "Incorrect query" << '\n';}
   }
 
   else if (query == "save") {
     is >> query;
     Save(query, user_id);
+    os << "made it" << '\n';
   }
 
   else if (query == "load") {
     is >> query;
     Load(query, user_id);
+    os << "made it" << '\n';
   }
 
   else if (query == "print") {
@@ -293,6 +305,7 @@ int DataBase::Process(std::istream &is, std::ostream &os, int user_id) {
       return 0;
     }
     PrintAll(os, user_id, n, g, r, 1);
+    os << "made it" << '\n';
   }
 
   else if (query == "insert") {
@@ -304,6 +317,7 @@ int DataBase::Process(std::istream &is, std::ostream &os, int user_id) {
     is >> query;
     Bogdan.rating = stod(query);
     Insert(Bogdan, user_id);
+    os << "made it" << '\n';
   }
 
   else if (query == "remove") {
@@ -315,14 +329,17 @@ int DataBase::Process(std::istream &is, std::ostream &os, int user_id) {
     is >> query;
     Bogdan.rating = stod(query);
     Remove(Bogdan, user_id);
+    os << "made it" << '\n';
   }
 
   else if (query == "renew") {
     Renew_Buffer(user_id);
+    os << "made it" << '\n';
   }
 
   else if (query == "disconnect") {
     DeleteUser(user_id);
+    os << "made it" << '\n';
     return 1;
   }
 
