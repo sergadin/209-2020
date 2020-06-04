@@ -254,7 +254,7 @@ int main(int argc, char *argv[])
 		//close (ms);
 		answer = NULL;
     }
-	
+	// djldkjs
 	in = fopen ("text.txt","w");
 	for (i = 0; i < Par_Num; i++) {
 		fprintf (in, "%s\n", text[i]);
