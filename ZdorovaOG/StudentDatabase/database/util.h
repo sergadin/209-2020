@@ -5,8 +5,8 @@ namespace util {
 namespace ios {
 struct SkipSpaces {} skipws;
 struct SkipCommas {} skipcm;
-} // namespace ios
-} // namespace util
+}  // namespace ios
+}  // namespace util
 
 std::istream &operator>>(std::istream &is, const util::ios::SkipSpaces &) {
   char c;
@@ -22,7 +22,6 @@ std::istream &operator>>(std::istream &is, const util::ios::SkipSpaces &) {
 std::istream &operator>>(std::istream &is, const util::ios::SkipCommas &) {
   char c;
   c = is.peek();
-  if (c == ',')
-    is.ignore();
+  if (c == ',') is.ignore();
   return is;
 }

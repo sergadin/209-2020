@@ -1,15 +1,19 @@
 OBJS_PARSER	= _obj/node.o _obj/token.o _obj/condition_parser.o
-OBJS_DATABASE	= _obj/database.o _obj/index.o _obj/student.o
-OBJS = $(OBJS_DATABASE) $(OBJS_PARSER) _obj
+OBJS_DATABASE = _obj/database.o _obj/index.o _obj/student.o
+OBJS_SERVER = _obj/server.o _obj/client_socket.o
+OBJS = $(OBJS_DATABASE) $(OBJS_PARSER) $(OBJS_SERVER) _obj
 OUT_TESTS = tests/_test_condition_parsing tests/_test_tokenize
-OUT = _main _input_builder $(OUT_TESTS)
+OUT = _db_local _input_builder $(OUT_TESTS)
 CC	 = g++
-FLAGS	 = -g --std=c++1z -fstack-protector-all -Wall -Wextra -Wunused -Werror -pedantic -pedantic-errors -Wfloat-equal -Wpointer-arith -Wformat-security -Wformat=1 -Wwrite-strings -Wcast-align -Wno-long-long -Woverloaded-virtual -Wnon-virtual-dtor -Wcast-qual -Wno-suggest-attribute=format
+FLAGS	 = -g -O2 --std=c++1z -fstack-protector-all -Wall -Wextra -Wunused -Werror -pedantic -pedantic-errors -Wfloat-equal -Wpointer-arith -Wformat-security -Wformat=1 -Wwrite-strings -Wcast-align -Wno-long-long -Woverloaded-virtual -Wnon-virtual-dtor -Wcast-qual -Wno-suggest-attribute=format
 
-all: main tests run_tests
+all: db_local db_server tests run_tests
 
-main: parser database
-	$(CC) $(FLAGS) $(OBJS_PARSER) $(OBJS_DATABASE) main.cpp -o _main
+db_local: parser database
+	$(CC) $(FLAGS) $(OBJS_PARSER) $(OBJS_DATABASE) db_local.cpp -o _db_local
+
+db_server: parser database server_part
+	$(CC) $(FLAGS) $(OBJS_PARSER) $(OBJS_DATABASE) $(OBJS_SERVER) db_server.cpp -o _db_server -lpthread
 
 tests: parser $(OUT_TESTS)
 
@@ -27,6 +31,8 @@ run_tests: tests
 parser: $(OBJS_PARSER)
 
 database: $(OBJS_DATABASE)
+
+server_part: $(OBJS_SERVER)
 
 input_builder:
 	$(CC) $(FLAGS) data_generator/file_generator.cpp -o _input_builder
@@ -51,6 +57,12 @@ _obj/index.o: _obj/student.o database/index.cpp
 
 _obj/student.o: database/student.cpp | _obj
 	$(CC) -c $(FLAGS) database/student.cpp -o _obj/student.o
+
+_obj/server.o: server/server.cpp | _obj
+	$(CC) -c $(FLAGS) server/server.cpp -o _obj/server.o
+
+_obj/client_socket.o: server/client_socket.cpp | _obj
+	$(CC) -c $(FLAGS) server/client_socket.cpp -o _obj/client_socket.o
 
 clean:
 	rm -rf $(OBJS) $(OUT)

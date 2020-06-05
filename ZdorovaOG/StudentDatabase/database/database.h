@@ -1,11 +1,22 @@
+/**
+ * @file
+ * @brief      Заголовочный файл с описанием основных классов базы данных
+ *
+ * Данный файл содержит в себе определение класса DataHolder,
+ * служащего для базовых операций ввода-вывода, и класса
+ * DataBase, служащего для обработки основных запросов.
+ */
 #pragma once
-#define DEBUG
 
-#include "index.h"
-#include "student.h"
-
+#include <map>
+#include <mutex>
+#include <set>
 #include <string>
 #include <vector>
+
+#include "../config/config.h"
+#include "index.h"
+#include "student.h"
 
 /**
  * @brief      Базовый класс для хранения записей
@@ -13,19 +24,27 @@
  *             загрузки и сохранения записей.
  */
 class DataHolder {
-public:
+ public:
   DataHolder() = default;
   /**
-   * @brief      Добавляет студента в базу
+   * @brief      Добавляет запись о студенте в базу
    *
-   * @param[in]  s     Студент
+   * Добавляет запись о студенте в базу хранящуюся в оперативной памяти.
+   * Не изменяет файл базы на диске. Для сохранения изменений, должна быть
+   * вызвана функция Save(const std::string &)
+   *
+   * @param[in]  s     Структура Student с информацией по студенту
    */
   void Insert(const Student &s);
 
   /**
-   * @brief      Удаляет студента из базы
+   * @brief      Удаляет запись о студенте из базы
    *
-   * @param[in]  id    ИД (номер записи) студента
+   * Удаляет запись о студенте из базы хранящейся в оперативной памяти.
+   * Не изменяет файл базы на диске. Для сохранения изменений, должна быть
+   * вызвана функция Save(const std::string &)
+   *
+   * @param[in]  id    ИД записи студента
    *
    * @return     True если студент был удален, False иначе.
    */
@@ -65,10 +84,11 @@ public:
    */
   void Save(std::ostream &os);
 
-protected:
+ protected:
   using base = DataHolder;
-  Index _index;
-  std::vector<Student> _data;
+  Index _index;  ///< Базовый индекс базы данных
+  std::vector<Student> _data;  ///< Список записей с информацией по студентам
+  std::mutex _mutex;
 };
 
 /**
@@ -76,50 +96,117 @@ protected:
  *             Дополнительно умеет делать выборку по запросу.
  */
 class DataBase : public DataHolder {
-public:
+ public:
   /**
    * @brief      Производит выборку по запросу по всей базе
    *
    * @param      is    Поток ввода
+   * @param[in]  pid   Идентификатор пользователя
    */
-  void Select(std::istream &is);
+  void Select(std::istream &is, size_t pid);
 
   /**
    * @brief      Производит выбрку по запросу по предудущей выборке
    *
    * @param      is    Поток ввода
+   * @param[in]  pid   Идентификатор пользователя
    */
-  void Reselect(std::istream &is);
+  void Reselect(std::istream &is, size_t pid);
 
   /**
    * @brief      Выводит результаты последнего запроса в поток
    *
+   * Извлекает из потока ввода список полей для вывода и поле
+   * сортировки, если оно присутствует, и выводит в поток вывода
+   * информацию по запрошенным полям отсортированную по указанному полю
+   * (по умолчанию по ИД записи)
+   *
    * @param      is    Поток ввода
    * @param      os    Поток вывода
+   * @param[in]  pid   Идентификатор пользователя
    */
-  void Print(std::istream &is, std::ostream &os);
+  void Print(std::istream &is, std::ostream &os, size_t pid);
 
   /**
    * @brief      Удаляет записи из последнего запроса
+   *
+   * Вызывает метод Remove() родительского класса DataHolder
+   * для каждого ИД из последнего запроса и очищает индекс
+   * текущего пользователя
+   *
+   * @param[in]  pid   Идентификатор пользователя
    */
-  void Delete();
+  void Delete(size_t pid);
+
+  /**
+   * @brief      Удаляет записи из переданного списка
+   *
+   * Вызывает метод Remove() родительского класса DataHolder
+   * для каждого ИД из переданного списка и удаляет их из
+   * индекса текущего пользователя
+   *
+   * @param[in]  pid   Идентификатор пользователя
+   */
+  void Delete(size_t pid, const std::vector<size_t> &ids);
 
   /**
    * @brief      Добавляет запись о студенте
+   *
+   * Считывает с потока ввода данные и формирует из них структуру Student,
+   * которую передает в метод Insert() родительского класса DataHolder
    *
    * @param      is    Поток ввода
    */
   void Add(std::istream &is);
 
   /**
+   * @brief      Список состояний после функции Process
+   */
+  enum Status {
+    Shutdown = -1,  ///< Указывает, что необходимо завершить программу
+    Ok = 0,  ///< Указывает, что можно продолжать работать
+    Close = 1  ///< Указывает, что необходимо закрыть сессию
+  };
+  
+  /**
    * @brief      Обрабатывает запрос
+   *
+   * Базовый метод обработки запросов. Определяет по
+   * потоку ввода тип запроса и передает поток ввода в
+   * соответствующий метод для дальнейшей обработки
    *
    * @param      is    Поток ввода
    * @param      os    Поток вывода
+   * @param[in]  pid   Идентификатор пользователя
+   *
+   * @return     Статус указывающий на необходимое действие
    */
-  void Process(std::istream &is, std::ostream &os);
+  Status Process(std::istream &is, std::ostream &os, size_t pid);
 
-private:
+  /**
+   * @brief      Задает разделитель для вывода
+   *
+   * @param      delim    Символ разделителя
+   */
+  void SetDelim(char delim);
+
+  /**
+   * @brief      Регистрирует нвоого пользователя
+   *
+   * @return     Идентификатор пользователя
+   */
+  int RegisterUser();
+
+  /**
+   * @brief      Удаляет сессию пользователя
+   *
+   * @param[in]  pid   Идентификатор пользователя
+   *
+   * @return     True если сессия с данным ИД существовала, False иначе.
+   */
+  bool EraseUser(size_t pid);
+
+ private:
   using Columns = std::vector<std::string>;
   using IdSet = std::set<size_t>;
   using NameMap = std::map<std::string, IdSet>;
@@ -130,7 +217,7 @@ private:
    *
    * @param[in]  ids   ИД студентов
    */
-  void ConstructIndex(const std::set<size_t> &ids);
+  Index ConstructIndex(const std::set<size_t> &ids);
 
   /**
    * @brief      Выводит в поток значения указанных полей,
@@ -171,5 +258,7 @@ private:
    * @param[in]  ratings   Список рейтингов
    */
   void Print(std::ostream &os, Columns what_col, const RatingMap &ratings);
-  Index _index;
+
+  std::map<int, Index> _indexes;
+  char _delim = ' ';
 };

@@ -1,0 +1,40 @@
+Простите ради бога, что я такой невежда и пишу весь код в одном файле
+
+Database - основная структура (vector<info> inf - вся база vector<info> ses - то что в селект) 
+Query - в это переделываем запрос, чтобы удобно работать (vector<condition> com)
+Словарь
+Result - то, что получилось, чтобы передать пользователю (вектор из resultat)
+resultat - строка что все ок или вектор(-ы) info (string stroka; vector<info> inf;)
+Session (структура) - то, что получилось после последнего селекта, для принта 
+condition - 1 запрос (string comand, vector<crit> criteri)
+DB_Exception - структура ошибок при обработки запрос
+
+info - string teacher; string group; ...  (одна строка в таблице), int index
+crit - string pole("teacher"...); string low_val; string high_val; string val;
+condition - string comand; vector<crit> criteri;
+
+
+
+Порядок исполнения программы ----
+1)Создается база, на вход дается название файла базы 
+2)В Query посылается все строчки (запрос), там будет вектор condition 
+3)Делим по end-ам и отправляемся каждую строчку (команду) в condition.make
+4)Там заполнется команда и ее критерии
+5)Создаем Result = baza.process(zapros)
+6)По одному присоединяем результаты одного запроса (resresult_of_zapros)
+7)Выполняем команду
+8)Вызываем print для 5)
+
+
+teacher, subject - string val 
+group, room - string low_val, high_val	(cr.high_val = cr.low_val, если 1)(0<1000000)
+date_time - string low_val, high_val (2300-*) (cr.high_val = cr.low_val, если 1)(0<2400)
+
+
+Base.txt - база
+Base_for_out.txt - база, куда сохраняются изменения после команды save
+в файле порядок записи такой - teacher, group, date_time, room, subject	
+
+команды select, reselect, print, insert, remove, save, generate
+Для insert и remove должны быть указаны все поля
+

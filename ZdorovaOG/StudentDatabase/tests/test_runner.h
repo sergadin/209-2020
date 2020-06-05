@@ -1,3 +1,12 @@
+/**
+ * @file
+ * @brief      Заголовочный файл с описанием класса TestRunner
+ *
+ * Данный файл содержит в себе описание и имплементацию класса
+ * TestRunner, назначение которого в запуске тестов и проверке
+ * выполнения условий.
+ * Это файл из курса Основы разработки на C++ от Яндекса.
+ */
 #pragma once
 
 #include <iostream>
@@ -67,7 +76,7 @@ inline void Assert(bool b, const std::string &hint) {
 }
 
 class TestRunner {
-public:
+ public:
   template <class TestFunc>
   void RunTest(TestFunc func, const std::string &test_name) {
     try {
@@ -89,7 +98,7 @@ public:
     }
   }
 
-private:
+ private:
   int fail_count = 0;
 };
 
@@ -101,12 +110,12 @@ private:
     AssertEqual(x, y, __assert_equal_private_os.str());                        \
   }
 
-#define ASSERT(x)                                                              \
-  {                                                                            \
-    std::ostringstream __assert_equal_private_os;                              \
-    __assert_equal_private_os << #x << " is false, " << __FILE__ << ":"        \
-                              << __LINE__;                                     \
-    Assert(x, __assert_equal_private_os.str());                                \
+#define ASSERT(x)                                                       \
+  {                                                                     \
+    std::ostringstream __assert_equal_private_os;                       \
+    __assert_equal_private_os << #x << " is false, " << __FILE__ << ":" \
+                              << __LINE__;                              \
+    Assert(x, __assert_equal_private_os.str());                         \
   }
 
 #define RUN_TEST(tr, func) tr.RunTest(func, #func)

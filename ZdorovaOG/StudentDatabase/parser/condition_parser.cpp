@@ -1,12 +1,14 @@
 #include "condition_parser.h"
-#include "token.h"
 
 #include <map>
 #include <stdexcept>
 #include <vector>
+
+#include "token.h"
 using namespace std;
 
-template <class It> shared_ptr<Node> ParseComparison(It &current, It end) {
+template <class It>
+shared_ptr<Node> ParseComparison(It &current, It end) {
   if (current == end) {
     throw logic_error("1. Expected column name: name, group or rating");
   }
@@ -33,17 +35,17 @@ template <class It> shared_ptr<Node> ParseComparison(It &current, It end) {
 
   Comparison cmp;
   if (op.value == "<") {
-    cmp = Comparison::Less;
+    cmp = Comparison::LESS;
   } else if (op.value == "<=") {
-    cmp = Comparison::LessOrEqual;
+    cmp = Comparison::LESS_EQUAL;
   } else if (op.value == ">") {
-    cmp = Comparison::Greater;
+    cmp = Comparison::GREATER;
   } else if (op.value == ">=") {
-    cmp = Comparison::GreaterOrEqual;
+    cmp = Comparison::GREATER_EQUAL;
   } else if (op.value == "==") {
-    cmp = Comparison::Equal;
+    cmp = Comparison::EQUAL;
   } else if (op.value == "!=") {
-    cmp = Comparison::NotEqual;
+    cmp = Comparison::NOT_EQUAL;
   } else {
     throw logic_error("Unknown comparison token: " + op.value);
   }
@@ -69,18 +71,18 @@ shared_ptr<Node> ParseExpression(It &current, It end, unsigned precedence) {
   shared_ptr<Node> left;
 
   if (current->type == TokenType::PAREN_LEFT) {
-    ++current; // consume '('
+    ++current;  // consume '('
     left = ParseExpression(current, end, 0u);
     if (current == end || current->type != TokenType::PAREN_RIGHT) {
       throw logic_error("Missing right paren");
     }
-    ++current; // consume ')'
+    ++current;  // consume ')'
   } else {
     left = ParseComparison(current, end);
   }
 
   const map<LogicalOperation, unsigned> precedences = {
-      {LogicalOperation::Or, 1}, {LogicalOperation::And, 2}};
+      {LogicalOperation::OR, 1}, {LogicalOperation::AND, 2}};
 
   while (current != end && current->type != TokenType::PAREN_RIGHT) {
     if (current->type != TokenType::LOGICAL_OP) {
@@ -88,13 +90,13 @@ shared_ptr<Node> ParseExpression(It &current, It end, unsigned precedence) {
     }
 
     const auto logical_operation =
-        current->value == "AND" ? LogicalOperation::And : LogicalOperation::Or;
+        current->value == "AND" ? LogicalOperation::AND : LogicalOperation::OR;
     const auto current_precedence = precedences.at(logical_operation);
     if (current_precedence <= precedence) {
       break;
     }
 
-    ++current; // consume op
+    ++current;  // consume op
 
     left = make_shared<LogicalOperationNode>(
         logical_operation, left,
@@ -104,8 +106,8 @@ shared_ptr<Node> ParseExpression(It &current, It end, unsigned precedence) {
   return left;
 }
 
-std::shared_ptr<Node> ParseSelectCondition(istream &is) {
-  auto tokens = Tokenize(is); // vector<Token>
+std::shared_ptr<Node> ParseExpression(istream &is) {
+  auto tokens = Tokenize(is);  // vector<Token>
   auto current = tokens.begin();
   auto top_node = ParseExpression(current, tokens.end(), 0u);
   if (!top_node) {
@@ -113,39 +115,58 @@ std::shared_ptr<Node> ParseSelectCondition(istream &is) {
   }
 
   if (current != tokens.end()) {
-    throw logic_error("Unexpected tokens after condition");
+    throw logic_error("1. Unexpected tokens after condition");
   }
 
   return top_node;
 }
 
-std::vector<std::string> ParsePrintCondition(std::istream &is) {
-  std::vector<std::string> items;
-  std::string sort_by = "id";
-  auto tokens = Tokenize(is); // vector<Token>
+std::pair<std::vector<std::string>, std::string> ParseFieldList(
+    std::istream &is) {
+  std::vector<std::string> fields;
+  std::string sortby = "id";
+  auto tokens = Tokenize(is);
   auto current = tokens.begin();
   for (; current != tokens.end(); ++current) {
-    if (current->type == TokenType::SORT_OP) {
-      ++current;
-      if (current != tokens.end() && current->type == TokenType::COLUMN) {
-        sort_by = current->value;
-        ++current;
-        break;
-      } else {
-        throw logic_error("Unexpected token type");
-      }
-    } else if (current->type == TokenType::COLUMN) {
-      items.push_back(current->value);
-    } else {
-      throw logic_error("Unexpected token");
-    }
+    if (current->type == TokenType::SORT_OP) break;
+    if (current->type == TokenType::COLUMN)
+      fields.push_back(current->value);
+    else
+      throw logic_error("3. Expected column name: name, group, rating or info");
   }
-
-  items.push_back(sort_by);
-
-  if (current != tokens.end()) {
-    throw logic_error("Unexpected tokens after condition");
+  if (current != tokens.end() && ++current != tokens.end()) {
+    if (current->type == TokenType::COLUMN)
+      sortby = current->value;
+    else
+      throw logic_error("4. Expected column name: name, group or rating");
+    ++current;
   }
+  if (current != tokens.end())
+    throw logic_error("2. Unexpected tokens after condition");
 
-  return items;
+  return {fields, sortby};
+}
+
+std::string ParseString(std::istream &is) {
+  auto token = ReadToken(is);
+  if (token.type == TokenType::STRING)
+    return token.value;
+  else
+    throw logic_error("Expected string");
+}
+
+int ParseInteger(std::istream &is) {
+  auto token = ReadToken(is);
+  if (token.type == TokenType::INTEGER)
+    return std::stoi(token.value);
+  else
+    throw logic_error("Expected integer number");
+}
+
+double ParseFloat(std::istream &is) {
+  auto token = ReadToken(is);
+  if (token.type == TokenType::FLOAT || token.type == TokenType::INTEGER)
+    return std::stod(token.value);
+  else
+    throw logic_error("Expected real number");
 }

@@ -1,3 +1,12 @@
+/**
+ * @file
+ * @brief      Заголовочный файл с описанием класса LogDuration
+ *
+ * Данный файл содержит в себе описание и имплементацию класса
+ * LogDuration, назначение которого в логировании времени своегосущестовавания.
+ * Это файл из курса Основы разработки на C++ от Яндекса с доработанным выводом
+ * времени.
+ */
 #pragma once
 
 #include <chrono>
@@ -7,7 +16,7 @@
 #include <string>
 
 class LogDuration {
-public:
+ public:
   explicit LogDuration(const std::string &msg = "")
       : message(msg + ": "), start(std::chrono::steady_clock::now()) {}
 
@@ -42,7 +51,7 @@ public:
     std::cerr << os.str();
   }
 
-private:
+ private:
   std::string message;
   std::chrono::steady_clock::time_point start;
 };
