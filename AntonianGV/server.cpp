@@ -289,7 +289,7 @@ int  main (void)
 		exit(1);
 	}
 	for (k = 0; k < Par_Num; k++) {
-		text[k] = (char*)malloc(1026);
+		text[k] = (char*)malloc(1027);
 	}
 	for (k = 0; k < Par_Num; k++) {
 		fgets (text[k], 1024, in);
