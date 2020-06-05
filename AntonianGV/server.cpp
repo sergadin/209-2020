@@ -281,17 +281,17 @@ int  main (void)
 							if (strncmp(buf, "add", 3) == 0) {
 								k = 4;
 								while (buf[k] == ' ') k++;
-								printf ("%d\n",k);
 								if ((buf[k] < '0' || buf[k] > '9')||buf[k] == '\0') {
-									flag = 1;
 									answer = NULL;
+									flag = 1;
 								}
 								
 								else {
-									chislo = atoi(&buf[i]);
+									chislo = atoi(&buf[k]);
+									//printf ("%d %c\n",chislo, buf[k]);
 									k = k + kek(chislo)+1;
 									while (buf[k] == ' ') k++;
-									if (chislo < 0||chislo > Par_Num+1) {
+									if (chislo <= 0||chislo > Par_Num+1) {
 										answer = (char*)malloc(22);
 										strcpy (answer, "Incorrect number\n");
 									}
@@ -345,10 +345,11 @@ int  main (void)
 								strcpy (answer, "Incorrect request\n");
 							}
 							bzero( buf, sizeof(buf));
-                            writeToClient(i,answer);
+							writeToClient(i,answer);
 							free (answer);
 							answer = NULL;
 							flag = 0;
+							k = 1;
                         }
                     }
                 }
