@@ -93,13 +93,14 @@ int  writeToServer (int fd)
 		if (size == 0) return 0;
 		read (fd, &depth, 4);
 		if (depth > 1024) depth = 1024;
-		tabliza = (struct table *)malloc(sizeof(struct table));
+		tabliza = (struct table *)malloc(size*sizeof(struct table));
 		for (i = 0; i < size; i++) {
-			tabliza[i].result = (char*)malloc(depth+1);
+			tabliza[i].result = (char*)malloc(depth+2);
 			read (fd, &((tabliza[i]).paragraph), 4);
 			read (fd, &((tabliza[i]).numbers), 4);
 			read (fd, &((tabliza[i]).number), 4);
 			read (fd, (tabliza[i]).result, depth+1);
+			tabliza[i].result[depth] = '\0';
 			fprintf (stdout, "%d %d %d %s\n",(tabliza[i]).paragraph, (tabliza[i]).numbers, (tabliza[i]).number, (tabliza[i]).result);
 		}
 		return 0;

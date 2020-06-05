@@ -143,11 +143,15 @@ char* add (char** text, int N, char * adding, int paragraph) {
 
 char* search (int fd, char** text, int N, char * string, int depth) {
 	char * answer;
+	char * keks;
 	int i, j, length, ilength;
 	int allnumber = 0, number = 0, noch;
 	bool numbers[1024];
 	int lol;
 	length = strlen(string);
+	keks = (char*)malloc(depth+1);
+	keks[0] = '\0';
+	//printf ("depth - %d\n", depth);
 	for (i = 0; i < N; i++) {
 		ilength = strlen (text[i]);
 		for (j = 0; j < ilength; j++){
@@ -176,24 +180,40 @@ char* search (int fd, char** text, int N, char * string, int depth) {
 		for (j = 0; j < ilength; j++){
 			if (numbers[j]) {
 				lol = i+1;
-				//printf ("%d %d %d\n", lol, number, noch);
+				printf ("%d %d %d \n", lol, number, noch);
 				write (fd, &lol, 4);
 				write (fd, &number, 4);
 				write (fd, &noch, 4);
 				noch++;
-				if ((j >= (depth-length)/2 + (depth - length)%2)&&((j + length + (depth-length)/2) <= ilength)) write (fd,&text[i][j-(depth-length)/2-(depth-length)%2], depth+1);
-				if ((j < (depth-length)/2 + (depth - length)%2)&&((j + length + (depth-length)/2) <= ilength)) write (fd,&text[i][0],depth+1);
-				if ((j >= (depth-length)/2 + (depth - length)%2)&&((j + length + (depth-length)/2) > ilength)) write (fd,&text[i][ilength-depth], depth+1);
+				if ((j >= (depth-length)/2 + (depth - length)%2)&&((j + length + (depth-length)/2) <= ilength)) {
+					strncpy (keks,&text[i][j-(depth-length)/2-(depth-length)%2], depth);
+					keks[depth] = '\0';
+					write (fd,keks, depth+1);
+				}
+				if ((j < (depth-length)/2 + (depth - length)%2)&&((j + length + (depth-length)/2) <= ilength)) {
+					strncpy (keks,&text[i][0],depth);
+					keks[depth] = '\0';
+					write (fd,keks,depth+1);
+				}
+				if ((j >= (depth-length)/2 + (depth - length)%2)&&((j + length + (depth-length)/2) > ilength)) {
+					strncpy (keks,&text[i][ilength-depth], depth);
+					keks[depth] = '\0';
+					write (fd,keks, depth+1);
+				}
 				//if ((j < (depth-length)/2 + (depth - length)%2)&&((j + length + (depth-length)/2) > ilength)) {
 				if (depth > ilength) {
-					write (fd,&text[i][0], ilength);
-					depth = ilength;
+					strncpy (keks,&text[i][0], ilength);
+					keks[ilength] = '\0';
+					write (fd,keks, depth+1);
 				}
+				//printf ("%s\n",keks);
+				bzero (keks, sizeof(keks));
 			}		
 		}
 		number = 0;
 	}
 	answer = (char*)malloc(7);
+	free (keks);
 	strcpy (answer, "Done\n");
 	return answer;
 }
@@ -364,6 +384,7 @@ int  main (void)
 								k = 7;
 								while (buf[k] == ' ') k++;
 								if ((buf[k] < '0' || buf[k] > '9')||buf[k] == '\0') {
+									write (i, &flag, 4);
 									answer = NULL;
 									flag = 1;
 								}
