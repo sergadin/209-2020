@@ -405,7 +405,7 @@ int  main (void)
 								}
 								else {
 									chislo = atoi(&buf[k]);
-									if (chislo < 0||chislo > Par_Num) {
+									if (chislo <= 0||chislo > Par_Num) {
 										answer = (char*)malloc(22);
 										strcpy (answer, "Incorrect number\n");
 									}
