@@ -1,9 +1,9 @@
 #include <iostream>
 #include <map>
 typedef enum {Play, Quit, Move, ShowMy, ShowOther, Ships} CommandType;
-enum {FREE, InGame, LOSE} STATUS;
+enum {FREE, InGame} STATUS;  
 enum {miss, half, kill} HITS;
-enum {OK, WS, OpM, SM ,SO, Q, NC} RES; //ws - введите корабли, opm - ход противника, sm- мои шаги, so- шаги соперника, q- выход, nc - не команда
+enum {OK, WS, OpM, SM ,SO, Q, NC, LOSE} RES; //ws - введите корабли, opm - ход противника, sm- мои шаги, so- шаги соперника, q- выход, nc - не команда, l- game over
 
 
 
@@ -17,6 +17,7 @@ class Player {
 		int sock_;
 		bool queue_;
 		int numb_;
+		int qs_; //количество оставшихся кораблей
 	public:
 	    Game* game_;
 		Player(int sock) 
@@ -70,6 +71,8 @@ class Player {
 							{
 								this->game->change_q();
 								this->my_moves.push_back(row*10 + col);
+								if(this->game->pl_2->lose())
+									return LOSE;
 								return OK;
 							}
 							
@@ -80,6 +83,8 @@ class Player {
 							{
 								this->game->change_q();
 								this->my_moves.push_back(row*10 + col);
+								if(this->game->pl_1->lose())
+									return LOSE;
 								return OK;
 							}
 						}
@@ -106,6 +111,7 @@ class Player {
 							else
 								ships_[i] = new Ship(row, col, ori, 4);
 						}
+						qs = 10;
 					}
 				}
 			}
@@ -114,6 +120,12 @@ class Player {
 		&vector<int> get_moves()
 		{
 			return &my_moves;
+		}
+		bool lose()
+		{
+			if(qs_ = 0)
+				return true;
+			return false;
 		}
 		&Player search(map<int, Player*> &Players)
 		{
@@ -127,8 +139,22 @@ class Player {
 			if(it == Players->end())
 				return NULL;
 		}
-		move()
+		int hit(row, col)
 		{
+			for(int i = 0; i < 10; i++)
+			{
+				if(ships_[i]->wound(row, col))
+				{
+					if(ships_[i]->kill())
+					{
+						qs_--;
+						return kill;
+					}
+					else 
+						return half
+				}
+				return miss;
+			}
 		}
 }
 
