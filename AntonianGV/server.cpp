@@ -152,6 +152,13 @@ char* search (int fd, char** text, int N, char * string, int depth) {
 	keks = (char*)malloc(depth+1);
 	keks[0] = '\0';
 	//printf ("depth - %d\n", depth);
+	if (depth < strlen(string)) {
+		allnumber = 0;
+		write (fd, &allnumber, 4);
+		answer = (char*)malloc(20);
+		strcpy (answer, "Incorrect Depth\n");
+		return answer;
+	}
 	for (i = 0; i < N; i++) {
 		ilength = strlen (text[i]);
 		for (j = 0; j < ilength; j++){
@@ -161,11 +168,6 @@ char* search (int fd, char** text, int N, char * string, int depth) {
 		}
 	}
 	write (fd, &allnumber, 4);
-	if (depth < strlen(string)) {
-		answer = (char*)malloc(20);
-		strcpy (answer, "Incorrect Depth\n");
-		return answer;
-	}
 	if (allnumber == 0) {
 		answer = (char*)malloc(14);
 		strcpy (answer, "Not found\n");
