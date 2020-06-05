@@ -135,6 +135,7 @@ char * search (char** text, int N, char * string, int depth) {
 		number = 0;
 	}
 	answer[cur_answer] = '\0';
+	if (cur_answer == 0) strcpy (answer, "Not found\n");
 	return answer;
 }
 
@@ -161,7 +162,8 @@ int  main (void)
     struct  sockaddr_in  client;
     char    buf[BUFLEN];
     socklen_t  size;
-	char* answer;
+	int flag = 0;
+	char* answer = NULL;
 	int str_length;
 	char c = '0';
 	int k, j, Par_Num = 0, length; 
@@ -256,10 +258,14 @@ int  main (void)
                             close(i);
                             FD_CLR (i,&active_set);
                         } else {
-							if (strcmp(buf, "quit") == 0 ) {
+							if (strncmp(buf, "info", 4) == 0 ) {
+								answer = (char*)malloc(134);
+								strcpy (answer, "list of requests:\nstop\nquit\nshow\nadd <number> <paragraph>\nsearch <number> <paragraph>\ndelete <number>\n");
+							}
+							if (strncmp(buf, "quit", 4) == 0 ) {
 								answer = (char*)malloc(7);
 								strcpy (answer, "Quit\n");
-								puts (answer);
+								writeToClient (i, answer);
 								free (answer);
 								in = fopen ("text.txt","w");
 								for (k = 0; k < Par_Num; k++) {
@@ -272,53 +278,76 @@ int  main (void)
 							}
 							if (strncmp(buf, "show", 4) == 0) answer = show(text, Par_Num);
 							if (strncmp(buf, "add", 3) == 0) {
-								k = 3;
-								while (buf[k] < '0'&&buf[k]>'9') k++;
-								chislo = atoi(&buf[i]);
-								k = k + kek(chislo)+1;
+								k = 4;
 								while (buf[k] == ' ') k++;
-								if (chislo < 0||chislo > Par_Num+1) {
-									answer = (char*)malloc(22);
-									strcpy (answer, "Incorrect number\n");
+								printf ("%d\n",k);
+								if ((buf[k] < '0' || buf[k] > '9')||buf[k] == '\0') {
+									flag = 1;
+									answer = NULL;
 								}
+								
 								else {
-									text = (char**)realloc(text, (Par_Num+1)*sizeof(char*));
-									text[Par_Num] = (char*)malloc(1026);
-									answer = add (text, Par_Num, &buf[k], chislo);
-									Par_Num++;
+									chislo = atoi(&buf[i]);
+									k = k + kek(chislo)+1;
+									while (buf[k] == ' ') k++;
+									if (chislo < 0||chislo > Par_Num+1) {
+										answer = (char*)malloc(22);
+										strcpy (answer, "Incorrect number\n");
+									}
+									else {
+										text = (char**)realloc(text, (Par_Num+1)*sizeof(char*));
+										text[Par_Num] = (char*)malloc(1026);
+										answer = add (text, Par_Num, &buf[k], chislo);
+										Par_Num++;
+									}
 								}
 							}
-							if (strncmp(buf, "search", 6) == 0) {
-								k = 6;
+								
+							if (flag==0&&strncmp(buf, "search", 6) == 0) {
+								k = 7;
 								while (buf[k] == ' ') k++;
-								chislo = atoi(&buf[k]);
-								k = k + kek(chislo) + 1;
-								while (buf[k] == ' ') k++;
-								answer = search (text, Par_Num, &buf[k], chislo);
+								if ((buf[k] < '0' || buf[k] > '9')||buf[k] == '\0') {
+									answer = NULL;
+									flag = 1;
+								}
+								
+								else {
+									chislo = atoi(&buf[k]);
+									k = k + kek(chislo) + 1;
+									while (buf[k] == ' ') k++;
+									answer = search (text, Par_Num, &buf[k], chislo);
+								}
 							}
-							if (strncmp(buf, "delete", 6) == 0) {
-								k = 6;
-								while (buf[k] < '0'&&buf[k]>'9') k++;
-								chislo = atoi(&buf[k]);
-								if (chislo < 0||chislo > Par_Num) {
-									answer = (char*)malloc(22);
-									strcpy (answer, "Incorrect number\n");
+							if (flag==0&&strncmp(buf, "delete", 6) == 0) {
+								k = 7;
+								while (buf[k] == ' ') k++;
+								if ((buf[k] < '0' || buf[k] > '9')||buf[k] == '\0') {
+									answer = NULL;
+									flag = 1;
 								}
 								else {
-									answer = del (text, Par_Num, chislo);
-									free (text[Par_Num-1]);
-									text = (char**)realloc(text, (Par_Num-1)*sizeof(char*));
-									Par_Num--;
+									chislo = atoi(&buf[k]);
+									if (chislo < 0||chislo > Par_Num) {
+										answer = (char*)malloc(22);
+										strcpy (answer, "Incorrect number\n");
+									}
+									else {
+										answer = del (text, Par_Num, chislo);
+										free (text[Par_Num-1]);
+										text = (char**)realloc(text, (Par_Num-1)*sizeof(char*));
+										Par_Num--;
+									}
 								}
 							}
 							if (answer == NULL) {
 								answer = (char*)malloc(20);
 								strcpy (answer, "Incorrect request\n");
 							}
-							
+							bzero( buf, sizeof(buf));
                             writeToClient(i,answer);
 							free (answer);
 							answer = NULL;
+							flag = 0;
                         }
                     }
                 }
@@ -355,7 +384,7 @@ void  writeToClient (int fd, char *buf)
 {
     int  nbytes;
     unsigned char *s;
-	nbytes = strlen(buf);
+	nbytes = strlen(buf)+1;
     //for (s=(unsigned char*)buf; *s; s++) *s = toupper(*s);
 	write (fd, &nbytes, 4);
     nbytes = write(fd,buf,strlen(buf)+1);

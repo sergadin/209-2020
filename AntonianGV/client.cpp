@@ -50,7 +50,7 @@ int  main (void)
     }
     fprintf (stdout,"Connection is ready\n");
 
-
+	fprintf(stdout,"Write info to see the list of possible requests\n");
     while(1) {
         if (writeToServer(sock)<0) break;
         if (readFromServer(sock)<0) break;
@@ -71,6 +71,7 @@ int  writeToServer (int fd)
     char  buf[BUFLEN];
 
     fprintf(stdout,"Send to server > ");
+	
     if (fgets(buf,BUFLEN,stdin)==nullptr) {
 	printf("error\n");
     }
@@ -86,9 +87,11 @@ int  writeToServer (int fd)
 int  readFromServer (int fd)
 {
     int   nbytes;
-    char  buf[100*BUFLEN];
+    char  *buf;
 	read(fd, &nbytes, 4);
-    nbytes = read(fd,buf,BUFLEN);
+	
+	buf = (char*)malloc(nbytes+2);
+    nbytes = read(fd,buf,nbytes+2);
     if ( nbytes<0 ) {
         // ошибка чтения
         perror ("read"); 
@@ -98,8 +101,14 @@ int  readFromServer (int fd)
         fprintf (stderr,"Client: no message\n");
     } else {
         // ответ успешно прочитан
-        fprintf (stdout,"Server's replay: %s\n",buf);
+        fprintf (stdout,"Server's replay:\n%s\n",buf);
+		//fprintf (stdout,"%d\n",nbytes);
     }
+	if (strncmp(buf,"Quit",4) == 0) {
+		free (buf);
+		return -1;
+	}
+	free (buf);
     return 0;
 }
 
