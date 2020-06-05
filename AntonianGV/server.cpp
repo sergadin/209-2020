@@ -21,7 +21,8 @@ void  writeToClient (int fd, char *buf);
 char * show (char**, int);
 char * add (char**, int, char*, int);
 char * del (char**, int, int);
-char * search (char **, int, char*, int);
+//char * search (char **, int, char*, int);
+char * search (int, char **, int, char*, int);
 void itoa (int, char*);
 void reverse (char*);
 int kek (int);
@@ -84,7 +85,7 @@ char* add (char** text, int N, char * adding, int paragraph) {
 	strcpy (answer, "Done\n");
 	return answer;
 }
-char * search (char** text, int N, char * string, int depth) {
+/*char * search (char** text, int N, char * string, int depth) {
 	char * answer;
 	int i, j, length, number = 0, noch, ilength;
 	int haha = depth;
@@ -138,9 +139,91 @@ char * search (char** text, int N, char * string, int depth) {
 	answer[cur_answer] = '\0';
 	if (cur_answer == 0) strcpy (answer, "Not found\n");
 	return answer;
+}*/
+
+char* search (int fd, char** text, int N, char * string, int depth) {
+	char * answer;
+	char * keks;
+	int i, j, length, ilength;
+	int allnumber = 0, number = 0, noch;
+	bool numbers[1024];
+	int lol;
+	length = strlen(string);
+	keks = (char*)malloc(depth+1);
+	keks[0] = '\0';
+	//printf ("depth - %d\n", depth);
+	if (depth < strlen(string)) {
+		allnumber = 0;
+		write (fd, &allnumber, 4);
+		answer = (char*)malloc(20);
+		strcpy (answer, "Incorrect Depth\n");
+		return answer;
+	}
+	for (i = 0; i < N; i++) {
+		ilength = strlen (text[i]);
+		for (j = 0; j < ilength; j++){
+			if (strncmp(&text[i][j], string, length) == 0) {
+				allnumber++;
+			}
+		}
+	}
+	write (fd, &allnumber, 4);
+	if (allnumber == 0) {
+		answer = (char*)malloc(14);
+		strcpy (answer, "Not found\n");
+		return answer;
+	}
+	write (fd, &depth, 4);
+	for (i = 0; i < N; i++) {
+		ilength = strlen(text[i]);
+		for (j = 0; j < ilength; j++){
+			numbers[j] = false;
+			if (strncmp(&text[i][j], string, length) == 0) {
+				number++;
+				numbers[j] = true;
+			}
+		}
+		noch = 1;
+		for (j = 0; j < ilength; j++){
+			if (numbers[j]) {
+				lol = i+1;
+				printf ("%d %d %d \n", lol, number, noch);
+				write (fd, &lol, 4);
+				write (fd, &number, 4);
+				write (fd, &noch, 4);
+				noch++;
+				if ((j >= (depth-length)/2 + (depth - length)%2)&&((j + length + (depth-length)/2) <= ilength)) {
+					strncpy (keks,&text[i][j-(depth-length)/2-(depth-length)%2], depth);
+					keks[depth] = '\0';
+					write (fd,keks, depth+1);
+				}
+				if ((j < (depth-length)/2 + (depth - length)%2)&&((j + length + (depth-length)/2) <= ilength)) {
+					strncpy (keks,&text[i][0],depth);
+					keks[depth] = '\0';
+					write (fd,keks,depth+1);
+				}
+				if ((j >= (depth-length)/2 + (depth - length)%2)&&((j + length + (depth-length)/2) > ilength)) {
+					strncpy (keks,&text[i][ilength-depth], depth);
+					keks[depth] = '\0';
+					write (fd,keks, depth+1);
+				}
+				//if ((j < (depth-length)/2 + (depth - length)%2)&&((j + length + (depth-length)/2) > ilength)) {
+				if (depth > ilength) {
+					strncpy (keks,&text[i][0], ilength);
+					keks[ilength] = '\0';
+					write (fd,keks, depth+1);
+				}
+				//printf ("%s\n",keks);
+				bzero (keks, sizeof(keks));
+			}		
+		}
+		number = 0;
+	}
+	answer = (char*)malloc(7);
+	free (keks);
+	strcpy (answer, "Done\n");
+	return answer;
 }
-
-
 
 char * del (char ** text, int N, int paragraph) {
 	char * answer;
@@ -213,13 +296,14 @@ int  main (void)
 		exit(1);
 	}
 	for (k = 0; k < Par_Num; k++) {
-		text[k] = (char*)malloc(1026);
+		text[k] = (char*)malloc(1027);
 	}
 	for (k = 0; k < Par_Num; k++) {
 		fgets (text[k], 1024, in);
 		length = strlen(text[k]);
+		//printf ("%d\n", length);
 		if (text[k][length-1] == '\n'||text[k][length-1] == 13) text[k][length-1] = '\0';
-		if (text[k][length-2] == '\n'||text[k][length-2] == 13) text[k][length-2] = '\0';
+		//if (text[k][length-2] == '\n'||text[k][length-2] == 13) text[k][length-2] = '\0';
 	}
 	fclose(in);
    
@@ -308,6 +392,7 @@ int  main (void)
 								k = 7;
 								while (buf[k] == ' ') k++;
 								if ((buf[k] < '0' || buf[k] > '9')||buf[k] == '\0') {
+									write (i, &flag, 4);
 									answer = NULL;
 									flag = 1;
 								}
@@ -316,7 +401,7 @@ int  main (void)
 									chislo = atoi(&buf[k]);
 									k = k + kek(chislo) + 1;
 									while (buf[k] == ' ') k++;
-									answer = search (text, Par_Num, &buf[k], chislo);
+									answer = search (i, text, Par_Num, &buf[k], chislo);
 								}
 							}
 							if (flag==0&&strncmp(buf, "delete", 6) == 0) {
@@ -328,7 +413,7 @@ int  main (void)
 								}
 								else {
 									chislo = atoi(&buf[k]);
-									if (chislo < 0||chislo > Par_Num) {
+									if (chislo <= 0||chislo > Par_Num) {
 										answer = (char*)malloc(22);
 										strcpy (answer, "Incorrect number\n");
 									}
