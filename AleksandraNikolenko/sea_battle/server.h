@@ -1,9 +1,9 @@
 #include <iostream>
 #include <map>
-typedef enum {Play, Quit, Move, ShowMy, ShowOther} CommandType;
+typedef enum {Play, Quit, Move, ShowMy, ShowOther, Ships} CommandType;
 enum {FREE, InGame, LOSE} STATUS;
 enum {miss, half, kill} HITS;
-enum {WS, OpM, SM,SO, Q} RES; //ws - введите корабли, opm - ход противника, sm- мои шаги, so- шаги соперника, q- выход
+enum {OK, WS, OpM, SM ,SO, Q, NC} RES; //ws - введите корабли, opm - ход противника, sm- мои шаги, so- шаги соперника, q- выход, nc - не команда
 
 
 
@@ -11,7 +11,7 @@ enum {WS, OpM, SM,SO, Q} RES; //ws - введите корабли, opm - ход
 
 class Player {
 	private:
-		Ship[10] ships_ = {NULL};
+		Ship*[10] ships_ = {NULL};
 		vector<int> my_moves;
 		int status_;
 		int sock_;
@@ -30,6 +30,7 @@ class Player {
 			Player *pl_2;
 			string query;
 			int row, col;
+			string ori;
 			string str(buf);
 			if(strcmp(buf, "Quit") == 0)
 				return Q;
@@ -59,7 +60,7 @@ class Player {
 					stringstream ss(str);
 					getline(ss, query, ':');
 					if(strcmp(query, "Move") != 0)
-							return -1;
+							return NC;
 					else
 					{
 						ss >> row >> col;
@@ -69,7 +70,7 @@ class Player {
 							{
 								this->game->change_q();
 								this->my_moves.push_back(row*10 + col);
-								return 0;
+								return OK;
 							}
 							
 						}
@@ -79,8 +80,31 @@ class Player {
 							{
 								this->game->change_q();
 								this->my_moves.push_back(row*10 + col);
-								return 0;
+								return OK;
 							}
+						}
+					}
+				}
+				else if(strstr(buf, "Ships") != NULL)
+				{
+					stringstream ss(str);
+					getline(ss, query, ':');
+					if(strcmp(query, "Ships") != 0)
+							return -1;
+					else
+					{
+						for(int i = 0; i < 10, i++)
+						{
+							ss >> row >> col >> ori;
+							ss.ignore();
+							if(0 <= i < 4)
+								ships_[i] = new Ship(row, col, ori, 1);
+							else if(4 <= i < 7)
+								ships_[i] = new Ship(row, col, ori, 2);
+							else if(7 <= i < 9)
+								ships_[i] = new Ship(row, col, ori, 3);
+							else
+								ships_[i] = new Ship(row, col, ori, 4);
 						}
 					}
 				}
