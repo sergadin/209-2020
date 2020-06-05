@@ -14,7 +14,7 @@ void TextProcessor::Add(int i, const std::string& text,std::ostream& os) {
   for (; i != 0 && it != _data.end(); i--) it++;
   if(i>_data.size())
   {
-     os << "Nope";
+     os << "No";
   }
   _data.insert(it, text);
 }
