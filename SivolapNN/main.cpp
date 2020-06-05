@@ -11,8 +11,7 @@ int main(int argc, char const* argv[]) {
   int port = 7897;
   if (argc > 1) port = std::stoi(argv[1]);
 
-  TextProcessor tp; 7897
-Shu
+  TextProcessor tp; 
   Server server;
   server.SetPort(port);
 
@@ -20,10 +19,6 @@ Shu
     if (auto s = socket.lock()) {
       SocketStream is(s->FileDescriptor());
       SocketStream os(s->FileDescriptor());
-    //   std::string key;
-    //   is >> key;
-    //   os << "ответ";
-      if (/* какая-то проблема */ 0) s->Close();
     }
   });
 
