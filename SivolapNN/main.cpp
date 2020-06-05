@@ -19,10 +19,6 @@ int main(int argc, char const* argv[]) {
     if (auto s = socket.lock()) {
       SocketStream is(s->FileDescriptor());
       SocketStream os(s->FileDescriptor());
-    //   std::string key;
-    //   is >> key;
-    //   os << "ответ";
-      if (/* какая-то проблема */ 0) s->Close();
     }
   });
 
