@@ -17,7 +17,12 @@
 int  writeToServer  (int fd);
 int  readFromServer (int fd);
 //int flagg (int, int);
-
+struct table {
+	int paragraph;
+	int numbers;
+	int number;
+	char* result;
+};
 int  main (void)
 {
 //    int i;
@@ -69,7 +74,10 @@ int  writeToServer (int fd)
 {
     int   nbytes;
     char  buf[BUFLEN];
-
+	struct table * tabliza;
+	int size;
+	int i;
+	int depth;
     fprintf(stdout,"Send to server > ");
 	
     if (fgets(buf,BUFLEN,stdin)==nullptr) {
@@ -79,7 +87,23 @@ int  writeToServer (int fd)
 
     nbytes = write (fd,buf,strlen(buf)+1);
     if ( nbytes<0 ) { perror("write"); return -1; }
-    if (strncmp(buf,"stop"),4 == 0) return -1;
+    if (strncmp(buf,"stop",4) == 0) return -1;
+	if (strncmp(buf,"search",6) == 0) {
+		read (fd, &size, 4);
+		if (size == 0) return 0;
+		read (fd, &depth, 4);
+		if (depth > 1024) depth = 1024;
+		tabliza = (struct table *)malloc(sizeof(struct table));
+		for (i = 0; i < size; i++) {
+			tabliza[i].result = (char*)malloc(depth+1);
+			read (fd, &((tabliza[i]).paragraph), 4);
+			read (fd, &((tabliza[i]).numbers), 4);
+			read (fd, &((tabliza[i]).number), 4);
+			read (fd, (tabliza[i]).result, depth+1);
+			fprintf (stdout, "%d %d %d %s\n",(tabliza[i]).paragraph, (tabliza[i]).numbers, (tabliza[i]).number, (tabliza[i]).result);
+		}
+		return 0;
+	}
     return 0;
 }
 /*int flagg (int i, int N) {

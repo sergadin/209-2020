@@ -21,7 +21,8 @@ void  writeToClient (int fd, char *buf);
 char * show (char**, int);
 char * add (char**, int, char*, int);
 char * del (char**, int, int);
-char * search (char **, int, char*, int);
+//char * search (char **, int, char*, int);
+char * search (int, char **, int, char*, int);
 void itoa (int, char*);
 void reverse (char*);
 int kek (int);
@@ -84,7 +85,7 @@ char* add (char** text, int N, char * adding, int paragraph) {
 	strcpy (answer, "Done\n");
 	return answer;
 }
-char * search (char** text, int N, char * string, int depth) {
+/*char * search (char** text, int N, char * string, int depth) {
 	char * answer;
 	int i, j, length, number = 0, noch, ilength;
 	int haha = depth;
@@ -138,9 +139,64 @@ char * search (char** text, int N, char * string, int depth) {
 	answer[cur_answer] = '\0';
 	if (cur_answer == 0) strcpy (answer, "Not found\n");
 	return answer;
+}*/
+
+char* search (int fd, char** text, int N, char * string, int depth) {
+	char * answer;
+	int i, j, length, ilength;
+	int allnumber = 0, number = 0, noch;
+	bool numbers[1024];
+	int lol;
+	length = strlen(string);
+	for (i = 0; i < N; i++) {
+		ilength = strlen (text[i]);
+		for (j = 0; j < ilength; j++){
+			if (strncmp(&text[i][j], string, length) == 0) {
+				allnumber++;
+			}
+		}
+	}
+	write (fd, &allnumber, 4);
+	if (allnumber == 0) {
+		answer = (char*)malloc(14);
+		strcpy (answer, "Not found\n");
+		return answer;
+	}
+	write (fd, &depth, 4);
+	for (i = 0; i < N; i++) {
+		ilength = strlen(text[i]);
+		for (j = 0; j < ilength; j++){
+			numbers[j] = false;
+			if (strncmp(&text[i][j], string, length) == 0) {
+				number++;
+				numbers[j] = true;
+			}
+		}
+		noch = 1;
+		for (j = 0; j < ilength; j++){
+			if (numbers[j]) {
+				lol = i+1;
+				//printf ("%d %d %d\n", lol, number, noch);
+				write (fd, &lol, 4);
+				write (fd, &number, 4);
+				write (fd, &noch, 4);
+				noch++;
+				if ((j >= (depth-length)/2 + (depth - length)%2)&&((j + length + (depth-length)/2) <= ilength)) write (fd,&text[i][j-(depth-length)/2-(depth-length)%2], depth+1);
+				if ((j < (depth-length)/2 + (depth - length)%2)&&((j + length + (depth-length)/2) <= ilength)) write (fd,&text[i][0],depth+1);
+				if ((j >= (depth-length)/2 + (depth - length)%2)&&((j + length + (depth-length)/2) > ilength)) write (fd,&text[i][ilength-depth], depth+1);
+				//if ((j < (depth-length)/2 + (depth - length)%2)&&((j + length + (depth-length)/2) > ilength)) {
+				if (depth > ilength) {
+					write (fd,&text[i][0], ilength);
+					depth = ilength;
+				}
+			}		
+		}
+		number = 0;
+	}
+	answer = (char*)malloc(7);
+	strcpy (answer, "Done\n");
+	return answer;
 }
-
-
 
 char * del (char ** text, int N, int paragraph) {
 	char * answer;
@@ -316,7 +372,7 @@ int  main (void)
 									chislo = atoi(&buf[k]);
 									k = k + kek(chislo) + 1;
 									while (buf[k] == ' ') k++;
-									answer = search (text, Par_Num, &buf[k], chislo);
+									answer = search (i, text, Par_Num, &buf[k], chislo);
 								}
 							}
 							if (flag==0&&strncmp(buf, "delete", 6) == 0) {
