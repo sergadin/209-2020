@@ -8,11 +8,14 @@ std::string TextProcessor::Show() const {
   return text;
 }
 
-void TextProcessor::Add(int i, const std::string& text) {
+void TextProcessor::Add(int i, const std::string& text,std::ostream& os) {
   std::lock_guard<std::mutex> lock(_mutex);
   auto it = _data.begin();
   for (; i != 0 && it != _data.end(); i--) it++;
-  // Логика если i > числа имеющийхся абзацев
+  if(i>_data.size())
+  {
+     os << "Nope";
+  }
   _data.insert(it, text);
 }
 
