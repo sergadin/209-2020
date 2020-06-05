@@ -1,71 +1,74 @@
 #include "Headbase.h"
 
-void DataBase::SelectName(std::string str) {
-  for (auto it = group_data.begin(); it != group_data.end(); it++) {
-    auto &group = group_data[it->first];
+void DataBase::SelectName(std::string str, int user_id) {
+  for (auto it = buffer[user_id].begin(); it != buffer[user_id].end(); it++) {
+    auto &group = buffer[user_id][it->first];
     auto &students = group.students_by_rating;
     auto student_it = students.begin();
     while (student_it != students.end()) {
       auto stud = *student_it;
-      std::string name = stud.name;
-      int a = str.length();
-      if (str != name.substr(a))
-        student_it = Remove(stud);
+      //std::string name = stud.name;
+      std::size_t found = stud.name.find(str);
+      if (found == std::string::npos)
+      //size_t a = str.length();
+      //if (str != name.substr(0, a))
+        student_it = Remove(stud, user_id);
       else
         student_it++;
     }
   }
 }
 
-void DataBase::SelectGroupMore(int g) {
-  for (auto it = group_data.begin(); it != group_data.end();) {
-    if (it->first < g)
-      it = group_data.erase(it);
+void DataBase::SelectGroupMore(int g, int user_id) {
+  for (auto it = buffer[user_id].begin(); it != buffer[user_id].end();) {
+    if (it->first <= g)
+      it = buffer[user_id].erase(it);
     else
       it++;
   }
 }
 
-void DataBase::SelectGroupLess(int g) {
-  for (auto it = group_data.begin(); it != group_data.end();) {
-    if (it->first > g)
-      it = group_data.erase(it);
+void DataBase::SelectGroupLess(int g, int user_id) {
+  for (auto it = buffer[user_id].begin(); it != buffer[user_id].end();) {
+    if (it->first >= g)
+      it = buffer[user_id].erase(it);
     else
       it++;
   }
 }
 
-void DataBase::SelectRatingMore(double r) {
-  for (auto it = group_data.begin(); it != group_data.end(); it++) {
-    auto &group = group_data[it->first];
+void DataBase::SelectRatingMore(double r, int user_id) {
+  for (auto it = buffer[user_id].begin(); it != buffer[user_id].end(); it++) {
+    auto &group = buffer[user_id][it->first];
     auto &students = group.students_by_rating;
     auto student_it = students.begin();
     while (student_it != students.end()) {
       auto stud = *student_it;
       if (stud.rating < r)
-        student_it = Remove(stud);
+        student_it = Remove(stud, user_id);
       else
         student_it++;
     }
   }
 }
 
-void DataBase::SelectRatingLess(double r) {
-  for (auto it = group_data.begin(); it != group_data.end(); it++) {
-    auto &group = group_data[it->first];
+void DataBase::SelectRatingLess(double r, int user_id) {
+  for (auto it = buffer[user_id].begin(); it != buffer[user_id].end(); it++) {
+    auto &group = buffer[user_id][it->first];
     auto &students = group.students_by_rating;
     auto student_it = students.begin();
     while (student_it != students.end()) {
       auto stud = *student_it;
       if (stud.rating > r)
-        student_it = Remove(stud);
+        student_it = Remove(stud, user_id);
       else
         student_it++;
     }
   }
 }
 
-void DataBase::Load(const std::string &filename) {
+void DataBase::Load(const std::string &filename, int user_id) {
+  Clear(user_id);
   std::ifstream input;
   input.open(filename);
   Student Bogdan;
@@ -75,17 +78,19 @@ void DataBase::Load(const std::string &filename) {
     if(!input) break;
     std::getline(input, buff, ',');
     Bogdan.group = std::stoi(buff);
-    std::getline(input, buff);
+    std::getline(input, buff, ',');
     Bogdan.rating = std::stod(buff);
-    Insert(Bogdan);
+    std::getline(input, Bogdan.info);
+    Insert(Bogdan, user_id);
   }
+  group_data_copied[user_id] = buffer[user_id];
   input.close();
 }
 
-void DataBase::Save(const std::string &filename) {
+void DataBase::Save(const std::string &filename, int user_id) {
   std::ofstream file;
   file.open(filename);
-  PrintAll(file);
+  PrintAll(file, user_id, 1, 1, 1, 1);
   file.close();
 }
 
@@ -99,10 +104,10 @@ bool compareRatings(Student A, Student B) {
   return (A.rating < B.rating);
 }
 
-void DataBase::SortName(std::ostream &os) {
+void DataBase::SortName(std::ostream &os, int user_id, bool n, bool g, bool r, bool i) {
   std::vector<Student> Names;
-  for (auto it = group_data.begin(); it != group_data.end(); it++) {
-    auto &group = group_data[it->first];
+  for (auto it = buffer[user_id].begin(); it != buffer[user_id].end(); it++) {
+    auto &group = buffer[user_id][it->first];
     auto &students = group.students_by_rating;
     auto student_it = students.begin();
     while(student_it != students.end()) {
@@ -112,14 +117,18 @@ void DataBase::SortName(std::ostream &os) {
   }
   std::sort(Names.begin(), Names.end(), compareNames);
   for (auto iter = Names.begin(); iter != Names.end(); iter++){
-    os << *iter << '\n';
+    if (n == true) os << (*iter).name << ',';
+    if (g == true) os << (*iter).group << ',';
+    if (r == true) os << (*iter).rating << ',';
+    if (i == true) os << (*iter).info;
+    os << '\n';
   }
 }
 
-void DataBase::SortGroup(std::ostream &os) {
+void DataBase::SortGroup(std::ostream &os, int user_id, bool n, bool g, bool r, bool i) {
   std::vector<Student> Groups;
-  for (auto it = group_data.begin(); it != group_data.end(); it++) {
-    auto &group = group_data[it->first];
+  for (auto it = buffer[user_id].begin(); it != buffer[user_id].end(); it++) {
+    auto &group = buffer[user_id][it->first];
     auto &students = group.students_by_rating;
     auto student_it = students.begin();
     while(student_it != students.end()) {
@@ -129,14 +138,18 @@ void DataBase::SortGroup(std::ostream &os) {
   }
   std::sort(Groups.begin(), Groups.end(), compareGroups);
   for (auto iter = Groups.begin(); iter != Groups.end(); iter++){
-    os << *iter << '\n';
+    if (n == true) os << (*iter).name << ',';
+    if (g == true) os << (*iter).group << ',';
+    if (r == true) os << (*iter).rating << ',';
+    if (i == true) os << (*iter).info;
+    os << '\n';
   }
 }
 
-void DataBase::SortRating(std::ostream &os) {
+void DataBase::SortRating(std::ostream &os, int user_id, bool n, bool g, bool r, bool i) {
   std::vector<Student> Ratings;
-  for (auto it = group_data.begin(); it != group_data.end(); it++) {
-    auto &group = group_data[it->first];
+  for (auto it = buffer[user_id].begin(); it != buffer[user_id].end(); it++) {
+    auto &group = buffer[user_id][it->first];
     auto &students = group.students_by_rating;
     auto student_it = students.begin();
     while(student_it != students.end()) {
@@ -146,21 +159,27 @@ void DataBase::SortRating(std::ostream &os) {
   }
   std::sort(Ratings.begin(), Ratings.end(), compareRatings);
   for (auto iter = Ratings.begin(); iter != Ratings.end(); iter++){
-    os << *iter << '\n';
+    if (n == true) os << (*iter).name << ',';
+    if (g == true) os << (*iter).group << ',';
+    if (r == true) os << (*iter).rating << ',';
+    if (i == true) os << (*iter).info;
+    os << '\n';
   }
 }
 
-void DataBase::Process(std::istream &is, std::ostream &os) {  //New unchecked
+int DataBase::Process(std::istream &is, std::ostream &os, int user_id) {
   std::string query;
   is >> query;
   for (auto &c : query) c = std::tolower(c);
   if (query == "select") {
+    while (true) {
     is >> query;
     for (auto &d : query) d = std::tolower(d);
-
+    if (query == "end") return 0;
     if (query == "name") {
       is >> query;
-      SelectName(query); 
+      SelectName(query, user_id);
+      os << "made it" << '\n';
     } else if (query == "group") {
       is >> query;
       for (auto &c : query) c = std::tolower(c);
@@ -169,16 +188,19 @@ void DataBase::Process(std::istream &is, std::ostream &os) {  //New unchecked
         int l = stoi(query);
         is >> query;
         int m = stoi(query);
-        SelectGroupMore(l);
-        SelectGroupLess(m);
+        SelectGroupMore(l, user_id);
+        SelectGroupLess(m, user_id);
+        os << "made it" << '\n';
       } else if (query == "more") {
         is >> query;
         double r = stoi(query);
-        SelectGroupMore(r);
+        SelectGroupMore(r, user_id);
+        os << "made it" << '\n';
       } else if (query == "less") {
         is >> query;
         double r = stoi(query);
-        SelectGroupLess(r);
+        SelectGroupLess(r, user_id);
+        os << "made it" << '\n';
       } 
       else {os << "Incorrect query" << '\n';}
 
@@ -190,20 +212,23 @@ void DataBase::Process(std::istream &is, std::ostream &os) {  //New unchecked
         double l = stod(query);
         is >> query;
         double m = stod(query);
-        SelectRatingMore(l);
-        SelectRatingLess(m);
+        SelectRatingMore(l, user_id);
+        SelectRatingLess(m, user_id);
+        os << "made it" << '\n';
       } else if (query == "more") {
         is >> query;
         double r = stod(query);
-        SelectRatingMore(r);
+        SelectRatingMore(r, user_id);
+        os << "made it" << '\n';
       } else if (query == "less") {
         is >> query;
         double r = stod(query);
-        SelectRatingLess(r);
+        SelectRatingLess(r, user_id);
+        os << "made it" << '\n';
       } 
-      else {os << "Incorrect query" << '\n';}
     }
     else {os << "Incorrect query" << '\n';}
+    }
   }
 
   else if (query == "sort") {
@@ -211,39 +236,79 @@ void DataBase::Process(std::istream &is, std::ostream &os) {  //New unchecked
     for (auto &d : query) d = std::tolower(d);
 
     if (query == "name") {
-      SortName(os);
+      is >> query;
+      int choise = stoi(query);
+      bool r = choise % 10;
+      choise = choise / 10;
+      bool g = choise % 10;
+      choise = choise / 10;
+      bool n = choise % 10;
+      if (n == false && g == false && r == false) {
+        os << "Choose parameters for print" << '\n';
+        return 0;
+      }
+      SortName(os, user_id, n, g, r, 1);
+      os << "made it" << '\n';
     } else if (query == "group") {
-      SortGroup(os);
+      is >> query;
+      int choise = stoi(query);
+      bool r = choise % 10;
+      choise = choise / 10;
+      bool g = choise % 10;
+      choise = choise / 10;
+      bool n = choise % 10;
+      if (n == false && g == false && r == false) {
+        os << "Choose parameters for print" << '\n';
+        return 0;
+      }
+      SortGroup(os, user_id, n, g, r, 1);
+      os << "made it" << '\n';
     } else if (query == "rating") {
-      SortRating(os);
+      is >> query;
+      int choise = stoi(query);
+      bool r = choise % 10;
+      choise = choise / 10;
+      bool g = choise % 10;
+      choise = choise / 10;
+      bool n = choise % 10;
+      if (n == false && g == false && r == false) {
+        os << "Choose parameters for print" << '\n';
+        return 0;
+      }
+      SortRating(os, user_id, n, g, r, 1);
+      os << "made it" << '\n';
     } else {os << "Incorrect query" << '\n';}
   }
 
   else if (query == "save") {
     is >> query;
-    Save(query);
+    Save(query, user_id);
+    os << "made it" << '\n';
   }
 
   else if (query == "load") {
     is >> query;
-    Load(query);
+    Load(query, user_id);
+    os << "made it" << '\n';
   }
 
   else if (query == "print") {
     is >> query;
-    if (query == "all") {
-      PrintAll(os);
-    } else if (query == "name") {
-      PrintName(os);
-    } else if (query == "group") {
-      PrintName(os);
-    } else if (query == "rating") {
-      PrintName(os);
-    } 
-    else {os << "Incorrect query" << '\n';}
+    int choise = stoi(query);
+    bool r = choise % 10;
+    choise = choise / 10;
+    bool g = choise % 10;
+    choise = choise / 10;
+    bool n = choise % 10;
+    if (n == false && g == false && r == false) {
+      os << "Choose parameters for print" << '\n';
+      return 0;
+    }
+    PrintAll(os, user_id, n, g, r, 1);
+    os << "made it" << '\n';
   }
 
-  else if (query == "insert") {  //Добавить проверки
+  else if (query == "insert") {
     Student Bogdan;
     is >> query;
     Bogdan.name = query;
@@ -251,10 +316,11 @@ void DataBase::Process(std::istream &is, std::ostream &os) {  //New unchecked
     Bogdan.group = stoi(query);
     is >> query;
     Bogdan.rating = stod(query);
-    Insert(Bogdan);
+    Insert(Bogdan, user_id);
+    os << "made it" << '\n';
   }
 
-  else if (query == "remove") {  //Добавить проверки
+  else if (query == "remove") {
     Student Bogdan;
     is >> query;
     Bogdan.name = query;
@@ -262,40 +328,30 @@ void DataBase::Process(std::istream &is, std::ostream &os) {  //New unchecked
     Bogdan.group = stoi(query);
     is >> query;
     Bogdan.rating = stod(query);
-    Remove(Bogdan);
+    Remove(Bogdan, user_id);
+    os << "made it" << '\n';
+  }
+
+  else if (query == "renew") {
+    Renew_Buffer(user_id);
+    os << "made it" << '\n';
+  }
+
+  else if (query == "disconnect") {
+    DeleteUser(user_id);
+    os << "made it" << '\n';
+    return 1;
+  }
+
+  else if (query == "exit") {
+    std::cout << "Server closed" << '\n';
+    return -1;
   }
   else {os << "Incorrect query" << '\n';}
+  return 0;
 }
 
-int main() {
-  DataBase db;
-  db.Insert({"A", 1, 0.51});
-  db.Insert({"B", 2, 0.25});
-  db.Insert({"C", 3, 0.65});
-  db.Insert({"D", 1, 0.57});
-  db.Insert({"D", 2, 0.125});
-  db.Insert({"F", 3, 0.95});
-  db.Insert({"G", 1, 0.75});
-  db.Insert({"H", 2, 0.55});
-  db.Insert({"K", 3, 0.15});
-  std::cout << "============================\n";
-  //db.Remove({"B", 2, 0.25});
-  //db.Remove({"D", 1, 0.57});
-  //db.Remove({"F", 3, 0.95});
-  //db.Remove({"H", 2, 0.55});
-  //db.SelectGroup(1);
-  //db.SelectRating(0.4);
-  //db.RawEditionSelectName("T");
-  db.PrintAll(std::cout);
-  std::cout << "============================\n";
-  db.Save("Data.csv");
-  DataBase nb;
-  nb.Load("database.csv");
-  //nb.PrintAll(std::cout);
-  nb.Save("test.csv");
-  std::ofstream fout;
-  fout.open("test.csv");
-  nb.SortRating(fout);
-  fout.close();
-  return 0;
+std::ostream &operator<<(std::ostream &os, const Student &s) {
+  os << s.name << ',' << s.group << ',' << s.rating << ',' << s.info;
+  return os;
 }
