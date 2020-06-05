@@ -16,7 +16,7 @@
 
 int  writeToServer  (int fd);
 int  readFromServer (int fd);
-
+//int flagg (int, int);
 
 int  main (void)
 {
@@ -79,19 +79,29 @@ int  writeToServer (int fd)
 
     nbytes = write (fd,buf,strlen(buf)+1);
     if ( nbytes<0 ) { perror("write"); return -1; }
-    if (strstr(buf,"stop")) return -1;
+    if (strncmp(buf,"stop"),4 == 0) return -1;
     return 0;
 }
-
+/*int flagg (int i, int N) {
+	if (i==N) return 0;
+	return 1;
+}*/
 
 int  readFromServer (int fd)
 {
     int   nbytes;
-    char  *buf;
-	read(fd, &nbytes, 4);
-	
-	buf = (char*)malloc(nbytes+2);
-    nbytes = read(fd,buf,nbytes+2);
+	int blocks;
+	int i;
+    char  buf[1025];
+	char *ans;
+	int proverka;
+	read(fd, &blocks, 4);
+	proverka = blocks;
+	ans = (char*)malloc(1024*blocks);
+	for (i = 0; i < blocks; i++) {
+		nbytes = read(fd,buf,1025);
+		strcpy (&ans[1024*i],buf);
+	}
     if ( nbytes<0 ) {
         // ошибка чтения
         perror ("read"); 
@@ -101,14 +111,17 @@ int  readFromServer (int fd)
         fprintf (stderr,"Client: no message\n");
     } else {
         // ответ успешно прочитан
-        fprintf (stdout,"Server's replay:\n%s\n",buf);
+        fprintf (stdout,"Server's replay:\n%s\n",ans);
+		//fprintf (stdout, "Proverka = %d\n",proverka);
 		//fprintf (stdout,"%d\n",nbytes);
     }
-	if (strncmp(buf,"Quit",4) == 0) {
-		free (buf);
+	if (strncmp(ans,"Quit",4) == 0) {
+		free (ans);
 		return -1;
 	}
-	free (buf);
+	bzero (buf, sizeof(buf));
+	bzero (ans, sizeof(ans));
+	free (ans);
     return 0;
 }
 

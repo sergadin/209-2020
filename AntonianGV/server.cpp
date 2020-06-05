@@ -25,6 +25,7 @@ char * search (char **, int, char*, int);
 void itoa (int, char*);
 void reverse (char*);
 int kek (int);
+int flagg (int, int);
 
 void itoa(int n, char s[]) {
      int i, sign;
@@ -378,17 +379,28 @@ int  readFromClient (int fd, char *buf)
     }
 }
 
-
+int flagg (int i, int N) {
+	if (i == N) return 0;
+	return 1;
+}
 
 void  writeToClient (int fd, char *buf)
 {
     int  nbytes;
+	int blocks;
+	int i;
+	int proverka;
     unsigned char *s;
 	nbytes = strlen(buf)+1;
+	blocks = strlen(buf)/1024+1;
     //for (s=(unsigned char*)buf; *s; s++) *s = toupper(*s);
-	write (fd, &nbytes, 4);
-    nbytes = write(fd,buf,strlen(buf)+1);
+	write (fd, &blocks, 4);
+	for (i = 0; i < blocks; i++) {
+		write (fd, &buf[1024*i], flagg(i,blocks-1)*1024 + (1-flagg(i,blocks-1))*strlen(&buf[1024*i])+1);
+	}
+    //nbytes = write(fd,buf,strlen(buf)+1);
     fprintf(stdout,"Write back: %s\nnbytes=%d\n",buf,nbytes);
+	
     
     if ( nbytes<0 ) {
         perror ("Server: write failure");
