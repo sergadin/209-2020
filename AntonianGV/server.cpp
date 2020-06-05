@@ -260,8 +260,8 @@ int  main (void)
                             FD_CLR (i,&active_set);
                         } else {
 							if (strncmp(buf, "info", 4) == 0 ) {
-								answer = (char*)malloc(134);
-								strcpy (answer, "list of requests:\nstop\nquit\nshow\nadd <number> <paragraph>\nsearch <number> <paragraph>\ndelete <number>\n");
+								answer = (char*)malloc(360);
+								strcpy (answer, "list of requests:\nstop - stop working of client\nquit - stop working of server\nshow - show text\nadd <number> <text> - insert paragraph with given number\nsearch <depth> <text> - searching text with given context's depth\ndelete <number> - delete paragraph with given number\n");
 							}
 							if (strncmp(buf, "quit", 4) == 0 ) {
 								answer = (char*)malloc(7);
