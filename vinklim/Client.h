@@ -1,39 +1,37 @@
 #pragma once
 
 #include <string>
-#include<vector>
+#include <vector>
+#include "Common.h"
+#include "Message.h"
+#include "NetworkClient.h"
+#include "RecordSet.h"
 
-namespace R2
+namespace R2 
 {
 	using namespace std;
-	class RecordSet
-	{
-	public:
-		typedef vector<string> Row;
-	private:
-		vector<Row> rows;
-		inline const vector<Row>& _row_ref(size_t i) const
-		{
-			return rows[i];
-		}
-	public:
-		inline size_t length() const
-		{
-			return rows.size();
-		}
-		inline vector<Row> row(size_t i) const
-		{
-			return vector<Row>(_row_ref(i));
-		}
-		inline string getItemStr(size_t i, size_t j) const
-		{
-			return _row_ref(i)[j];
-		}
-	};
 
 	class Client
 	{
+		NetworkClient nc;
+
 	public:
-		RecordSet query() const;
+		Client(const string& host_, int port_) : nc(host_, port_)
+		{}
+
+		inline RecordSet query(const string& q) const
+		{
+			Message reply;
+			// unsigned char *p = new unsigned char[q.size()+1];
+			// for (size_t j = 0; j <= q.size(); ++j)
+			// 		p[j] = q[j];
+			cout << q << endl;
+			nc.sendMessage((const unsigned char*)q.c_str(), q.size()+1, reply);
+			//
+			cout << reply.binary() << endl;
+			//
+			return RecordSet(reply);
+		}
 	};
-}
+
+} // R2
