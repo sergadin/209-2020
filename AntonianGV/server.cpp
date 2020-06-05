@@ -294,8 +294,9 @@ int  main (void)
 	for (k = 0; k < Par_Num; k++) {
 		fgets (text[k], 1024, in);
 		length = strlen(text[k]);
+		//printf ("%d\n", length);
 		if (text[k][length-1] == '\n'||text[k][length-1] == 13) text[k][length-1] = '\0';
-		if (text[k][length-2] == '\n'||text[k][length-2] == 13) text[k][length-2] = '\0';
+		//if (text[k][length-2] == '\n'||text[k][length-2] == 13) text[k][length-2] = '\0';
 	}
 	fclose(in);
    
