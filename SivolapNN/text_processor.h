@@ -8,7 +8,7 @@
 class TextProcessor {
  public:
   std::string Show() const;
-  void Add(int i, const std::string& text);
+  void Add(int i, const std::string& text,std::ostream& os);
   void Search(const std::string& word, size_t N, std::ostream& os) const;
   bool Delete(std::set<int> ids);
 
