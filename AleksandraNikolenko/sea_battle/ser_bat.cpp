@@ -20,13 +20,17 @@
 #define EXIT_FAILURE 1
 
 
-int readFromClient(int fd, char *buf);
-//void  writeToClient (int fd, char *buf);
+int readFrom(int fd, char *buf);
+void  writeTo(int fd, const char* buf);
+char* mess(const char* ch, int c);
+char* str_moves(vector<int> &v);
+int coord(char *buf);
+void processing(int res, int sock, map<int, Player*> &Players, char *buf);
 
 
 int  main (void)
 {
-	int     i, err, opt=1;
+	int     i, err, opt=1, res;
     int     ser_sock, new_sock;
     struct  sockaddr_in  addr;
     struct  sockaddr_in  client;
@@ -93,7 +97,7 @@ int  main (void)
                          act_set[num_set].revents = 0;
                          num_set++;
 						 player = new Player(new_sock);
-						 Players.insert(pair<int, Player*> (new_sock, &player));
+						 Players.insert(pair<int, Player*> (new_sock, player));
                       } 
 					  else 
 					  {
@@ -103,7 +107,7 @@ int  main (void)
                    } 
 				   else 
 				   {
-                      err = readFromClient(act_set[i].fd, buf);
+                      err = readFrom(act_set[i].fd, buf);
                       if (err < 0) 
 					  {          
                           close (act_set[i].fd);
@@ -115,7 +119,9 @@ int  main (void)
                       } 
 					  else 
 					  {
-                          Players[act_set[i]]->analysis(buf, &Players);
+                          res = Players[act_set[i].fd]->analysis(buf, Players);
+						  processing(res, act_set[i].fd, &Players, buf);
+						  
                       }
                   }  
               }
@@ -125,8 +131,75 @@ int  main (void)
 } 
 
 
+void processing(int res, int sock, map<int, Player*> &Players, char *buf)
+{
+	int k = Players[sock]->get_game()->opponent(sock);
+	if(res == OK)
+	{
+		if(Players[k]->get_qs() == -1)
+			writeTo(k, "Your ships");
+		else writeTo(k, "Your move");
+	}
+	if(res == WS)
+	{
+		writeTo(sock, "Your ships");
+	}
+	if(res == OpM)
+	{
+		writeTo(sock, "Not your move");
+	}
+	if(res == SM)
+	{
+		char* str;
+		vector<int>* moves = Players[sock]->get_moves();
+		str = str_moves(&moves);
+		writeTo(sock, str);
+	}
+	if(res == SO)
+	{
+		char* str;
+		vector<int>* moves = Players[k]->get_moves();
+		str = str_moves(&moves);
+		writeTo(sock, str);
+	}
+	if(res == Q)
+	{
+		writeTo(sock, "Game over");
+		writeTo(k, "Opponent is out of the game");
+		Players[sock]->free();
+		Players[k]->free;
+	}
+	if(res == NC)
+	{
+		writeTo(sock, "Not command");
+	}
+	if(res == LOSE)
+	{
+		writeTo(sock, "You lose");
+		writeTo(k, "You win");
+	}
+	if(res == MISS)
+	{
+		int c = coord(buf);
+		writeTo(sock, mess("Miss:", c));
+		writeTo(k, mess("Miss:", c)); //сказать чей ход
+	}
+	if(res == KILL)
+	{
+		int c = coord(buf);
+		mess("Kill:", c);
+		writeTo(sock, mess("Kill:", c));
+		writeTo(k, mess("Kill:", c)); //сказать чей ход
+	}
+	if(res == HALF)
+	{
+		int c = coord(buf);
+		writeTo(sock, mess("Half:", c));
+		writeTo(k, mess("Half:", c)); //сказать чей ход
+	}
+}
 
-int  readFromClient (int fd, char *buf)
+int  readFrom(int fd, char *buf)
 {
     int  nbytes;
 
@@ -147,25 +220,54 @@ int  readFromClient (int fd, char *buf)
 
 
 
-/*void  writeToClient (int fd, char *buf)
+void  writeTo(int fd, const char* buf)
 {
     int  nbytes;
-    unsigned char *s;
-
-    for (s=(unsigned char*)buf; *s; s++) *s = toupper(*s);
-    nbytes = write(fd,buf,strlen(buf)+1);
-    fprintf(stdout,"Write back: %s\nnbytes=%d\n",buf,nbytes);
-    
-    if ( nbytes<0 ) {
+    nbytes = write(fd, buf, strlen(buf)+1);
+    if (nbytes < 0) {
         perror ("Server: write failure");
     }
 }
-*/
+
+int coord(char *buf)
+{
+	string str = buf;
+	int a, b;
+	stringstream ss(str);
+	ss.ignore(4, ':');
+	ss >> a >> b;
+	return (a * 10 + b); 
+}
 
 
 
+char* str_moves(vector<int> &v)
+{
+	int a, b, i;
+	string str;
+	std::ostringstream ss;
+	for(i = 0; i < v.size(); i++)
+	{
+		a = v[i]/10;
+		b = v[i]%10;
+		ss << a << b;
+	}
+	str = ss.str();
+	return str.c_str();
+}
 
-
+char* mess(const char* ch, int c)
+{
+	string str;
+	int a = c/10;
+	int b = c%10;
+	std::ostringstream ss;
+	ss << ch;
+	ss << a;
+	ss << b;
+	str = ss.str();
+	return str.c_str();
+}
 
 
 
