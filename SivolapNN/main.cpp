@@ -11,8 +11,7 @@ int main(int argc, char const* argv[]) {
   int port = 7897;
   if (argc > 1) port = std::stoi(argv[1]);
 
-  TextProcessor tp; 7897
-Shu
+  TextProcessor tp; 
   Server server;
   server.SetPort(port);
 
