@@ -12,24 +12,27 @@
 #include <netdb.h>
 #include <map>
 
+#include "server.h"
+
 
 #define PORT    8766
 #define BUFLEN  1024
 #define EXIT_FAILURE 1
-#define (i min) i * 60 000
 
-int   readFromClient(int fd, char *buf);
-void  writeToClient (int fd, char *buf);
+
+int readFromClient(int fd, char *buf);
+//void  writeToClient (int fd, char *buf);
 
 
 int  main (void)
 {
-	int     i, err, err2, opt = 1;
-    int     ser_sock, sock;
+	int     i, err, opt=1;
+    int     ser_sock, new_sock;
     struct  sockaddr_in  addr;
-    struct  sockaddr_in  client, client2;
-    char    buf[BUFLEN], buf2[BUFLEN];
-	socklen_t  size = 0, size2 = 0;
+    struct  sockaddr_in  client;
+    char    buf[BUFLEN];
+	Player* player;
+    socklen_t  size = 0;
 	int num_set = 1;
 	map<int, Player*> Players;
 	
@@ -119,7 +122,7 @@ int  main (void)
            }
         }
     }
-}
+} 
 
 
 
@@ -144,7 +147,7 @@ int  readFromClient (int fd, char *buf)
 
 
 
-void  writeToClient (int fd, char *buf)
+/*void  writeToClient (int fd, char *buf)
 {
     int  nbytes;
     unsigned char *s;
@@ -157,10 +160,7 @@ void  writeToClient (int fd, char *buf)
         perror ("Server: write failure");
     }
 }
-
-
-void game(int fd, chsr *buf)
-
+*/
 
 
 
@@ -177,49 +177,3 @@ void game(int fd, chsr *buf)
 
 
 
-
-
-
-
-/*
-if(err == 0 && strcmp(buf, "Play") == 0)   // если от клиента пришло сообщение: play, то называем его 1 игроком и ищем противника
-					  {
-						  player_1 = Player(act_set[i].fd];
-						  ret = poll(act_set, num_set, (10 min));
-						  if(ret < 0)
-						  {
-							  perror("Error: opponent is not founded"); //ошибка поиска противника
-							  exit (EXIT_FAILURE);
-						  }
-						  else if(ret == 0)  //time out
-						  {
-							  writeToClient(player_1.sock_.fd, "error");
-							  // xnj-nj tot
-						  }
-						  else(ret > 0)
-						  {
-							  if (act_set[0].revents & POLLIN) 
-							  {
-									printf("get POLLIN at fd %d\n", act_set[i].fd);
-									act_set[0].revents &= ~POLLIN;  
-									player_2 = Player(accept(act_set[0].fd,(struct sockaddr*)&client2,&size2)); //противник найден
-									writeToClient(player_1.sock_.fd, "found");
-									writeToClient(player_1.
-									if (num_set < 100) 
-									{
-										 act_set[num_set].fd = player_2.sock_;
-										 act_set[num_set].events = POLLIN;
-										 act_set[num_set].revents = 0;
-										 num_set++;
-										
-									} 
-									else 
-									{
-										printf("no more sockets for client");
-										close(player_2.sock_);
-										writeToClient(player_1.sock_.fd, "error");
-									}
-							   }
-						  }
-					  }
-	*/

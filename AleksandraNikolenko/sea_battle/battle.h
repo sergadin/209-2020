@@ -2,7 +2,7 @@
 #include<math.h>
 #include<vector>
 
-#define F_SIZE
+#define F_SIZE 10
 
 typedef enum {h, v} Orientation;
 
@@ -15,12 +15,12 @@ class Ship {
 	public:
 		Ship(int row, int col, string ori, int len)
 		{
-			if((ori == h && row + len > F_SIZE) || (ori == v && col + len > F_SIZE))
+			if((ori == h && row + len >= F_SIZE) || (ori == v && col + len >= F_SIZE))
 			{
 				printf("Coordinates is not correct");
 				return -1;
 			}
-			if(!(0 <= row < 10) || !(0 <= col < 10) || (ori != h && ori != v))
+			if(!(0 <= row < F_SIZE) || !(0 <= col < F_SIZE) || (ori != h && ori != v))
 			{
 				printf("Coordinates is not correct");
 				return -1;
@@ -67,6 +67,8 @@ class Ship {
 				return true
 			return false
 		}
+		
+		friend class Player;
 }
 
 
