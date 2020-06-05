@@ -40,7 +40,7 @@ int main(int argc, char const* argv[]) {
           std::string text;  //
           std::getline(is, text, '"');
           std::getline(is, text, '"');
-          tp.Add(n, text);
+          tp.Add(n, text,os);
           os << "Done";
         } else if (query == "search") {
           int N;
