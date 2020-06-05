@@ -162,6 +162,7 @@ char* search (int fd, char** text, int N, char * string, int depth) {
 	}
 	write (fd, &allnumber, 4);
 	if (depth < strlen(string)) {
+		answer = (char*)malloc(20);
 		strcpy (answer, "Incorrect Depth\n");
 		return answer;
 	}
