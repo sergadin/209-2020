@@ -42,13 +42,16 @@ void TextProcessor::Search(const std::string& word, size_t N,
 
 bool TextProcessor::Delete(std::set<int> ids) {
   std::lock_guard<std::mutex> lock(_mutex);
-  auto it = _data.begin();
-  for (auto i : ids) {
-    for (; i != 0 && it != _data.end(); i--) it++;
-    if (i == 0)
-      _data.erase(it);
-    else
-      return false;
-  }
-  return true;
+ int i = 1;
+auto it = _data.begin();
+for(auto& id : ids) {
+for(;i != id; ++i) 
+{
+  ++it;
+if(it == _data.end()) return 1;
+}
+it = _data.erase(it);
+++i;
+}
+return true;
 }
