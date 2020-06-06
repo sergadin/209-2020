@@ -16,11 +16,10 @@ void TextProcessor::Add(int i, const std::string& text,std::ostream& os) {
      os << "No";
      return;
   }
-  for (; i >= 0 && it != _data.end(); i--) 
+  for (; i+1 >= 0 && it != _data.end(); i--) 
   it++;
   _data.insert(it, text);
 }
-
 
 void TextProcessor::Search(const std::string& word, size_t N,
                            std::ostream& os) const {
