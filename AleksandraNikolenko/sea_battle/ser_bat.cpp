@@ -23,7 +23,7 @@
 int readFrom(int fd, char *buf);
 void  writeTo(int fd, const char* buf);
 char* mess(const char* ch, int c);
-char* str_moves(vector<int> &v);
+char* str_moves(vector<int>* v);
 int coord(char *buf);
 void processing(int res, int sock, map<int, Player*> &Players, char *buf);
 
@@ -120,7 +120,7 @@ int  main (void)
 					  else 
 					  {
                           res = Players[act_set[i].fd]->analysis(buf, Players);
-						  processing(res, act_set[i].fd, &Players, buf);
+						  processing(res, act_set[i].fd, Players, buf);
 						  
                       }
                   }  
@@ -152,14 +152,14 @@ void processing(int res, int sock, map<int, Player*> &Players, char *buf)
 	{
 		char* str;
 		vector<int>* moves = Players[sock]->get_moves();
-		str = str_moves(&moves);
+		str = str_moves(moves);
 		writeTo(sock, str);
 	}
 	if(res == SO)
 	{
 		char* str;
 		vector<int>* moves = Players[k]->get_moves();
-		str = str_moves(&moves);
+		str = str_moves(moves);
 		writeTo(sock, str);
 	}
 	if(res == Q)
@@ -167,7 +167,7 @@ void processing(int res, int sock, map<int, Player*> &Players, char *buf)
 		writeTo(sock, "Game over");
 		writeTo(k, "Opponent is out of the game");
 		Players[sock]->free();
-		Players[k]->free;
+		Players[k]->free();
 	}
 	if(res == NC)
 	{
@@ -241,24 +241,27 @@ int coord(char *buf)
 
 
 
-char* str_moves(vector<int> &v)
+char* str_moves(vector<int>* v)
 {
 	int a, b, i;
+	char* buf;
 	string str;
 	std::ostringstream ss;
-	for(i = 0; i < v.size(); i++)
+	for(i = 0; i < v->size(); i++)
 	{
-		a = v[i]/10;
-		b = v[i]%10;
+		a = (v->at(i))/10;
+		b = (v->at(i))%10;
 		ss << a << b;
 	}
 	str = ss.str();
-	return str.c_str();
+	buf = const_cast<char *> (str.c_str());
+	return buf;
 }
 
 char* mess(const char* ch, int c)
 {
 	string str;
+	char* buf;
 	int a = c/10;
 	int b = c%10;
 	std::ostringstream ss;
@@ -266,7 +269,8 @@ char* mess(const char* ch, int c)
 	ss << a;
 	ss << b;
 	str = ss.str();
-	return str.c_str();
+	buf = const_cast<char *> (str.c_str());
+	return buf;
 }
 
 
