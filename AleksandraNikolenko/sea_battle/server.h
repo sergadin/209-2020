@@ -115,12 +115,12 @@ class Player {
 		Player* search(map<int, Player*> &Players)
 		{
 			map <int, Player*> :: iterator it = Players.begin();
-			while(it != Players.end())
-			{
-				if(it->second->status_ == FREE)
+			
+			do {
+				if(it->second->status_ == FREE && it->second->sock_ != this->sock_)
 					return it->second;
 				else it++;
-			}
+			} while(it != Players.end());
 			if(it == Players.end())
 				return NULL;
 			return NULL;

@@ -75,9 +75,9 @@ int  writeTo(int fd)
 	printf("error\n");
     }
     buf[strlen(buf)-1] = 0;
-
-    nbytes = write (fd,buf,strlen(buf)+1);
+	nbytes = write (fd,buf,strlen(buf)+1);
     if ( nbytes<0 ) { perror("write"); return -1; }
+	printf("!!!writeTo!!!\n");
     return 0;
 }
 
@@ -85,7 +85,7 @@ void process(int fd, char* buf)
 {
 	int row, col;
 	if(buf == NULL)
-		printf("Enter a command");
+		printf("Enter command\n");
 	else if(isdigit(buf[0]) == 0)
 	{
 		for(int i =  0; i < (int)(strlen(buf)) + 1; i++)
@@ -93,16 +93,19 @@ void process(int fd, char* buf)
 			row = buf[i]/10;
 			col = buf[i]%10;
 			printf("%d, %d\n", row, col);
+			printf("!!!process_1!!!\n");
 		}
 	}
 	else if(strcmp(buf, "Quit") == 0)
 	{
 		printf("%s\n", buf);
+		printf("!!!process_q!!!\n");
 		close(fd);
 	}
 	else if(strstr(buf, "Kill") || strstr(buf, "Half"))
 	{
 		printf("%s\n", buf);
+		printf("!!!process_K_H!!!\n");
 		process(fd, readFrom(fd));
 	} 
 	else printf("%s\n", buf);	
