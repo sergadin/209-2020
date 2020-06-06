@@ -1,0 +1,4 @@
+Play
+Ships:1 1 h : 1 1 v : 1 1 h : 1 1 v : 2 2 v : 2 2 v : 2 2 v : 3 3 h : 3 3 h : 4 4 v
+Move:5 6
+
