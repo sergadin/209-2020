@@ -134,6 +134,8 @@ int  main (void)
 void processing(int res, int sock, map<int, Player*> &Players, char *buf)
 {
 	int k = Players[sock]->get_game()->opponent(sock);
+	if(res == -1)
+		writeTo(sock, "Opponents not found");
 	if(res == OK)
 	{
 		if(Players[k]->get_qs() == -1)
@@ -168,6 +170,7 @@ void processing(int res, int sock, map<int, Player*> &Players, char *buf)
 		writeTo(k, "Opponent is out of the game");
 		Players[sock]->free();
 		Players[k]->free();
+		close(sock);
 	}
 	if(res == NC)
 	{
@@ -175,27 +178,32 @@ void processing(int res, int sock, map<int, Player*> &Players, char *buf)
 	}
 	if(res == LOSE)
 	{
-		writeTo(sock, "You lose");
-		writeTo(k, "You win");
+		writeTo(sock, "You win");
+		writeTo(k, "You lose");
+		Players[sock]->free();
+		Players[k]->free();
 	}
 	if(res == MISS)
 	{
 		int c = coord(buf);
 		writeTo(sock, mess("Miss:", c));
-		writeTo(k, mess("Miss:", c)); //сказать чей ход
+		writeTo(k, mess("Miss:", c)); 
+		writeTo(k, "Your move");
 	}
 	if(res == KILL)
 	{
 		int c = coord(buf);
 		mess("Kill:", c);
 		writeTo(sock, mess("Kill:", c));
-		writeTo(k, mess("Kill:", c)); //сказать чей ход
+		writeTo(k, mess("Kill:", c)); 
+		writeTo(sock, "Your move");
 	}
 	if(res == HALF)
 	{
 		int c = coord(buf);
 		writeTo(sock, mess("Half:", c));
-		writeTo(k, mess("Half:", c)); //сказать чей ход
+		writeTo(k, mess("Half:", c)); 
+		writeTo(sock, "Your move");
 	}
 }
 
@@ -247,7 +255,7 @@ char* str_moves(vector<int>* v)
 	char* buf;
 	string str;
 	std::ostringstream ss;
-	for(i = 0; i < v->size(); i++)
+	for(i = 0; i < (int)(v->size()); i++)
 	{
 		a = (v->at(i))/10;
 		b = (v->at(i))%10;

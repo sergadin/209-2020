@@ -7,11 +7,11 @@
 #define F_SIZE 10
 
 
-typedef enum {Play, Quit, Move, ShowMy, ShowOther, Ships} CommandType;
-typedef enum {h, v} Orientation;
-enum {FREE, InGame} STATUS;  
-enum {miss, half, killed} HITS;
-enum {OK, WS, OpM, SM ,SO, Q, NC, LOSE, MISS, KILL, HALF} RES; //ws - введите корабли, opm - ход противника, sm- мои шаги, so- шаги соперника, q- выход, nc - не команда, l- game over
+enum {Play, Quit, Move, ShowMy, ShowOther, Ships};
+enum {h, v};
+enum {FREE, InGame};  
+enum {miss, half, killed};
+enum {OK, WS, OpM, SM ,SO, Q, NC, LOSE, MISS, KILL, HALF}; //ws - введите корабли, opm - ход противника, sm- мои шаги, so- шаги соперника, q- выход, nc - не команда, l- game over
 
 using namespace std;
 
@@ -27,9 +27,9 @@ class Ship {
 	public:
 		Ship(int row, int col, string ori, int len)
 		{
-			if((&ori[0] == "h" && row + len >= F_SIZE) || ((&ori[0] == "v" && col + len >= F_SIZE)))
+			if(!(0 <= row && row < F_SIZE) || !(0 <= col && col < F_SIZE) || (strcmp(ori.c_str(),"h") != 0 && strcmp(ori.c_str(),"v") != 0))
 				perror("Coordinates is not correct");
-			if(!(0 <= row < F_SIZE) || !(0 <= col < F_SIZE) || (&ori[0] != "h" && &ori[0] != "v"))
+			if((strcmp(ori.c_str(),"h") == 0 && row + len >= F_SIZE) || (strcmp(ori.c_str(),"v") == 0 && col + len >= F_SIZE))
 				perror("Coordinates is not correct");
 			row_ = row;
 			col_ = col;
@@ -40,7 +40,7 @@ class Ship {
 		}
 		bool wound(int row, int col)
 		{
-			if(ori_ == "h")
+			if(strcmp(ori_,"h") == 0)
 			{
 				for(int i = 0; i < len_; i++)
 				{
@@ -51,7 +51,7 @@ class Ship {
 					}
 				}
 			}
-			if(ori_ == "v")
+			if(strcmp(ori_,"v") == 0)
 			{
 				for(int i = 0; i < len_; i++)
 				{
@@ -103,7 +103,7 @@ class Player {
 		}
 		bool lose()
 		{
-			if(qs_ = 0)
+			if(qs_ == 0)
 				return true;
 			return false;
 		}
@@ -236,18 +236,18 @@ int Player::analysis(char* buf, map<int, Player*> &Players)
 			stringstream ss(str);
 			getline(ss, query, ':');
 			if(strcmp(query.c_str(), "Ships") != 0)
-				return -1;
+				return NC;
 			else
 			{
 				for(int i = 0; i < 10; i++)
 				{
 					ss >> row >> col >> ori;
 					ss.ignore();
-					if(0 <= i < 4)
+					if(0 <= i && i < 4)
 						ships_[i] = new Ship(row, col, ori, 1);
-					else if(4 <= i < 7)
+					else if(4 <= i && i< 7)
 						ships_[i] = new Ship(row, col, ori, 2);
-					else if(7 <= i < 9)
+					else if(7 <= i && i < 9)
 						ships_[i] = new Ship(row, col, ori, 3);
 					else
 						ships_[i] = new Ship(row, col, ori, 4);
@@ -266,7 +266,7 @@ int Player::analysis(char* buf, map<int, Player*> &Players)
             else
             {
                 ss >> row >> col;
-                if(this->numb_ = 1)
+                if(this->numb_ == 1)
                 {
                     if(this->game_->pl_2->hit(row, col) == miss)
                     {
@@ -281,7 +281,7 @@ int Player::analysis(char* buf, map<int, Player*> &Players)
 					else 
 						return HALF;
                 }
-                if(this->numb_ = 2)
+                if(this->numb_ == 2)
                 {
                     if(this->game_->pl_1->hit(row, col) == miss)
                     {
@@ -298,6 +298,6 @@ int Player::analysis(char* buf, map<int, Player*> &Players)
             }
         }
     }
-    return -1;
+    return NC;
 }
 
