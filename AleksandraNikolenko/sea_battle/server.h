@@ -3,6 +3,8 @@
 #include <map>
 #include<math.h>
 #include<vector>
+#include <assert.h>
+#include <stdio.h>
 
 #define F_SIZE 10
 
@@ -28,18 +30,25 @@ class Ship {
 		Ship(int row, int col, string ori, int len)
 		{
 			if(!(0 <= row && row < F_SIZE) || !(0 <= col && col < F_SIZE) || (strcmp(ori.c_str(),"h") != 0 && strcmp(ori.c_str(),"v") != 0))
-				perror("Coordinates is not correct");
+            {
+				perror("Coordinates is not correct 1");
+            }
 			if((strcmp(ori.c_str(),"h") == 0 && row + len >= F_SIZE) || (strcmp(ori.c_str(),"v") == 0 && col + len >= F_SIZE))
-				perror("Coordinates is not correct");
+				perror("Coordinates is not correct 2");
 			row_ = row;
 			col_ = col;
-			ori_ = &ori[0];
+            ori_ = new char[2];
+			ori_[0] = ori[0];
+            ori_[1] = 0;
 			len_ = len;
 			status_ = new int[len];
-			status_ = {0};
+            for(int k = 0; k < len; k++)
+                status_[k] = 0;
+            fprintf(stderr, "Ship at(%d, %d, '%s') of length %d\n", row_, col_, ori_, len_);
 		}
 		bool wound(int row, int col)
 		{
+            fprintf(stderr, "Ship at(%d, %d, '%s') of length %d; move=(%d, %d)\n", row_, col_, ori_, len_, row, col);
 			if(strcmp(ori_,"h") == 0)
 			{
 				for(int i = 0; i < len_; i++)
@@ -208,7 +217,7 @@ int Player::analysis(char* buf, map<int, Player*> &Players)
     string query;
     int row, col;
     string ori;
-    string str = buf;
+    string str(buf);
     if(strcmp(buf, "Quit") == 0)
         return Q;
     else if(strcmp(buf, "ShowMy") == 0)
@@ -233,6 +242,8 @@ int Player::analysis(char* buf, map<int, Player*> &Players)
         }
 		else if(strstr(buf, "Ships") != NULL)
 		{
+            std::string dummy_word;
+            fprintf(stderr, "Parse ships string '%s'\n", buf);
 			stringstream ss(str);
 			getline(ss, query, ':');
 			if(strcmp(query.c_str(), "Ships") != 0)
@@ -242,7 +253,8 @@ int Player::analysis(char* buf, map<int, Player*> &Players)
 				for(int i = 0; i < 10; i++)
 				{
 					ss >> row >> col >> ori;
-					ss.ignore();
+					ss >> dummy_word;
+                    fprintf(stderr, "row = %d, col = %d, ori = '%s'\n", row, col, ori.c_str());
 					if(0 <= i && i < 4)
 						ships_[i] = new Ship(row, col, ori, 1);
 					else if(4 <= i && i< 7)
@@ -288,12 +300,13 @@ int Player::analysis(char* buf, map<int, Player*> &Players)
                         this->game_->change_q();
                         this->my_moves.push_back(row*10 + col);
                         if(this->game_->pl_1->lose())
-                            return MISS;
-                        else if(this->game_->pl_2->hit(row, col) == killed)
-							return KILL;
-						else 
-							return HALF;
+                            return LOSE;
+                        return MISS;
                     }
+                    else if(this->game_->pl_1->hit(row, col) == killed)
+                        return KILL;
+                    else 
+                        return HALF;
                 }
             }
         }
