@@ -11,11 +11,13 @@ std::string TextProcessor::Show() const {
 void TextProcessor::Add(int i, const std::string& text,std::ostream& os) {
   std::lock_guard<std::mutex> lock(_mutex);
   auto it = _data.begin();
-  for (; i != 0 && it != _data.end(); i--) it++;
-  if(i>_data.size())
+   if(i > _data.size())
   {
      os << "No";
+     return;
   }
+  for (; i >= 0 && it != _data.end(); i--) 
+  it++;
   _data.insert(it, text);
 }
 
