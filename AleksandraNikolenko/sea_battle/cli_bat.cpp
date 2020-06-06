@@ -84,7 +84,9 @@ int  writeTo(int fd)
 void process(int fd, char* buf)
 {
 	int row, col;
-	if(isdigit(buf[0]) == 0)
+	if(buf == NULL)
+		printf("Enter a command");
+	else if(isdigit(buf[0]) == 0)
 	{
 		for(int i =  0; i < (int)(strlen(buf)) + 1; i++)
 		{
@@ -102,9 +104,7 @@ void process(int fd, char* buf)
 	{
 		printf("%s\n", buf);
 		process(fd, readFrom(fd));
-	}
-	else if(buf == NULL)
-		printf("Enter a command");
+	} 
 	else printf("%s\n", buf);	
 }
 
