@@ -21,6 +21,7 @@ void TextProcessor::Add(int i, const std::string& text,std::ostream& os) {
   _data.insert(it, text);
 }
 
+
 void TextProcessor::Search(const std::string& word, size_t N,
                            std::ostream& os) const {
   size_t block_number = 0;
