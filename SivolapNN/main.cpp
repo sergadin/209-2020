@@ -19,6 +19,10 @@ int main(int argc, char const* argv[]) {
     if (auto s = socket.lock()) {
       SocketStream is(s->FileDescriptor());
       SocketStream os(s->FileDescriptor());
+    //   std::string key;
+    //   is >> key;
+    //   os << "ответ";
+      if (/* какая-то проблема */ 0) s->Close();
     }
   });
 
@@ -40,7 +44,7 @@ int main(int argc, char const* argv[]) {
           std::string text;  //
           std::getline(is, text, '"');
           std::getline(is, text, '"');
-          tp.Add(n, text,os);
+          tp.Add(n, text, os);
           os << "Done";
         } else if (query == "search") {
           int N;
