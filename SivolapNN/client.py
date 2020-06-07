@@ -25,10 +25,9 @@ while True:
         break
     data = ''
     while True:
-        data_part = sock.recv(256)
+        data_part = sock.recv(8192)
         data += data_part.decode()
         if data.endswith(stop_word):
             break
     print(data[:-len(stop_word)])
-
 
