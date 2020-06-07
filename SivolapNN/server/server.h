@@ -51,3 +51,4 @@ class Server {
   std::vector<int> _staleFileDescriptors;
   std::mutex _staleFileDescriptorsMutex;
 };
+
