@@ -35,9 +35,20 @@ std::string ClientSocket::Read() {
   memset(buffer, 0, 256);
   ssize_t num_bytes = 0;
 
-  while ((num_bytes = recv(_fileDescriptor, buffer, sizeof(buffer),
-                           MSG_DONTWAIT)) > 0) {
+  num_bytes = recv(_fileDescriptor, buffer, 4, MSG_WAITALL);
+  int length = static_cast<int>(static_cast<unsigned char>(buffer[0]) << 24 |
+                                static_cast<unsigned char>(buffer[1]) << 16 |
+                                static_cast<unsigned char>(buffer[2]) << 8 |
+                                static_cast<unsigned char>(buffer[3]));
+  memset(buffer, 0, 4);
+
+  while (length != 0) {
+    num_bytes =
+        recv(_fileDescriptor, buffer,
+             (length < sizeof(buffer) ? length : sizeof(buffer)), MSG_WAITALL);
+    if (num_bytes < 0) throw std::runtime_error("Socket problems");
     buffer[num_bytes] = 0;
+    length -= num_bytes;
     message += buffer;
   }
   return message;
