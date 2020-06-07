@@ -2,6 +2,9 @@ import socket
 
 stop_word = '__4to-to__'
 
+def chunkstring(string, length):
+    return (string[0+i:length+i] for i in range(0, len(string), length))
+
 inp = input('Enter server adress and port separated by comma\n')
 addr, port = inp.split(',')
 
@@ -13,7 +16,8 @@ while True:
     if inp.startswith('delete') and not inp.endswith('end'):
         print('Delete request should ends with \'end\' word')
         continue
-    sock.send((inp + ' ').encode())
+    for substr in chunkstring(inp+' ', 256):
+        sock.send(substr.encode())
     if inp in ['disconnect', 'SHUTDOWN']:
         sock.close()
         break
@@ -24,3 +28,4 @@ while True:
         if data.endswith(stop_word):
             break
     print(data[:-len(stop_word)])
+

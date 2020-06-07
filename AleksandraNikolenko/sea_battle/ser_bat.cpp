@@ -15,7 +15,7 @@
 #include "server.h"
 
 
-#define PORT    8766
+#define PORT    7766
 #define BUFLEN  1024
 #define EXIT_FAILURE 1
 
@@ -133,11 +133,11 @@ int  main (void)
 
 void processing(int res, int sock, map<int, Player*> &Players, char *buf)
 {
-	int k = Players[sock]->get_game()->opponent(sock);
 	if(res == -1)
 		writeTo(sock, "Opponents not found");
 	if(res == OK)
 	{
+	    int k = Players[sock]->get_game()->opponent(sock);
 		if(Players[k]->get_qs() == -1)
 			writeTo(k, "Your ships");
 		else writeTo(k, "Your move");
@@ -153,12 +153,15 @@ void processing(int res, int sock, map<int, Player*> &Players, char *buf)
 	if(res == SM)
 	{
 		char* str;
+        fprintf(stderr, "Showing my for sock = %d\n", sock);
 		vector<int>* moves = Players[sock]->get_moves();
 		str = str_moves(moves);
 		writeTo(sock, str);
 	}
 	if(res == SO)
 	{
+        fprintf(stderr, "Showing other for sock = %d\n", sock);
+	    int k = Players[sock]->get_game()->opponent(sock);
 		char* str;
 		vector<int>* moves = Players[k]->get_moves();
 		str = str_moves(moves);
@@ -166,6 +169,7 @@ void processing(int res, int sock, map<int, Player*> &Players, char *buf)
 	}
 	if(res == Q)
 	{
+	    int k = Players[sock]->get_game()->opponent(sock);
 		writeTo(sock, "Game over");
 		writeTo(k, "Opponent is out of the game");
 		Players[sock]->free();
@@ -178,6 +182,7 @@ void processing(int res, int sock, map<int, Player*> &Players, char *buf)
 	}
 	if(res == LOSE)
 	{
+	    int k = Players[sock]->get_game()->opponent(sock);
 		writeTo(sock, "You win");
 		writeTo(k, "You lose");
 		Players[sock]->free();
@@ -185,6 +190,7 @@ void processing(int res, int sock, map<int, Player*> &Players, char *buf)
 	}
 	if(res == MISS)
 	{
+	    int k = Players[sock]->get_game()->opponent(sock);
 		int c = coord(buf);
 		writeTo(sock, mess("Miss:", c));
 		writeTo(k, mess("Miss:", c)); 
@@ -192,6 +198,7 @@ void processing(int res, int sock, map<int, Player*> &Players, char *buf)
 	}
 	if(res == KILL)
 	{
+	    int k = Players[sock]->get_game()->opponent(sock);
 		int c = coord(buf);
 		mess("Kill:", c);
 		writeTo(sock, mess("Kill:", c));
@@ -200,6 +207,7 @@ void processing(int res, int sock, map<int, Player*> &Players, char *buf)
 	}
 	if(res == HALF)
 	{
+	    int k = Players[sock]->get_game()->opponent(sock);
 		int c = coord(buf);
 		writeTo(sock, mess("Half:", c));
 		writeTo(k, mess("Half:", c)); 
@@ -221,7 +229,7 @@ int  readFrom(int fd, char *buf)
         return -1;
     } else {
         // есть данные
-        fprintf(stdout,"Server got message: %s\n",buf);
+        fprintf(stdout,"Server got message from %d: %s\n", fd, buf);
         return 0;
     }
 }
@@ -231,7 +239,10 @@ int  readFrom(int fd, char *buf)
 void  writeTo(int fd, const char* buf)
 {
     int  nbytes;
-    nbytes = write(fd, buf, strlen(buf)+1);
+    int bytes_to_send = strlen(buf) + 1;
+    nbytes = write(fd, &bytes_to_send, sizeof(int));
+    nbytes = write(fd, buf, bytes_to_send);
+    fprintf(stderr, "SEND to %d: '%s'\n", fd, buf);
     if (nbytes < 0) {
         perror ("Server: write failure");
     }

@@ -16,7 +16,7 @@ void TextProcessor::Add(int i, const std::string& text,std::ostream& os) {
      os << "No";
      return;
   }
-  for (; i+1 >= 0 && it != _data.end(); i--) 
+  for (; i>= 0 && it != _data.end(); i--) 
   it++;
   _data.insert(it, text);
 }
@@ -36,7 +36,7 @@ void TextProcessor::Search(const std::string& word, size_t N,
       i = data.find(word, i + word.size());
     }
     for (int i = 0; i < contexts.size(); ++i)
-      os << block_number << ' ' << contexts.size()<<' ' << i <<' '<< contexts[i]
+      os << block_number + 1 << ' ' << contexts.size()<<' ' << i <<' '<< contexts[i]
          << std::endl;
     ++block_number;
   }
