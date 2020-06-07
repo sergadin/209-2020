@@ -10,18 +10,21 @@ namespace R2
 
 	class Server
 	{
+		string dbPath;
+
 	protected:
 		// Server attributes
 
 		void init(const string& dbPath)
 		{
+			this->dbPath = dbPath;
 		}
 
 		// Database
 
-		string processRequest(const string& query) const
+		string processRequest(const string& query, const string& dbPath) const
 		{
-			auto r = TimetableDB::Instance().processRequest(query).serialize();
+			auto r = TimetableDB::Instance().processRequest(query, dbPath).serialize();
 			// cout << "%" << endl;
 			return r;
 		}
@@ -109,7 +112,7 @@ namespace R2
 			    string q((const char*)M.binary());
 			    // cout << q << endl << "^" << endl;
 			    //
-			    auto replyStr = processRequest(q);
+			    auto replyStr = processRequest(q, dbPath);
 			    // cout << "!" << endl;
 			    //
 			    // string s = "Message received @ server!";
