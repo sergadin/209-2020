@@ -20,19 +20,41 @@ namespace R2
 			return rows[i];
 		}
 
+		inline vector<string> split(const string& s_, char sep) const
+		{
+			string s = s_;
+			vector<string> a;
+			size_t i0 = s.find(sep);
+			while (i0 != -1)
+			{
+				string item = s.substr(0, i0);
+				if (item.size() > 0)
+					a.push_back(item);
+				s = s.substr(i0+1);
+				i0 = s.find(sep);
+			}
+			if (s.size() > 0)
+				a.push_back(s);
+			return a;
+		}
+
 		inline void parse(const string& text) const
 		{
-			int i0 = 0;
-			while (i0 < text.size())
+			auto lines = split(text, '\n');
+			for (const auto& line : lines)
 			{
-				int i1 = text.find('\n');
-				break;
+				rows.push_back(split(line, '\t'));
 			}
 		}
 
 	public:
 		inline RecordSet()
 		{
+		}
+
+		inline RecordSet(const RecordSet& other)
+		{
+			rows = other.rows;
 		}
 
 		inline RecordSet(const Message& msg)
@@ -48,7 +70,8 @@ namespace R2
 
 		inline size_t length() const 
 		{
-			return rows.size();
+			auto val = rows.size();
+			return val;
 		}
 
 		inline Row row(size_t i) const

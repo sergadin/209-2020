@@ -28,8 +28,6 @@ namespace R2
 			cout << q << endl;
 			nc.sendMessage((const unsigned char*)q.c_str(), q.size()+1, reply);
 			//
-			cout << reply.binary() << endl;
-			//
 			return RecordSet(reply);
 		}
 	};

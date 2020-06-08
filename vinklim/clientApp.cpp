@@ -61,6 +61,22 @@ void initialUpload(R2::Client& client)
 	client.query("select teacher_lectures teacher=Stucer");
 }
 
+void printRS(const R2::RecordSet& rs)
+{
+	using namespace std;
+	for (size_t i = 0; i < rs.length(); ++i)
+	{
+		const auto& row = rs.row(i);
+		for (size_t j = 0; j < row.size(); ++j)
+		{
+			if (j > 0)
+				cout << "\t";
+			cout << row[j];
+		}
+		cout << endl;
+	}
+}
+
 int main()
 {
 	using namespace std;
@@ -72,6 +88,7 @@ int main()
 		//
 		initialUpload(client);
 		//
+		RecordSet rs;
 		while (true)
 		{
 			string q;
@@ -79,8 +96,13 @@ int main()
 			getline(cin, q);
 			if (q == "exit")
 				break;
+			else if (q.substr(0,5) == "print")
+			{
+				printRS(rs);
+				continue;
+			}
 			// q = "insert lecture 1 0 4 1 0 0 0";
-			auto rows = client.query(q);		
+			rs = client.query(q);		
 			//break;
 		}
 	}
