@@ -1,35 +1,32 @@
-
 #include <iostream>
+#include <sstream>
 #include <vector>
 
 #include "server/client_socket.h"
 #include "server/server.h"
-#include "server/socket_stream.h"
 #include "text_processor.h"
-// g++ main.cpp text_processor.cpp server/*.cpp -lpthread
+
 int main(int argc, char const* argv[]) {
   int port = 7897;
   if (argc > 1) port = std::stoi(argv[1]);
 
-  TextProcessor tp; 
+  TextProcessor tp;
+
   Server server;
   server.SetPort(port);
 
   server.OnAccept([&](std::weak_ptr<ClientSocket> socket) {
     if (auto s = socket.lock()) {
-      SocketStream is(s->FileDescriptor());
-      SocketStream os(s->FileDescriptor());
-    //   std::string key;
-    //   is >> key;
-    //   os << "ответ";
-      if (/* какая-то проблема */ 0) s->Close();
+      // SocketStream os(s->FileDescriptor());
+      // os << '1' << std::flush;
+      s->Write("1");
     }
   });
 
   server.OnRead([&](std::weak_ptr<ClientSocket> socket) {
     if (auto s = socket.lock()) {
-      SocketStream is(s->FileDescriptor());
-      SocketStream os(s->FileDescriptor());
+      std::stringstream is(s->Read());
+      std::stringstream os;
       std::string query;
       // is == add 4 "some text"
       is >> query;
@@ -38,19 +35,19 @@ int main(int argc, char const* argv[]) {
         if (query == "show") {
           os << tp.Show();
         } else if (query == "add") {
-          // считать остальное и добавить
           int n;
           is >> n;
-          std::string text;  //
+          std::string text;
           std::getline(is, text, '"');
           std::getline(is, text, '"');
-          tp.Add(n, text, os);
+          tp.Add(n, text);
           os << "Done";
         } else if (query == "search") {
           int N;
           std::string word;
           is >> N;
-          is >> word;
+          std::getline(is, word, '"');
+          std::getline(is, word, '"');
           tp.Search(word, N, os);
         } else if (query == "delete") {
           std::set<int> ids;
@@ -73,6 +70,7 @@ int main(int argc, char const* argv[]) {
         os << ex.what();
       }
       os << "__4to-to__" << std::flush;
+      s->Write(os.str());
     }
   });
   std::cout << "Server started" << std::endl;

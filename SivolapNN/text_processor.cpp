@@ -8,22 +8,19 @@ std::string TextProcessor::Show() const {
   return text;
 }
 
-void TextProcessor::Add(int i, const std::string& text,std::ostream& os) {
+void TextProcessor::Add(int i, const std::string& text) {
+  --i;  // Tranform 1, 2, 3, ... to 0, 1, 2, ...
   std::lock_guard<std::mutex> lock(_mutex);
-  auto it = _data.begin();
-   if(i > _data.size())
-  {
-     os << "No";
-     return;
-  }
-  for (; i>= 0 && it != _data.end(); i--) 
-  it++;
+  if (i > _data.size() || i < 0)
+    throw std::out_of_range("Block index is greater than max=" +
+                            std::to_string(_data.size() + 1));
+  auto it = std::next(_data.begin(), i);
   _data.insert(it, text);
 }
 
 void TextProcessor::Search(const std::string& word, size_t N,
                            std::ostream& os) const {
-  size_t block_number = 0;
+  size_t block_number = 1;
   for (auto& data : _data) {
     std::vector<std::string> contexts;
     size_t i = data.find(word);
@@ -36,7 +33,7 @@ void TextProcessor::Search(const std::string& word, size_t N,
       i = data.find(word, i + word.size());
     }
     for (int i = 0; i < contexts.size(); ++i)
-      os << block_number + 1 << ' ' << contexts.size()<<' ' << i <<' '<< contexts[i]
+      os << block_number << ' ' << contexts.size() << i + 1 << contexts[i]
          << std::endl;
     ++block_number;
   }
@@ -44,16 +41,13 @@ void TextProcessor::Search(const std::string& word, size_t N,
 
 bool TextProcessor::Delete(std::set<int> ids) {
   std::lock_guard<std::mutex> lock(_mutex);
- int i = 1;
-auto it = _data.begin();
-for(auto& id : ids) {
-for(;i != id; ++i) 
-{
-  ++it;
-if(it == _data.end()) return 1;
-}
-it = _data.erase(it);
-++i;
-}
-return true;
+  if (*ids.begin() < 1 || *ids.rbegin() > _data.size()) return false;
+  int i = 1;
+  auto it = _data.begin();
+  for (auto id : ids) {
+    for (; i != id; ++i) ++it;
+    it = _data.erase(it);
+    ++i;
+  }
+  return true;
 }
