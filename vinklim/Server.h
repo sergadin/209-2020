@@ -178,4 +178,35 @@ namespace R2
 			return "Ok";
 		}
 	};
+
 } // R2
+
+/*Matrix operator*(const Matrix& lhs, const Matrix& rhs) {
+//	cout << "multiplying [" << lhs.GetN() << "x" << lhs.GetM() << "] * [" << rhs.GetN() << "x" << rhs.GetM() << "]...";
+
+	if(lhs.GetM() != rhs.GetN()) {
+		cout << " impossible to multiply." << endl;
+		throw MatrixSizeException("non-consistent dimensions while multiplicating", lhs.GetM(), rhs.GetN());
+	}
+
+	int new_n = lhs.GetN();
+	int new_m = rhs.GetM();
+	int mid_size = lhs.GetM();
+
+	int** newdata = new int*[new_n];
+	for(int i = 0; i < new_n; i++) {
+		newdata[i] = new int[new_m];
+
+		for(int j = 0; j < new_m; j++) {
+			newdata[i][j] = 0;
+			for(int k = 0; k < mid_size; k++) {
+//				cout << newdata[i][j] << "+=" << lhs.data_[i][k] << '*' << other.data_[k][j] << endl;
+				newdata[i][j] += lhs.GetElem(i,k) * rhs.GetElem(k,j);
+			}
+		}
+	}
+
+	cout << "it's [" << new_n << "x" << new_m << "]." << endl;
+
+	return Matrix(new_n, new_m, newdata);
+}*/

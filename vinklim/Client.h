@@ -5,7 +5,6 @@
 #include "Common.h"
 #include "Message.h"
 #include "NetworkClient.h"
-#include "RecordSet.h"
 
 namespace R2 
 {
@@ -19,7 +18,7 @@ namespace R2
 		Client(const string& host_, int port_) : nc(host_, port_)
 		{}
 
-		inline RecordSet query(const string& q) const
+		inline void query(const string& q) const
 		{
 			Message reply;
 			// unsigned char *p = new unsigned char[q.size()+1];
@@ -28,7 +27,6 @@ namespace R2
 			cout << q << endl;
 			nc.sendMessage((const unsigned char*)q.c_str(), q.size()+1, reply);
 			//
-			return RecordSet(reply);
 		}
 	};
 
