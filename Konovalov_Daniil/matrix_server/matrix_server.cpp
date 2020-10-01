@@ -2,7 +2,10 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <sys/poll.h>
 #include <netdb.h>
+#include <ctype.h>
+#include <unistd.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,14 +14,16 @@
 
 #include "Matrix_.h"
 
-int parsing(char* stroka, int id);
+using namespace std;
+
+int parsing(char* stroka, int id, vector <Matrix> Mat_vect);
 int message_to_client(char* stroka, int id);
 
 
 int main()
 {
 	vector <Matrix> Matrici;
-	char* buffer[1024];
+	char stroka[1024];
 	struct sockaddr_in Socket_s;
 	struct  sockaddr_in  Socket_cl;
 	
@@ -31,7 +36,7 @@ int main()
 	
 	Socket_s.sin_port = htons(5555);
 	Socket_s.sin_family = AF_INET;
-	Socket_s.sin_addr = INADDR_ANY;
+	Socket_s.sin_addr.s_addr = htonl(INADDR_ANY);
 	
 	int on = 1;
 	if(setsockopt(connection_socket, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof(on)) == -1) 
@@ -59,6 +64,8 @@ int main()
     
 	int err=0;
 	int i=0;
+	int new_sock;
+	socklen_t size=0;
 	
 	while(1)
 	{
@@ -78,7 +85,7 @@ int main()
                   if (i==0) 
 				  {
                       new_sock = accept(act_set[i].fd, (struct sockaddr*)&Socket_cl, &size);
-                      printf("\nnew client port %u\n", ntohs(client.sin_port));
+                      printf("\nnew client port %u\n", ntohs(Socket_cl.sin_port));
                       if (num_set < 100) 
 					  {
                          act_set[num_set].fd = new_sock;
@@ -94,7 +101,7 @@ int main()
                    } 
 				   else 
 				   {
-                      err = parsing(stroka, act_set[i].fd, Matrici); //soderzhatelnaya chast
+                      err = parsing(stroka, act_set[i].fd, Matrici); 
                       printf("%d [%s] %p\n", err, stroka, strstr(stroka,"stop"));
                       
 					  if ( err<0 || strstr(stroka,"stop") ) 
@@ -141,10 +148,13 @@ int parsing(char* stroka, int id, vector <Matrix> Mat_vect)
 	
 	for(i=0; i< Mat_vect.size(); i++)
 	{
-		if(can_i_multiply(Mat_vect.at(i), matrica)==1)
+		bool mozhno = can_i_multiply(Mat_vect.at(i), matrica);
+		if(mozhno == 1)
 		{
 			Good_matrix.push_back(Mat_vect.at(i));
-			Matrix_product.push_back(mat_mult(Mat_vect.at(i), matrica));
+			Matrix* mat_product = new Matrix(Mat_vect.at(i).get_mat_row(), matrica.get_mat_col());
+			mat_product = mat_mult(Mat_vect.at(i), matrica);
+			Matrix_product.push_back(*mat_product);
 			k++;
 			
 			/*double* massiv = new double[matrica.get_mat_col()*matrica.get_mat_row()];
@@ -160,16 +170,23 @@ int parsing(char* stroka, int id, vector <Matrix> Mat_vect)
 	if(k==0) 
 	{
 		Mat_vect.push_back(matrica);
-		message_to_client(id, "\nSended matrix was added on server\n");
+		char* stringg = new char[50];
+		sprintf(stringg, "\nSended matrix was added on server\n");
+		message_to_client(id, stringg);
+		free(stringg);
 	}
 	else
 	{
 		for(i=0; i<k; i++)
 		{
-			message_to_client(id, "\n %d matrix on server was multiplied on yours: \n", i);
+			char* string = new char[60];
+			sprintf(string, "\n %d matrix on server was multiplied on yours\n", i);
+			message_to_client(id, string);
 			message_to_client(id, matrix_to_string(Matrix_product.at(i)));
+			free(string);
 		}
 	}
 		
+	
 	return 0;
 }
