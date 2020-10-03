@@ -2,19 +2,22 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <sys/poll.h>
 #include <netdb.h>
+#include <ctype.h>
+#include <unistd.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include<string.h>
+#include <string.h>
 #include "server.h"
 
 int main(int argc, char* argv[])
 {
-	char* buffer[1024];
+	char stroka[1024];
 	struct sockaddr_in Socket_s;
 	struct  sockaddr_in  Socket_cl;
-	Server My_server;
+	Vector_server My_server;
 	
 	int connection_socket = socket(AF_INET, SOCK_STREAM, 0);
 	if(connection_socket == -1)
@@ -25,7 +28,7 @@ int main(int argc, char* argv[])
 	
 	Socket_s.sin_port = htons(5555);
 	Socket_s.sin_family = AF_INET;
-	Socket_s.sin_addr = INADDR_ANY;
+	Socket_s.sin_addr.s_addr = htonl(INADDR_ANY);
 	
 	
 	int on = 1;
@@ -46,10 +49,9 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 	
-	My_server.razmernost__ = argv[0];
-	My_server.port_ = Socket_s.sin_port;
-	My_server.family_ = ntohl(Socket_s.sin_family);
-	My_server.address_ = ntohl(Socket_s.sin_addr);
+	My_server.set_dim(atoi(argv[1]));
+	My_server.set_port(Socket_s.sin_port);
+	My_server.set_address(ntohl(Socket_s.sin_addr.s_addr));
 	
 	pollfd  act_set[100];   
     act_set[0].fd = connection_socket;
@@ -59,6 +61,8 @@ int main(int argc, char* argv[])
     
 	int err=0;
 	int i=0;
+	int new_sock;
+	socklen_t size =0;
 	
 	while(1)
 	{
@@ -78,7 +82,7 @@ int main(int argc, char* argv[])
                   if (i==0) 
 				  {
                       new_sock = accept(act_set[i].fd, (struct sockaddr*)&Socket_cl, &size);
-                      printf("\nnew client port %u\n", ntohs(client.sin_port));
+                      printf("\nnew client port %u\n", ntohs(Socket_cl.sin_port));
                       if (num_set < 100) 
 					  {
                          act_set[num_set].fd = new_sock;
@@ -94,12 +98,10 @@ int main(int argc, char* argv[])
                    } 
 				   else 
 				   {
-                      err = My_server.ReadFromClient(act_set[i].fd, stroka);
-                      Server.parsing(stroka, act_set[i].fd);
+                      err = My_server.parsing(stroka, act_set[i].fd);
+                      printf("%d [%s] %p\n", err, stroka, strstr(stroka, "stop"));
                       
-                      printf("%d [%s] %p\n", err, stroka, strstr(stroka,"stop"));
-                      
-					  if ( err<0 || strstr(stroka,"stop") ) 
+					  if ( err<0 || strstr(stroka, "stop") ) 
 					  {
                           close (act_set[i].fd);
                           if (i < num_set-1) 
@@ -111,7 +113,7 @@ int main(int argc, char* argv[])
                       } 
 					  else 
 					  {  
-                          My_server.WriteToClient(act_set[i].fd,stroka);
+                          My_server.WriteToClient(stroka, act_set[i].fd);
                       }
                   }  
               }
@@ -121,7 +123,3 @@ int main(int argc, char* argv[])
 	
 	return 0;
 }
-
-/*int len;
-recv(s, &len, sizeof(int), MSG_WAITALL); 
-recv(s, buf, len, MSG_WAITALL); */
