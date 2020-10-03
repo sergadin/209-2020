@@ -4,6 +4,21 @@ TCP_IP = '192.168.0.108'
 TCP_PORT = 64298
 BUFFER_SIZE = 2048
 
+def input_vector(dim):
+    vector = []
+    print("input vector elements:")
+    print(dim)
+    for i in range(dim[0]):
+        correct = False
+        while not correct:
+            try:
+                vector.append(float(input("Input element:")))
+                correct = True
+            except Exception:
+                print("Vvedite chto-to normalnoe")
+    return vector
+
+
 connection_socket = socket.socket(socket.AF_INET , socket.SOCK_STREAM)
 connection_socket.connect((TCP_IP , TCP_PORT))
 while 1 > 0 :
