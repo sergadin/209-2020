@@ -9,6 +9,7 @@
 #include<math.h>
 
 #define HASH 6
+#define Num_Client 10
 
 
 class student
@@ -289,21 +290,23 @@ class Database
 {
 	private:
 		hash * my_hash;
-		Session * sess;
+		Session * sess[Num_Client];
+		int sock = 0;
 	public:
-		Database(hash * base = 0){ my_hash = base; sess = new Session();}
-		~Database(){ my_hash = 0; delete sess; }
+		Database(hash * base = 0){ my_hash = base; for(int i=0; i<Num_Client; i++)	sess[i] = new Session();}
+		~Database(){ my_hash = 0; }
+		void set_socket( int i){ sock = i;} 
 		void base_print(FILE * stream = stdout){ my_hash->print(stream);}
-		void base_write(int sock){ my_hash->write(sock);}
+		void base_write(){ my_hash->write(sock);}
 		
-		void sess_print(FILE * stream = stdout){ sess->print(stream);}
-		void sess_write(int sock){ sess->write(sock);}
+		void sess_print(FILE * stream = stdout){ sess[0]->print(stream);}
+		void sess_write(){ sess[sock]->write(sock);}
 		
 		int add(student * prime){	my_hash->add(prime);}
-		void clear_sess(){	sess->eraze();}
+		void clear_sess(){	sess[sock]->eraze();}
 		void do_select(comand * cmd);
 		
-		int sess_size(){ return sess->get_size();}
+		int sess_size(){ return sess[sock]->get_size();}
 		
 		void sub_select_group(hash_node * head, comand * cmd);
 		void sub_select_tree(tree * head, comand * cmd);

@@ -9,6 +9,8 @@ void write_int(ostream& out_stream, int* pnum);
 void  read_int(istream&  in_stream, int* pnum);
 //краткая запись для read и write
 
+int int_from_buffer(char* buf);
+
 class Matrix {
 	int n_, m_;
 	int** data_;
@@ -23,6 +25,10 @@ public:
 
 	Matrix(int n, int m, istream& fin);
 	//_двоичные_ данные забираются из потока
+
+	Matrix(char* buffer);
+	//_двоичные_ данные читаются из буфера
+	//(как stringstream реализовать не вышло)
 
 	Matrix(int n, int m, int** data);
 	//динамический массив после этого конструктора связывается  

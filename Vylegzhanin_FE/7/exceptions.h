@@ -5,13 +5,14 @@
 using namespace std;
 
 class Exception {
-	string funcname_;
  	string msg_;
 public:
  	Exception(const string& msg):
- 		 msg_     (     msg)
- 		{}
- 	const string& Message () const {return      msg_;}
+ 		 msg_(msg)
+ 		{
+ 			cout << "Exception '" << msg << "' was thrown." << endl << flush;
+ 		}
+ 	const string& Message () const {return msg_;}
 };
 
 class MatrixElemException: public Exception {
@@ -60,6 +61,12 @@ public:
 		{}
 };
 
+class QueryException: public Exception {
+public:
+	QueryException(const string& msg):
+		Exception(msg)
+		{}
+};
 
 class DatabaseException: public Exception {
 public:

@@ -1,5 +1,6 @@
 #include <fstream>
 #include <iostream>
+#include <cstdio>
 #include <map>
 #include <set>
 using namespace std;
@@ -18,11 +19,16 @@ void Database::SaveToFile() const {
 	if(!fout) {
 		throw ServerException("Unable to save file");
 	}
+
+	cout << "Saving database... " << flush;
+
 	fout.write("DBASE",5);
 
 	int db_size = data_.size();
 
 	write_int(fout, &db_size);
+
+//	cout << "Writing: db_size=" << db_size << endl;
 
 	for(auto it = data_.begin(); it != data_.end(); it++) {
 
@@ -31,20 +37,21 @@ void Database::SaveToFile() const {
 		int set_size = m_set.size();
 
 
-		cout << "Saving matrices with m=" << m << endl;
+//		cout << "Writing: " << set_size << " matrices of width " << m << endl;
 
 		write_int(fout, &m);
 		write_int(fout, &set_size);
 
 		for(auto set_it = m_set.begin(); set_it != m_set.end(); set_it++) {
-			int n = set_it->n_;
+			int n = set_it->GetN();
 			write_int(fout, &n);
+//			cout << "saving matrix " << n << "x" << m << endl;
 			set_it->WriteToOstream(fout);//печать матрицы
 		}
 	}
-
 	fout.close();
 
+	cout << "done." << endl;
 }
 
 Database::Database(const string filename) {
@@ -52,7 +59,9 @@ Database::Database(const string filename) {
 }
 
 void Database::ReloadFromFile(const string filename) {
-	cout << "{loading db from file named '" << filename << "'..." << endl;
+	data_ = map<int, set<Matrix> >();
+
+	cout << "{{loading db from file named '" << filename << "'..." << endl;
 
 	filename_ = filename;
 	ifstream fin(filename);
@@ -66,6 +75,9 @@ void Database::ReloadFromFile(const string filename) {
 
 	int db_size;
 	read_int(fin, &db_size);
+
+	cout << "Database contains matrices of " << db_size << " different widths: {" << endl;
+
 	for(int db_i = 0; db_i < db_size; db_i++) {
 		int m;
 		set<Matrix> m_set;
@@ -73,12 +85,19 @@ void Database::ReloadFromFile(const string filename) {
 
 		read_int(fin, &m);
 		read_int(fin, &set_size);
+		cout << "\t" << set_size << " matrices of width " << m << ":" << endl; 
 
 		for(int set_j = 0; set_j < set_size; set_j++) {
 			int n;
 			read_int(fin, &n);
-			m_set.insert(Matrix(n,m,fin));
-			//считывание матрицы из входных данных (см. соотв. конструктор)
+			//cout << "matrices of width " << m << " (" << db_i+1 << "/" << db_size << "): reading matrix "  << n << "x" << m << " (" << set_j+1 << "/" << set_size << ")..." << flush; 
+//			m_set.insert(Matrix(n,m,fin));
+			//cout << "success." << endl << flush;
+			
+			Matrix mat(n,m,fin);
+			mat.Print();
+
+			m_set.insert(mat);
 		}
 		data_.insert({m,m_set});
 	}
@@ -86,7 +105,7 @@ void Database::ReloadFromFile(const string filename) {
 	fin.close();
 
 
-	cout << "db loaded successfully}." << endl;
+	cout << "}. Database loaded successfully}}." << endl;
 }
 
 bool Database::ContainsMatricesWithWidth(int m) const {
@@ -102,17 +121,23 @@ const set<Matrix>& Database::MatricesWithWidth(int m) const {
 }
 
 void Database::InsertMatrix(const Matrix& mat) {
-	int m = mat.m_;
+	int m = mat.GetM();
 	set<Matrix> new_set;
+
+	cout << "adding matrix " << mat.GetN() << "x" << m << " to db" << endl;
 
 	if (ContainsMatricesWithWidth(m)) {
 		auto pos = data_.find(m);
+		cout << "there were already " << pos->second.size() << " matrices of such width" << endl;
 		new_set = pos->second;
 		data_.erase(pos);
 	}
 	//чтобы добавить элемент в уже существующий
 	//список, нужно сначала убрать его из set'а
 	new_set.insert(mat);
+
+	cout << "now there are " << new_set.size() << " matrices of such width" << endl;
+
 	data_.insert({m, new_set});
 }
 
@@ -130,13 +155,13 @@ void Database::PrintInfo() const {
 		cout << "of form [(-)x" << it->first << "]: " << curr_num << " matrices." << endl;
 
 		//--{более подробное---
-		///*
+		/*
 		cout << "namely:" << endl;
 		for(auto m_it = (it->second).begin(); m_it != (it->second).end(); m_it++) {
 			m_it->Print();
 		}
 		cout << endl;
-		//*/
+		*/
 		//---более подробное}--
 		
 	}
@@ -145,26 +170,25 @@ void Database::PrintInfo() const {
 }
 
 QueryResult Database::InteractWithMatrix(const Matrix& mat) {
+	cout << "Interacting with matrix [" << mat.GetN() << "x" << mat.GetM() << "]." << endl;
 	QueryResult result;
 	result.err_code = ERRC_OK;
 
-	cout << "db is interacting with mat=" << endl;
-	mat.Print();
-	cout << "let us see..." << endl;
-	if(!ContainsMatricesWithWidth(mat.m_)) {
-		cout << "found no matrices to multiply with" << endl;
-		cout << "try adding new matrix to the base..." << endl;
+//	cout << "db is interacting with mat=" << endl;
+//	mat.Print();
+//	cout << "let us see..." << endl;
+	if(!ContainsMatricesWithWidth(mat.GetN())) {
+		cout << "Found no matrices to multiply with. Adding new matrix to database... " << flush;
 		InsertMatrix(mat);
-		cout << "added successfully." << endl;
+		cout << "done." << endl;
 		return result;
 	}
 
 
-	const set<Matrix>& right_multiplies = MatricesWithWidth(mat.m_);
+	const set<Matrix>& right_multiplies = MatricesWithWidth(mat.GetN());
 
 
-	cout << "found " << right_multiplies.size() << " matrices to multiply with";
-	cout << endl;
+	cout << "Found " << right_multiplies.size() << " matrices to multiply with. Preparing list... " << flush;
  
 //	cout << ". namely: {{" << endl; 
 
@@ -178,34 +202,31 @@ QueryResult Database::InteractWithMatrix(const Matrix& mat) {
 
 //		result.output.push_back(temp);
 
-		result.output.push_back(mat * (*it));
+		result.output.push_back((*it) * mat);
 	}
 //	cout << "}}. returning this list." << endl;
 
-
+	cout << "done." << endl;
 	return result;
 }
 
-QueryResult Database::InteractWithMatrixFromBinaryStream(istream& in_stream) {
-	int n = -1, m = -1;
+QueryResult Database::InteractWithMatrixFromBuffer(char* buf) {
+	
 	Matrix mat(1,1);//заглушка
 
 	try{
-		read_int(in_stream, &n);
-		read_int(in_stream, &m);
-		mat = Matrix(n, m, in_stream);
+		mat = Matrix(buf);
 	}
 	catch(NullPtrException ex) {
+		cout << "NullPtrException '" << ex.Message() << "' was catched in InteractWithMatrixFromBuffer" << endl << flush;
 		return QueryResult(ERRC_BADISTREAM, ex.Message());
 	}
 	catch(MatrixSizeException ex) {
-		if(n == -1 && m == -1) {
-			return QueryResult(ERRC_BADISTREAM, ex.Message());
-		}
+		cout << "MatrixSizeException '" << ex.Message() << "' was catched in InteractWithMatrixFromBuffer" << endl << flush;
 		return QueryResult(ERRC_BADDATA, ex.Message());
 	}
 	catch(...) {
-
+		cout << "unknown exception was catched in InteractWithMatrixFromBuffer" << endl << flush;
 	}
 
 	return InteractWithMatrix(mat);

@@ -28,17 +28,18 @@ using namespace std;
 #define BUFLEN  512
 
 // Две вспомогательные функции для чтения/записи (см. ниже)
-int   readFromClient(int fd, char *buf);
+int   readFromClient(int fd, char *buf,string &str);
 
 
-int  readFromClient (int fd, char *buf)
+int  readFromClient (int fd, char *buf,string &str)
 {
-    int  nbytes;
-    nbytes = read(fd,buf,BUFLEN);
+    int  nbytes, len;
+    recv(fd, &len, 4, MSG_WAITALL);
+    nbytes = recv(fd, buf, len, MSG_WAITALL);
     if ( nbytes<0 )
     {
         // ошибка чтения
-        perror ("Server: read failure");
+        perror ("Server: read failure");//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         return -1;
     }
     else if ( nbytes==0 )
@@ -49,7 +50,8 @@ int  readFromClient (int fd, char *buf)
     else
     {
         // есть данные
-        fprintf(stdout,"Server got message: %s\n",buf);
+        string s(buf, len);
+        str = s;
         return 0;
     }
 }
@@ -569,7 +571,8 @@ struct resultat
   					stt.append(inf[i].room);
   					stt.append("  ");
   					stt.append(inf[i].subject);
-            stt.resize(stt.size() - 1);
+            //stt.append("  ");
+            stt.resize(stt.size());
   					len = stt.size();
   					send(fd, &len, 4, MSG_WAITALL);
   					strcpy(ch,stt.c_str());
@@ -680,7 +683,7 @@ class Database
 private:
 	int global_index;
 	vector<info> inf;
-	vector<info> ses;
+	vector<vector<info>> ses;
 	map <string,vector<int> > mp_t;
 	map <string,vector<int> > mp_g;
 	map <string,vector<int> > mp_r;
@@ -695,6 +698,11 @@ public:
 		mp_d[in.date_time].push_back(in.index);
 		mp_s[in.subject].push_back(in.index);
 	}
+  void push_ses()
+  {
+    vector <info> vec;
+    ses.push_back(vec);
+  }
 	void del_el_from_maps(info in)
 	{
 		int i = 0;
@@ -769,7 +777,7 @@ public:
 	            	i++;
 				}
 				i++;
-	            while(i < a.size())
+	            while(i < a.size()-1)
 	            {
 	            	line.subject.push_back(a[i]);
 	            	i++;
@@ -972,7 +980,7 @@ public:
 	{
 		ofstream out;
 		int i = 0;
-	    out.open("Base_for_out.txt");
+	    out.open("Base.txt");
 	    if (out.is_open())
 	    {
 	    	while(i < inf.size())
@@ -996,7 +1004,7 @@ public:
 		inf.erase(inf.begin() + i);
 		vector<info>(inf).swap(inf);
 	}
-	resultat resresult_of_zapros(const condition &one_zapr)
+	resultat resresult_of_zapros(const condition &one_zapr,int number)
 	{
 		resultat otvet;
 		if(one_zapr.comand == "save")
@@ -1018,7 +1026,7 @@ public:
 				inf.room = int_to_string(100 + (rand() % 900));
 				inf.subject = random_name();
 				inf.index = global_index;
-	        	global_index++;
+        global_index++;
 				add_elem(inf);
 				number--;
 			}
@@ -1077,7 +1085,7 @@ public:
 		{
 			int i ,q = 0;
 			vector<int> ind_for_sel;
-			ses.clear();
+			ses[number].clear();
 			ind_for_sel = association(one_zapr);
  			for(i = 0;i < ind_for_sel.size();i++)
 			{
@@ -1085,7 +1093,7 @@ public:
 				{
 					q++;
 				}
-				ses.push_back(inf[q]);
+				ses[number].push_back(inf[q]);
 			}
 			otvet.stroka = "SELECT is OK";
 		}
@@ -1094,12 +1102,12 @@ public:
 			int i ,q, status;
 			vector<int> ind_for_sel;
 			ind_for_sel = association(one_zapr);
- 			for(q = 0;q < ses.size();q++)
+ 			for(q = 0;q < ses[number].size();q++)
 			{
 				status = 0;
 				for(i = 0;i < ind_for_sel.size();i++)
 				{
-					if(ind_for_sel[i] == ses[q].index)
+					if(ind_for_sel[i] == ses[number][q].index)
 					{
 						status = 1;
 						break;
@@ -1107,8 +1115,8 @@ public:
 				}
 				if(status == 0 )
 				{
-					ses.erase(ses.begin() + q);
-					vector<info>(ses).swap(ses);
+					ses[number].erase(ses[number].begin() + q);
+					vector<info>(ses[number]).swap(ses[number]);
 					q--;
 				}
 			}
@@ -1123,9 +1131,9 @@ public:
 			prov.room = 0;
 			prov.subject = 0;
 			prov.teacher = 0;
-			while(i < ses.size())
+			while(i < ses[number].size())
 			{
-				otvet.inf.push_back(ses[i]);
+				otvet.inf.push_back(ses[number][i]);
 				i++;
 			}
 			while(q < one_zapr.criteri.size())
@@ -1162,7 +1170,7 @@ public:
 				if(prov.date_time == 0)
 				{
 					i = 0;
-					while(i < ses.size())
+					while(i < ses[number].size())
 					{
 						otvet.inf[i].date_time.clear();
 						i++;
@@ -1171,7 +1179,7 @@ public:
 				if(prov.group == 0)
 				{
 					i = 0;
-					while(i < ses.size())
+					while(i < ses[number].size())
 					{
 						otvet.inf[i].group.clear();
 						i++;
@@ -1180,7 +1188,7 @@ public:
 				if(prov.room == 0)
 				{
 					i = 0;
-					while(i < ses.size())
+					while(i < ses[number].size())
 					{
 						otvet.inf[i].room.clear();
 						i++;
@@ -1189,7 +1197,7 @@ public:
 				if(prov.subject == 0)
 				{
 					i = 0;
-					while(i < ses.size())
+					while(i < ses[number].size())
 					{
 						otvet.inf[i].subject.clear();
 						i++;
@@ -1198,7 +1206,7 @@ public:
 				if(prov.teacher == 0)
 				{
 					i = 0;
-					while(i < ses.size())
+					while(i < ses[number].size())
 					{
 						otvet.inf[i].teacher.clear();
 						i++;
@@ -1208,7 +1216,7 @@ public:
 		}
 		return otvet;
 	}
-	Result process(Query &q)
+	Result process(Query &q,int number)
 	{
 		Result res;
 		resultat one_res;
@@ -1217,7 +1225,7 @@ public:
 		while(i < q.sizee())
 		{
 			one_zapr = q.elem(i);
-			one_res = resresult_of_zapros(one_zapr);
+			one_res = resresult_of_zapros(one_zapr,number);
 			res.add_element(one_res);
 			one_res.clear();
 			i++;
@@ -1233,11 +1241,13 @@ int main(void)
 
 	    int     i, err, opt=1, how=1,len;
 	    int     sock, new_sock;
+      int     sok_number = 0;
 	    fd_set  active_set, read_set;
 	    struct  sockaddr_in  addr;
 	    struct  sockaddr_in  client;
 	    char    buf[BUFLEN],ch[512];
 	    socklen_t  size;
+      map <int, int> sok;
 
 			string st, base = "Base.txt";
 			condition s;
@@ -1290,12 +1300,15 @@ int main(void)
 
 	        // Данные появились. Проверим в каком сокете.
 	        for (i=0; i<FD_SETSIZE; i++) {
-	            if ( FD_ISSET(i,&read_set) ) {
-	                if ( i==sock ) {
+	            if ( FD_ISSET(i,&read_set) )
+              {
+	                if ( i==sock )
+                  {
 	                    // пришел запрос на новое соединение
 	                    size = sizeof(client);
 	                    new_sock = accept(sock,(struct sockaddr*)&client,&size);
-	                    if ( new_sock<0 ) {
+	                    if ( new_sock<0 )
+                      {
 	                        perror("accept");
 	                        exit (EXIT_FAILURE);
 	                    }
@@ -1307,30 +1320,40 @@ int main(void)
 									else
 									{
 	                    // пришли данные в уже существующем соединени
-	                    err = readFromClient(i,buf);
+	                    err = readFromClient(i,buf,st);
 	                    if ( err<0 )
 											{
 	                        // ошибка или конец данных
+                          cout << "client out" << endl;
+                          sok.erase(sok.find(i));
 	                        close (i);
 	                        FD_CLR(i,&active_set);
 	                    }
 											else
 											{
 	                        // а если это команда закончить работу?
-	                        if ( strstr(buf,"stop") )
+	                        if ( st == "stop" )
 													{
+                              cout << "this is stop" << endl;
+                              sok.erase(sok.find(i));
 	                            close(i);
 	                            FD_CLR (i,&active_set);
 	                        }
 													else
 													{
+                              cout << "this is st -" << st << "----" << endl;
+                              if(sok.find(i) == sok.end())
+                              {
+                                baza.push_ses();
+                                sok[i] = sok_number;
+                                sok_number++;
+                              }
+                              cout << endl << " id of client " << sok[i] << endl;
 	                            // данные прочитаны нормально
-															st = string(buf);
-                         								     cout << "this is st -" << st << "----" << endl;
 															try
 															{
 																zapros.make(st);
-																res = baza.process(zapros);
+																res = baza.process(zapros,sok[i]);
 																res.print(i);
   																res.clear();
   																zapros.clear();

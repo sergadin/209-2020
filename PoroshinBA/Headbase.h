@@ -1,3 +1,5 @@
+#pragma once
+
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -8,22 +10,21 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <set>
 
 struct Student {
   std::string name;
   int group;
   double rating;
+  std::string info;
   bool operator==(const Student &other) {
-    return std::tie(name, group, rating) ==
-           std::tie(other.name, other.group, other.rating);
+    return std::tie(name, group, rating, info) ==
+           std::tie(other.name, other.group, other.rating, other.info);
   }
   bool operator!=(const Student &other) { return !(*this == other); }
 };
 
-std::ostream &operator<<(std::ostream &os, const Student &s) {
-  os << s.name << ',' << s.group << ',' << s.rating;
-  return os;
-}
+std::ostream &operator<<(std::ostream &os, const Student &s);
 
 struct GroupInfo {
   std::list<Student> students_by_rating;
@@ -33,13 +34,42 @@ struct GroupInfo {
 
 class DataBase {
  private:
-  std::unordered_map<int, GroupInfo> group_data;
+  std::set<int> Users = {0};  //new
+
+  //std::unordered_map<int, GroupInfo> group_data;
+  std::map<int, std::unordered_map<int, GroupInfo> > group_data_copied;  //new
+  std::map<int, std::unordered_map<int, GroupInfo> > buffer;  //new
 
  public:
   DataBase() = default;
   ~DataBase() = default;
-  void Insert(const Student &s) {
-    auto &group = group_data[s.group];
+  
+  void Clear(int user_id) {  //new
+    for (auto it = group_data_copied[user_id].begin(); it != group_data_copied[user_id].end();) {
+      it = group_data_copied[user_id].erase(it);
+    }
+  }
+
+  int RegisterUser() {  //new
+    int last_id = *Users.rbegin();
+    last_id = last_id + 1;
+    buffer[last_id] = group_data_copied[last_id] = group_data_copied[0];
+    Users.insert(last_id);
+    return last_id;
+  }
+
+  void Renew_Buffer(int user_id) {
+    buffer[user_id] = group_data_copied[user_id];
+  }
+
+  void DeleteUser(int user_id) {  //new
+    group_data_copied.erase(user_id);
+    buffer.erase(user_id);
+    Users.erase(user_id);
+  }
+
+  void Insert(const Student &s, int user_id) {
+    auto &group = buffer[user_id][s.group];
     auto &students = group.students_by_rating;
     auto student_it = students.begin();
     while (student_it != students.end() && student_it->rating < s.rating)
@@ -48,8 +78,8 @@ class DataBase {
     group.it_by_name[s.name].push_back(student_it);
   }
 
-  GroupInfo::student_it Remove(const Student &s) {
-    auto &group = group_data[s.group];
+  GroupInfo::student_it Remove(const Student &s, int user_id) {
+    auto &group = buffer[user_id][s.group];
     auto &students = group.students_by_rating;
     auto student_it1 = students.begin();
     while (student_it1 != students.end() && *student_it1 != s) ++student_it1;
@@ -73,22 +103,46 @@ class DataBase {
     return students.erase(student_it1, student_it2);
   }
 
-  void PrintAll(std::ostream &os) {
-    for (const auto &[group_id, group] : group_data)
-      for (const auto &[name, it_vector] : group.it_by_name)
-        for (auto it : it_vector) os << *it << '\n';
+  void PrintAll(std::ostream &os, int user_id, bool n, bool g, bool r, bool i) {  //VERY DANGEROUS
+    for (const auto &[group_id, group] : buffer[user_id])
+      for (auto it : group.students_by_rating) {
+          if (n == true) os << (it).name << ',';
+          if (g == true) os << (it).group << ',';
+          if (r == true) os << (it).rating << ',';
+          if (i == true) os << (it).info;
+          os << '\n';
+        }
   }
 
-  void RawEditionSelectName(std::string str);
-  void SelectGroup(int g);
-  void SelectRating(double r);
+  /*void PrintName(std::ostream &os, int user_id) {
+    for (const auto &[group_id, group] : buffer[user_id])
+      for (const auto &[name, it_vector] : group.it_by_name)
+        for (auto it : it_vector) os << (*it).name << '\n';
+  }
+  void PrintGroup(std::ostream &os, int user_id) {
+    for (const auto &[group_id, group] : buffer[user_id])
+      for (const auto &[name, it_vector] : group.it_by_name)
+        for (auto it : it_vector) os << (*it).group << '\n';
+  }
+  void PrintRating(std::ostream &os, int user_id) {
+    for (const auto &[group_id, group] : buffer[user_id])
+      for (const auto &[name, it_vector] : group.it_by_name)
+        for (auto it : it_vector) os << (*it).rating << '\n';
+  }*/
 
-  void Load(const std::string &filename);
-  void Save(const std::string &filename);
 
-  void SortName(std::ostream &os);
-  void SortGroup(std::ostream &os);
-  void SortRating(std::ostream &os);
+  void SelectName(std::string str, int user_id);
+  void SelectGroupMore(int g, int user_id);
+  void SelectGroupLess(int g, int user_id);
+  void SelectRatingMore(double r, int user_id);
+  void SelectRatingLess(double r, int user_id);
 
-  void Process(std::istream &is, std::ostream &os);
+  void Load(const std::string &filename, int user_id);
+  void Save(const std::string &filename, int user_id);
+
+  void SortName(std::ostream &os, int user_id, bool n, bool g, bool r, bool i);
+  void SortGroup(std::ostream &os, int user_id, bool n, bool g, bool r, bool i);
+  void SortRating(std::ostream &os, int user_id, bool n, bool g, bool r, bool i);
+
+  int Process(std::istream &is, std::ostream &os, int user_id);
 };
